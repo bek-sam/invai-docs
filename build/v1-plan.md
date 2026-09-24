@@ -186,3 +186,14 @@ Logins: `owner@desertbloom.test` / `demo1234!` and `vendor@suncitydtf.test` / `d
 | 2 | Docker builds from scratch fail pnpm's `minimumReleaseAge` policy for packages published hours ago | DevOps | Open, will clear with time; consider a pinned `minimumReleaseAgeExclude` |
 | 3 | `deploy.yml` role ARN and deploy-key secrets are placeholders | Owner (human) | Needs real AWS and GitHub values |
 | 4 | Floor SSE auth: EventSource can't send a bearer header | Backend + floor | To be settled in wave 3 |
+| 5 | OrbStack hung once (Docker commands hung); fixed with `orb stop && orb start` | — | Fixed |
+| 6 | Floor: no `floor.station` procedure; before the first login the station info comes only from the QR payload | Architect (later) | Open, minor |
+| 7 | Floor: the queue has no shelf/bin location for blanks | Inventory engineer | Wave 3: add `shelf` to blank stock and include it in `production.queue` pick items |
+| 8 | QC and bin calls have no idempotency key | Production engineer | Wave 3: treat a replayed QC on an already-transitioned item as success with the same result |
+| 9 | CORS must allow the floor origin (5174) | Backend foundation | Asked |
+
+### Decision: pack semantics (tech lead)
+
+- A **QC pass** moves the item `pressed → packed` (architecture 3.1), meaning "QC'd and ready to pack".
+- The **pack station** checks that the order is complete: each scan records a `pack` scan with no state change. "Mark packed" checks that every non-cancelled unit is `packed`, releases the tote and puts the order in the **shipping queue**.
+- A label purchase moves the items `packed → shipped` when tracking is pushed.
