@@ -213,3 +213,22 @@ Availability sync only pushes to connections where the shop turned on `pushAvail
 | 16 | No vendor accept-invite flow; the connection turns active on first portal use | Later | Accepted for v1 |
 | 17 | `blankReusable` on a QC fail is ignored; every re-press is booked as scrap | Later | Accepted |
 | 18 | `tsx watch` restarts on other engineers' edits; a stale non-watch worker shares the queues | QA | Restart all processes before end-to-end tests |
+| 19 | Browser presigned uploads intermittently got 403 SignatureDoesNotMatch (not reproducible from Node) | Tech lead | Mitigated: the web retries once with a freshly signed URL; the signature still binds content type and size (S-08 kept) |
+| 20 | Sign-in rate limit of 10/min per IP was tight for a shop office sharing one IP | Tech lead | Changed to 20/min; floor PIN lockout unchanged |
+| 21 | Shopify order names showed as `##1548` | Tech lead | Fixed: one `orderLabel` helper in the web |
+| 22 | Unknown URLs showed a bare "Not Found" | Tech lead | Fixed: 404 page (en/es) |
+
+## 7. Status at hand-off (Sep 24, 2026, morning)
+
+- **Built:** all 11 modules of the concept, minus the v1 cuts in section 2. 190 API procedures, all implemented.
+- **Verified:**
+  - The golden path passes three ways against the real stack: API (13/13), browser (13/13 plus a smoke test of 27 screens) and tablet (press, QC, pack).
+  - Typecheck, lint and tests pass in every repo, and web and floor build.
+  - Film use on full sheets is 86–91%.
+- **Security:** 4 High findings, all fixed. Open before the Amazon SP-API application: S-15 (email verification), S-26 (tenant-scoped foreign keys), KMS, pen test, incident-response plan. See `invai-docs/security/v1-review.md`.
+- **Needs a human:**
+  - Real keys for Claude, EasyPost, Shopify and S&S (each switches its mock off).
+  - AWS account plus the deploy role ARN and deploy-key secrets.
+  - Marketplace developer applications for Etsy, Amazon, TikTok and Walmart.
+  - A pilot shop's real CSV exports and a vendor's sheet spec, to tune the parsers and nesting.
+- **Not pushed:** every repo's work is on local branch `platform-v1`.
