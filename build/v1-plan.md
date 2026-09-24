@@ -131,6 +131,17 @@ All file references are S3 keys in `S3_BUCKET` (MinIO locally). Imaging reads in
 | `POST /labels/mock` | `{shipment_id, carrier, service, tracking_code, from, to (name, city, state, zip only), weight_oz, out_key}` | `{key}`: a 4x6-inch PDF label with a Code128 barcode for the mock carrier |
 | `POST /sample-art` | `{text, out_key, width_in, height_in, dpi=300, color_hex}` | `{key}`: generates simple transparent PNG artwork for seed designs |
 
+
+#### 5.1a Imaging implementation notes (as built, Sep 24)
+
+- `/compose` takes an optional `label_height_in` (default 0.35). It must equal the value sent to `/nest`.
+- Nest `placements[].copy` is 0-based. `width_in`/`height_in` are the size after rotation. Pass placements straight to compose.
+- `/qa/check` on a non-image returns 200 with an `unreadable` issue; a missing key returns `422 "file not found: <key>"`.
+- Fonts for `font_family`: Inter, Inter Bold, Inter Black, Oswald, Pacifico, Bebas Neue (unknown names fall back to Inter).
+- Personalization flags: `empty` (not drawn), `too_long` (still drawn), `overflow` (drawn at 60% and clipped).
+- PDFs over 200 inches use `/UserUnit` to keep their true physical size.
+- Performance: a 22 × 240-inch sheet with 93 designs renders in 4.1 s at 440 MB peak (10.2 s with PDF).
+
 ### 5.2 Backend layout (`invai-backend`)
 
 ```
