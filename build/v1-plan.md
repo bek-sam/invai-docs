@@ -78,6 +78,9 @@ Everything external (Claude, EasyPost, Shopify, S&S, marketplaces) runs through 
 | QA / integration engineer | **Fable 5.1** | Cross-repo debugging of an unfamiliar system | E2E tests, cross-repo fixes |
 | Security reviewer | Opus 5.5 | Focused audit: RLS, PII, webhooks | Findings and fixes |
 | Technical writer | Sonnet 5 | Docs from working code | READMEs, runbook |
+| Integrations engineer (added Sep 24) | Opus 5.5 | Real APIs need careful doc reading and edge-case handling | Adapters from mock to production |
+| Product designer (added Sep 24) | Opus 5.5 | Needs judgment about users under time pressure, and must implement changes | UX audits and fixes in web, floor, ui |
+| Pilot success (added Sep 24) | Opus 5.5 | Real shop data, privacy rules, turning feedback into evidence | Pilot onboarding, issue log, weekly updates |
 
 Haiku 4.5 is not used for building. Its cost advantage doesn't matter at this scale, and a mistake costs more than it saves.
 
