@@ -32,8 +32,9 @@ That gives Node 24 and pnpm 12.6. The system `/usr/local/bin/node` is Node 22 an
 - **No real API keys exist.** Every integration has a mock provider, chosen automatically when its key is missing, so the platform works end to end locally. Never remove a mock.
 
 ## Repos, branches, ownership
-- 8 separate git repos side by side (not a monorepo). Work happens on branch `platform-v1`.
-- **Never `git push`.** Never change remotes. Commit only when your task says so, and only your own paths (`git add <paths>`, never `git add -A` in a shared repo). End messages with the attribution line in your instructions.
+- 8 separate git repos side by side (not a monorepo). **All work happens on `main`:** no feature branches, no pull requests, no merging or pulling steps.
+- **Pushing (the owner's standing rule):** once the work is done and the definition of done passes, push straight to `main` with `git push origin main`. When several agents work in parallel, they commit and the tech lead pushes after the final verification; an agent working alone pushes its own finished work.
+- Never force-push, never rewrite pushed history, never change remotes. Commit only your own paths (`git add <paths>`, never `git add -A` in a shared repo). End messages with the attribution line in your instructions.
 - Work only in the repos and folders your task assigns. If something outside blocks you, work around it locally and report it; don't silently edit another owner's files.
 - Change order for a feature: `invai-contracts` → `invai-backend` → `invai-web` / `invai-floor`. A breaking contract change must be fixed in every consumer the same day.
 - **Migrations:** edit your module's schema file, then `pnpm db:generate --name <module>_<change>` and commit the migration at once. If two agents collide on the drizzle journal, the later one regenerates. Never hand-edit an applied migration.
