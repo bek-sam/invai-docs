@@ -1,0 +1,34 @@
+{
+  "folders": [
+    {
+      "path": "invai-docs"
+    },
+    {
+      "path": "invai-contracts"
+    },
+    {
+      "path": "invai-ui"
+    },
+    {
+      "path": "invai-backend"
+    },
+    {
+      "path": "invai-imaging"
+    },
+    {
+      "path": "invai-web"
+    },
+    {
+      "path": "invai-floor"
+    },
+    {
+      "path": "invai-infra"
+    }
+  ],
+  "settings": {
+    "editor.defaultFormatter": "biomejs.biome",
+    "[python]": {
+      "editor.defaultFormatter": "charliermarsh.ruff"
+    }
+  }
+}
