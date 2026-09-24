@@ -208,3 +208,8 @@ Availability sync only pushes to connections where the shop turned on `pushAvail
 | 11 | AI publish falls back to a CSV export until channel adapters get `upsertListing` | Later | Accepted for v1 |
 | 12 | `AssistantEvent` has no `get_production_status` tool name | Architect (later) | Open, minor |
 | 13 | Web tabs should use the new `orders.list` `itemState` filter | QA | Open |
+| 14 | Sheet utilization was 51.7% because every seeded design is 11×12 in (one per row on 22 in film) | QA | Open: seed a realistic size mix (adult front 10–10.5 in wide, youth 8–9 in, left chest 3.5–4 in, sleeves 3×10 in, back 12×14 in) and re-check ≥80% |
+| 15 | No `wrong_style` scan mismatch reason (reported as `wrong_design`) | QA (contract + floor) | Open |
+| 16 | No vendor accept-invite flow; the connection turns active on first portal use | Later | Accepted for v1 |
+| 17 | `blankReusable` on a QC fail is ignored; every re-press is booked as scrap | Later | Accepted |
+| 18 | `tsx watch` restarts on other engineers' edits; a stale non-watch worker shares the queues | QA | Restart all processes before end-to-end tests |
