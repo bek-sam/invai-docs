@@ -197,3 +197,14 @@ Logins: `owner@desertbloom.test` / `demo1234!` and `vendor@suncitydtf.test` / `d
 - A **QC pass** moves the item `pressed → packed` (architecture 3.1), meaning "QC'd and ready to pack".
 - The **pack station** checks that the order is complete: each scan records a `pack` scan with no state change. "Mark packed" checks that every non-cancelled unit is `packed`, releases the tote and puts the order in the **shipping queue**.
 - A label purchase moves the items `packed → shipped` when tracking is pushed.
+
+### Decision: marketplace stock push is opt-in per connection (tech lead)
+
+Availability sync only pushes to connections where the shop turned on `pushAvailability`. Silently overwriting a shop's live marketplace quantities on day one is riskier than a missed update; onboarding will prompt the shop to turn it on.
+
+| # | Issue | Owner | Status |
+|---|---|---|---|
+| 10 | Seed leaves some blanks with negative on-hand counts (e.g. Sport Grey M at -17) | QA | Open: the seed must receive enough stock |
+| 11 | AI publish falls back to a CSV export until channel adapters get `upsertListing` | Later | Accepted for v1 |
+| 12 | `AssistantEvent` has no `get_production_status` tool name | Architect (later) | Open, minor |
+| 13 | Web tabs should use the new `orders.list` `itemState` filter | QA | Open |
