@@ -177,3 +177,12 @@ Rules:
 - Stock levels with a few blanks below their reorder point.
 
 Logins: `owner@desertbloom.test` / `demo1234!` and `vendor@suncitydtf.test` / `demo1234!`.
+
+## 6. Open issues and backlog (tech lead log)
+
+| # | Issue | Owner | Status |
+|---|---|---|---|
+| 1 | AWS: nothing creates the low-privilege `invai_app` role in RDS (local `init.sql` does) | DevOps | Open, needs a one-time bootstrap script or an SST dynamic provider |
+| 2 | Docker builds from scratch fail pnpm's `minimumReleaseAge` policy for packages published hours ago | DevOps | Open, will clear with time; consider a pinned `minimumReleaseAgeExclude` |
+| 3 | `deploy.yml` role ARN and deploy-key secrets are placeholders | Owner (human) | Needs real AWS and GitHub values |
+| 4 | Floor SSE auth: EventSource can't send a bearer header | Backend + floor | To be settled in wave 3 |
