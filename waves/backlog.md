@@ -71,3 +71,77 @@ Status is `open`, `planned (wave n)`, `done (wave n)` or `accepted`.
 | B-48 | Eval harness: `invai-backend/evals/` and `evals/run.ts`, one eval set per AI route | ai-engineer | decision 0007 | open |
 | B-49 | Analytics scripts folder and first metric queries (`invai-backend/scripts/analytics/`) | data-analyst | define-metric | open |
 | B-47 | Path-guard hook: block Write/Edit outside the card's owned paths (tech-lead and reviewer first) | platform-sre + security-reviewer | team review B4 | open |
+
+## Added 2026-09-24 by the full-codebase audit (source: `waves/roadmap.md`)
+Sources: `A-BE` backend audit, `A-FE` frontend audit, `A-INF` imaging/infra/contracts audit, `A-QA` baseline health run. Evidence with file:line is in `build/audit-2026-09-24.md`; the wave order is in `roadmap.md`.
+
+### P0
+| ID | Item | Owner role | Source | Status |
+|---|---|---|---|---|
+| B-50 | Production guard: refuse to boot or refuse side effects when carrier, billing, supplier or AI mocks are active with `NODE_ENV=production`; hide `mocks` from public `/health` | backend-foundation | A-BE, A-INF | open |
+| B-51 | Team invites broken end to end (no invitation row, no email, member never activated, email can't sign up later); staff without email get PIN-only accounts | backend-foundation + web-engineer | A-BE, A-FE | open |
+| B-52 | Vendor invite link points to `/vendor/accept?token=` which doesn't exist; `inviteToken` never read | backend-engineer (vendors) | A-BE | open |
+| B-53 | Stripe billing: Checkout, webhook, customer portal, `changePlan` must not apply paid plans without payment, trial expiry job, `maxUsers`/`maxConnections` limits, credit packs, upgrade prompts, trial/past-due banners | backend-engineer (billing) + integrations-engineer + web-engineer | A-BE, A-FE | open |
+| B-54 | Production reference data: trademark marks (and plans) loaded by a reference-seed step with no demo tenants | backend-foundation + ai-engineer | A-BE, A-INF | open |
+| B-55 | Tenant POs fall back to InvAI's own S&S keys (`suppliers/index.ts`); never use platform keys for a tenant | integrations-engineer | A-BE | open |
+| B-56 | `invai-backend` `pnpm build` fails (`tsup --noExternal`), so Docker/AWS images can't build; add build to the definition of done | backend-foundation | A-QA | open |
+| B-57 | `sst.config.ts` deploy blockers: `imaging.url` on an internal service, worker env (`BETTER_AUTH_URL`, `WEB_ORIGIN`, `FLOOR_ORIGIN`), stage URLs, imaging S3 config (endpoint/keys/region), one registrable domain with ACM for app/floor/api | platform-sre + imaging-engineer | A-INF | open |
+| B-58 | Email in AWS: `SMTP_URL`/`MAIL_FROM` in env schema, SES SMTP secret + IAM, DKIM/SPF/DMARC | platform-sre + backend-foundation | A-INF, A-BE | open |
+| B-59 | Migrations in the prod image: compiled migrate entry + `drizzle/`, one-off ECS task: bootstrap `invai_app` (+ proxy secret) → migrate → reference seed (extends B-01, B-03) | platform-sre + backend-foundation | A-INF | open |
+
+### P1
+| ID | Item | Owner role | Source | Status |
+|---|---|---|---|---|
+| B-60 | Password reset, account page (name, password, sessions) | backend-foundation + web-engineer | A-BE, A-FE | open |
+| B-61 | Heavy work off the request/transaction: CSV import, personalization renders (with retry job), `batchBuy`, carrier call under `FOR UPDATE` in `rateOrder` | backend-foundation + backend-engineer (orders, shipping, personalization) | A-BE | open |
+| B-62 | Cancel/hold after a label: void the label and block the tracking push; check item state in `pushTracking*` | backend-engineer (orders + shipping) | A-BE | open |
+| B-63 | Shopify: webhooks import unpaid orders; poll misses refunded/voided; line-item pagination; webhook-subscription failure surfaced; disconnect unsubscribes; persisted delivery table; OAuth state expiry (extends B-07, B-28) | integrations-engineer | A-BE | open |
+| B-64 | `submitPo` crash-safe with idempotency key; `receivePo` idempotent; cancel at supplier | integrations-engineer + backend-engineer (inventory) | A-BE | open |
+| B-65 | `listings`/`listing_variants` never written, so availability push is dead (extends B-04) | integrations-engineer + backend-engineer (inventory) | A-BE | open |
+| B-66 | Live tracking: EasyPost tracker webhooks → `in_transit`/`delivered` (extends B-11) | integrations-engineer | A-BE | open |
+| B-67 | Void labels for CSV channels (`NO_PUSH_CHANNELS`), void confirmation dialog | backend-engineer (shipping) + web-engineer | A-BE, A-FE | open |
+| B-68 | Tracking export files for CSV channels (Etsy, Amazon shipping confirmation, TikTok, Walmart) + UI | integrations-engineer + web-engineer | A-BE, A-FE | open |
+| B-69 | Label fee comes from the plan, not hard-coded `LABEL_FEE_CENTS = 4` (with B-40, OI-1) | backend-engineer (shipping) | A-BE | open |
+| B-70 | Refunds after shipment ingested (Shopify + CSV) into profit (extends B-13) | backend-engineer (finance) + integrations-engineer | A-BE | open |
+| B-71 | Tests for money/side-effect paths (`buyLabel`, `rateOrder`, `voidShipment`, `batchBuy`, `pushTracking`, `syncAvailability`, `publishDraft`, `renderItemArtwork`) and fetch-mocked live adapters (Shopify, EasyPost, S&S) | qa-engineer + owners | A-BE | open |
+| B-72 | Web demo mode: start with sample data, reset, leave | backend-foundation + web-engineer | A-BE, A-FE | open |
+| B-73 | S3 lifecycle rules match real keys; bucket CORS limited; versioning | platform-sre + architect | A-INF | open |
+| B-74 | RDS production settings (size, backups, deletion protection, final snapshot, `force_ssl`, Pool `ssl`) (P-G5) | platform-sre + backend-foundation | A-INF | open |
+| B-75 | Alarms, SNS, budget, 12-month log retention, error tracking (S-G30) | platform-sre | A-INF | open |
+| B-76 | Deploy pipeline: pinned sibling SHAs gated on green CI, staging → prod promotion, smoke test, rollback, region; infra CI; Docker build in app CI; root `.dockerignore`; compose `full` profile | platform-sre | A-INF | open |
+| B-77 | Missing SST secrets: FloorTokenSecret, SMTP_URL, MAIL_FROM, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, S&S; KMS grant. Since T-1-1, production boot refuses without them (or `ALLOW_MOCKS=true` for a demo stage) | platform-sre | A-INF | open |
+| B-78 | Imaging input formats: PDF input (rasterize at target DPI) or reject at upload; SVG at target DPI | imaging-engineer | A-INF | open |
+| B-79 | Sheet identity and scannability: transfer QRs rendered ≥ 300 DPI; sheet header barcode; sheet id in file name; configurable label gap with cut guide | imaging-engineer | A-INF | open |
+| B-80 | PDFs over 200 in rely on `/UserUnit`: cap or verify on vendor RIPs | imaging-engineer + architect | A-INF | open |
+| B-81 | Personalization: multi-line, stroke/outline, photo slot, font enum in contract, missing-glyph flag | imaging-engineer + architect | A-INF | open |
+| B-82 | Floor API version handshake (reload signal, compat window for offline replay) | architect + floor-engineer | A-INF | open |
+| B-83 | Contracts CI triggers consumer typechecks; versioning/changelog | architect + platform-sre | A-INF | open |
+| B-84 | Orders UI: rush/flag/artwork/tags, shipment section, address edit for `address_check` holds (new procedure), correct tab counts, more views/filters, bulk cancel, export | web-engineer + architect | A-FE | open |
+| B-85 | Channels settings: Shopify OAuth return message, import history, reconnect for pending/error | web-engineer | A-FE | open |
+| B-86 | Inventory UI: manual PO create/edit, "mark placed manually" for suppliers with no API (production refuses `submitPo` for them since T-1-3), stock count, inventory & supplier settings (S&S account, lead/safety days, `reserveOnImport`) | web-engineer | A-FE | open |
+| B-87 | Production UI: in-house print path (contract state), reprint queue + reasons report, bins with `BIN:` and `B:` labels | web-engineer + architect + product-designer | A-FE | open |
+| B-88 | Profit UI: ad spend screen + CSV import, export, drill-down | web-engineer | A-FE | open |
+| B-89 | AI listings UI: copy helpers + marketplace listing CSV with real SKUs/variants, publish status, credit ledger | web-engineer + ai-engineer | A-FE, A-BE | open |
+| B-90 | Shipping settings: carriers, label format, weights per style | web-engineer | A-FE | open |
+| B-91 | Onboarding checklist complete (address, carrier, tablet, designs, costs, plan), dismissable; Today stat links and alert translation | product-designer + web-engineer + backend-engineer (today) | A-FE | open |
+| B-92 | Team & stations: resend/revoke invites, confirmations for role/owner/deactivate, edit station, revoke token | web-engineer | A-FE | open |
+| B-93 | Accessibility & i18n: keyboard table rows, skip link, English strings in invai-ui/web errors/sign-up, `RelativeTime`/`Money` locale (extends B-42) | web-engineer + product-designer | A-FE | open |
+| B-94 | Floor pack completeness check (decision 0002), new contract procedure | architect + floor-engineer + backend-engineer (production) | A-FE | open |
+| B-95 | Floor offline queue: attempt limit and parking, view/clear rejected, alerts on rejected replay, correct attribution, warn on forget, `storage.persist()` | floor-engineer | A-FE | open |
+| B-96 | Floor receiving station (POs, vendor transfers, counts) | floor-engineer + product-designer | A-FE | open |
+| B-97 | E2E: floor offline replay, role permissions, Spanish, uncovered web/floor flows; fix flaky vendor step (`clickIfShown`) and sign-in rate limit in dev E2E | qa-engineer | A-FE, A-QA | open |
+| B-98 | Help center (en/es), terms/privacy links at sign-up, in-app help link | docs-writer + compliance-officer | A-FE | open |
+
+### P2
+| ID | Item | Owner role | Source | Status |
+|---|---|---|---|---|
+| B-99 | Orders: `ON CONFLICT` import / per-connection lock; channel line edits; poller skips pending-approval connections | backend-engineer (orders) + integrations-engineer | A-BE | open |
+| B-100 | Production jobs: scrap job id collision; retries on build/regenerate sheets; deterministic compose keys | backend-engineer (production) | A-BE, A-INF | open |
+| B-101 | AI: dead publish branch, assistant stream finish on disconnect, empty assistant messages, `sku_suggestion` and `personalization_check` prompts | ai-engineer | A-BE | open |
+| B-102 | Vendor sheet email: resend, send after commit | backend-engineer (vendors) | A-BE | open |
+| B-103 | Imaging polish: template geometry, aspect/upscale flags, ICC profiles, mirror, input bounds (and contract bounds), gate mock endpoints, return render time, graceful shutdown + HEALTHCHECK, test gaps | imaging-engineer + architect | A-INF | open |
+| B-104 | Contract drift: `stock.changed` never published, `listing.synced` never emitted; imaging API contract test; remove or build unused procedures | architect | A-INF, A-FE | open |
+| B-105 | Floor polish: all 12 reprint reasons, truthful QC outcome, English leaks in Spanish, pack progress persisted, camera scanner, PWA icons and `lang` | floor-engineer | A-FE | open |
+| B-106 | Seed collides with a running worker (`stock_levels` unique); runbook fixes (seed time, imaging first, worker stopped, E2E steps, `pnpm stop`, `ALLOW_MOCKS`, `SMTP_URL`, `MAIL_FROM`, `STRIPE_WEBHOOK_SECRET` from T-1-1) | backend-foundation + docs-writer | A-QA | open |
+| B-107 | Security/cost details: WAF, S3 gateway endpoint, ARM Fargate, imaging scaling; bundle size over 500 kB | platform-sre + web-engineer + floor-engineer | A-INF, A-QA | open |
+| B-108 | Direct Etsy Open API v3 adapter (OAuth PKCE, receipts sync, tracking push, ledger fees) in mock mode until approval — **needs owner scope approval (OI-3)** | integrations-engineer | owner request | open |

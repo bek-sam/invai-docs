@@ -48,3 +48,11 @@ Entry format:
 - Recommendation: A for pilots, then decide on B after pilots show how many shops are Shopify-first.
 - Cost of waiting: the growth-marketer's app-store work and the Shopify part of B-06 can't be finalized.
 - Answer:
+
+## OI-3: Build the direct Etsy API adapter now (mock mode) instead of waiting for approval?   status: open
+- From: tech-lead, 2026-09-24. Deadline: before wave 4 starts. Default if no answer: stay on CSV import for Etsy (decision 0006); B-108 waits.
+- Context: most target shops sell mainly on Etsy. Decision 0006 keeps direct Etsy on CSV until Etsy approves our app. The Etsy Open API v3 (OAuth 2.0 with PKCE, receipts, tracking, ledger entries for fees) can be built and tested in mock mode now, then switched on with your API key. Personal access works on your own shop; other shops need Etsy's commercial-access approval, which can take weeks.
+- Options: A) Build it now in mock mode (one wave card, about the size of the Shopify adapter), and you apply for an Etsy developer app in parallel. B) Wait for approval first. C) Keep CSV only, and add the Etsy tracking export file (B-68) as the stopgap.
+- Recommendation: A plus C. B-68 helps every CSV channel either way, and the adapter is ready the day Etsy approves.
+- Cost of waiting: Etsy shops keep uploading CSVs and typing tracking codes, which is the biggest daily pain for Etsy-first shops.
+- Answer:
