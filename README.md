@@ -16,6 +16,21 @@
 | [research/08-tools-ai-imaging.md](research/08-tools-ai-imaging.md) | Claude costs, image models, upscaling, mockups, OCR, trademark, keywords |
 | [research/09-tools-frontend.md](research/09-tools-frontend.md) | Frontend framework, UI, tables, editors, PWA, AI chat, dev tools |
 
+## Team and process
+
+| Path | What it is |
+| --- | --- |
+| [team/operating-system.md](team/operating-system.md) | How the 20-role agent team plans, builds, reviews and ships |
+| [team/README.md](team/README.md) | Backup of the live team (roles, playbooks, hook) and how to restore it |
+| [product/scope.md](product/scope.md) | What is in and out of scope, by shop segment |
+| [decisions/](decisions/README.md) | One file per accepted decision |
+| [waves/backlog.md](waves/backlog.md) | The ranked backlog |
+| [owner-inbox.md](owner-inbox.md) | Questions and drafts waiting for the owner |
+| [research/10-marketplace-engineering-rules.md](research/10-marketplace-engineering-rules.md) | Marketplace, shipping and DTF rules, with a code audit |
+| [research/11-platform-scale-playbook.md](research/11-platform-scale-playbook.md) | How to scale from 1 to 10,000 shops |
+| [research/12-security-quality-playbook.md](research/12-security-quality-playbook.md) | Security, compliance and testing rules |
+| [research/13-team-gap-analysis.md](research/13-team-gap-analysis.md) | Why the team is shaped this way |
+
 The live shared version of the concept doc: https://claude.ai/code/artifact/810068bd-1e49-4792-b2e7-e5fa74d916aa
 
 Research is as of Sep 2026. Items marked [K] or "unsourced" in the research files were not verified against a live source.

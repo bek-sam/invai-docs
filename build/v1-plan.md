@@ -183,6 +183,8 @@ Logins: `owner@desertbloom.test` / `demo1234!` and `vendor@suncitydtf.test` / `d
 
 ## 6. Open issues and backlog (tech lead log)
 
+Decisions now live in `invai-docs/decisions/` (one file each). The "Decision:" paragraphs below were moved there as 0002 and 0003; the open items below were moved to `invai-docs/waves/backlog.md`, which is now the backlog.
+
 | # | Issue | Owner | Status |
 |---|---|---|---|
 | 1 | AWS: nothing creates the low-privilege `invai_app` role in RDS (local `init.sql` does) | DevOps | Open, needs a one-time bootstrap script or an SST dynamic provider |
@@ -234,4 +236,4 @@ Availability sync only pushes to connections where the shop turned on `pushAvail
   - AWS account plus the deploy role ARN and deploy-key secrets.
   - Marketplace developer applications for Etsy, Amazon, TikTok and Walmart.
   - A pilot shop's real CSV exports and a vendor's sheet spec, to tune the parsers and nesting.
-- **Not pushed:** every repo's work is on local branch `platform-v1`.
+- **Pushed:** merged to `main` on Sep 24, 2026; all work now happens on `main` (`decisions/0004`).
