@@ -1,0 +1,107 @@
+# InvAI v1 security review
+
+Date: 2026-09-24. Reviewer: security reviewer agent. Scope: `invai-backend` on `platform-v1`, checked against architecture.md sections 7, 8.4 and 11. Areas covered: tenant isolation, auth, authorization, secrets, PII, input validation, SSRF and injection. B1 paths (`modules/{orders,channels,personalization}`, `integrations/channels`, `api/webhooks.ts`, `lib/realtime.ts`) and B2 paths (`modules/{production,vendors,shipping}`, `integrations/{carriers,vendors}`) were reviewed read-only. Their findings are listed with an owner and were not fixed here.
+
+Severity: **High** means cross-tenant data or PII exposure, or privilege escalation, reachable through the API. **Medium** means the same kind of harm but needing a second condition, or a strong defense-in-depth gap. **Low** is hardening.
+
+## Findings
+
+| ID | Severity | Area | Description | Status | Owner |
+|---|---|---|---|---|---|
+| S-01 | High | Authorization | Better Auth's organization endpoints (`/api/auth/organization/update`, `update-member-role`, `remove-member`, `invite-member`, `delete`, `leave`, ...) were exposed. They bypass `team.*`: an admin could promote themselves or a friend to owner, remove or demote owners, and delete the company. | Fixed: `disabledPaths` in `src/auth.ts`. The web app only uses create, list, set-active and accept-invitation. | Security |
+| S-02 | High | Billing / authz | `companies.plan` and `companies.type` were `input: true` on the Better Auth organization schema. Anyone could sign up with `plan: "enterprise"` (plan limits read `companies.plan`) or create a `vendor` org. Admins could also change the plan through `organization/update`. | Fixed: both fields are `input: false`. Tested through the real HTTP handler. | Security |
+| S-03 | High | Authorization | `team.changeRole`, `team.invite` and `team.deactivate` let any `team.manage` holder (admin, and the vendor role) grant `owner`, demote or deactivate owners, and demote the last owner. `team.setPin` let an admin set an owner's PIN. | Fixed: only an owner may grant, change or deactivate an owner. At least one active owner must remain. The role must fit the org type. Role changes are audited with `from`/`to`. | Security |
+| S-04 | High | Tenant isolation / PII | `processWebhook` routes a Shopify webhook to **every** connection whose `external_shop_id` matches and whose status is not `disconnected`, and that includes `pending`. `channels.connect` creates a `pending` row for any `*.myshopify.com` domain without proof of ownership, and the duplicate check runs under RLS, so it can't see other companies. Result: any shop can start a connect for a victim's shop domain and receive that victim's order webhooks, including buyer names and addresses. | Open | B1 |
+| S-05 | Medium | Tenant isolation (RLS) | The vendor policies (`gang_sheets_vendor_read/update`, `transfers_vendor_read`) trusted any `vendor_access` row. In a vendor session `app.company_id` is the vendor, so a vendor could insert `vendor_access` rows for itself (or a shop could insert them for another shop's sheet id) and expose sheets that aren't theirs. Because permissive policies are OR'ed, a vendor could also rewrite a shared sheet's `company_id` to its own. | Fixed: migration `0003_vendor_policy_owner_match` requires `vendor_access.company_id = <row>.company_id`, and a trigger makes `gang_sheets.company_id` immutable. Tests in `src/db/rls-coverage.test.ts`. | Security |
+| S-06 | Medium | Auth (floor) | Floor PINs (4 to 6 digits) had no rate limit or lockout. | Fixed: after 10 failures per station token in 15 minutes the station is locked (`RATE_LIMITED`, `retryAfterSec`), even for the right PIN. Counters live in Redis and fail open after a 500 ms timeout. | Security |
+| S-07 | Medium | Auth (floor) | Floor sessions kept the role signed into the token for 12 hours. A role change or deactivation didn't apply. `floor.logout` was a no-op, so the token stayed valid. `stations.revokeToken` cleared the live-token cache by station id instead of token id, which left up to 30 s of validity. | Fixed: the floor context reads the live membership (role, active status). Logout revokes the token in Redis for the rest of its lifetime (tokens now carry a nonce). Revocation clears the cache by token id. | Security |
+| S-08 | Medium | Files / S3 | Presigned PUTs signed only `host`, so the browser could upload any content type and any size. The SDK also signed a CRC32 of an empty body into every URL, which real S3 would reject on upload. | Fixed: `content-type` and `content-length` are signed and `requestChecksumCalculation: WHEN_REQUIRED`. Verified against MinIO: wrong type gives 403, bigger body gives 403. | Security |
+| S-09 | Medium | Files / PII | `files.downloadUrl` (`files.read`, `auth: floor`) handed pressers and designers links to any key in the company prefix. That included raw channel payloads, uploaded order CSVs and shipping labels, all of which contain buyer addresses. | Fixed: `raw` is never served, `csv` needs `channels.import`/`catalog.manage`/`finance.manage`, `label` needs `shipping.read`. | Security |
+| S-10 | Medium | Files / injection | The key extension came from the user's filename (`x.pdf/../../<other>/...` ended up in the key). Download keys weren't validated for `..` or `//`. Kind `other` accepted any content type, including `text/html`, served inline from the bucket. | Fixed: the extension is `[a-z0-9]{1,8}` or `bin`, `isSafeKey()` is enforced on download, and `other` uses an allowlist. | Security |
+| S-11 | Medium | Tenant isolation (S3) | `designs.create/update` and `blanks.bulkImport` accepted any `fileKey`, including another company's key, which imaging would then read or render. | Fixed: `isCompanyKey()` check in catalog. | Security |
+| S-12 | Medium | Tenant isolation (S3) | `personalization.templates.create/update` accept any `backgroundKey`, and imaging reads it. | Open (add `isCompanyKey(ctx.companyId, key)` from `src/lib/s3.ts`) | B1 |
+| S-13 | Medium | DoS | SKU rules of type `regex` compile user-supplied patterns with `new RegExp` and run them in the API and worker. Catastrophic backtracking (for example `(a+)+$`) can stall a shared process for every tenant. | Open: cap pattern and SKU length, reject nested quantifiers, or use RE2 (`re2` package). | B1 |
+| S-14 | Medium | Webhooks | The mock Shopify provider verifies with the public constant `mock-shopify-webhook-secret`. If production runs without `SHOPIFY_API_SECRET`, anyone can forge order webhooks. | Mitigated: `app.ts` returns 404 for `/webhooks/shopify*` in production while Shopify is mocked. The adapter itself is unchanged. | Security (guard) / B1 |
+| S-15 | Medium | Auth | No email verification. A person can register someone else's address before they're invited. `team.invite` attaches the membership to an existing user by email, and vendor invitations are accepted with an unverified account. | Open: enable `emailVerification` (mailer) plus `requireEmailVerificationOnInvitation`, and a web flow for "verify your email". | Backend (auth) + Web |
+| S-16 | Medium | PII retention | The purge job deletes `buyer_pii` only for delivered orders (or `purgeAfter`). Orders that never get a delivery event (CSV channels, cancelled, lost tracking) keep PII forever. Uploaded order CSVs (`{company}/csv/...`) and label PDFs are never deleted. | Open: fall back to `shipped_at` or `cancelled_at` + 30 days, and set S3 lifecycle rules for the `csv`, `raw` and `label` prefixes (30 days). | B1 (job), DevOps (lifecycle) |
+| S-17 | Medium | AI / PII | The assistant sent the user's free-text message and history to the model unscrubbed (only structured prompts went through `stripPiiDeep`). | Fixed: `scrubAssistantRun()` in the gateway. | Security |
+| S-18 | Medium | Headers / DoS | No security headers and no request body limit, including on webhooks. | Fixed: `secureHeaders` (CSP `default-src 'none'`, DENY, nosniff, no-referrer, HSTS in production) and a 5 MB `bodyLimit`. | Security |
+| S-19 | Medium | Auth endpoints | Better Auth rate limiting was left at defaults, and cookies weren't forced secure. | Fixed: explicit limits (sign-in 10/min, sign-up 5/min, org create 5/min, 100/min otherwise; per IP, in memory), `useSecureCookies` in production, `maxPasswordLength` 128. Verified: the 11th bad sign-in returns 429. | Security |
+| S-20 | Low | Crypto | AES-GCM decryption didn't pin the tag length (Node accepts truncated tags) or check the minimum length. | Fixed: `authTagLength: 16` and a length check. IV is random 12 bytes, key id prefix, tag verified. | Security |
+| S-21 | Low | Injection | `toCsv` had no formula-injection guard (AI listing CSV exports contain user and AI text). | Fixed: text cells starting with `= + - @ \t \r` get a leading `'`, and numbers are untouched. | Security |
+| S-22 | Low | Injection | The `Content-Disposition` filename was built from the sheet name without escaping. | Fixed: `contentDisposition()` (ASCII fallback plus RFC 5987). | Security |
+| S-23 | Low | Authorization | Nothing tied a member's role to the org type (a `vendor` role in a shop, or `owner` in a vendor org). | Fixed: `roleFits()`. A mismatch gets no permissions. | Security |
+| S-24 | Low | Tenant isolation | Better Auth listings (`organization/list-members`, `get-full-organization`, `list-invitations`) exposed member emails to every role. | Fixed: disabled (team.list covers it behind `team.read`). | Security |
+| S-25 | Low | Least privilege | `inviteUser` used `withSystem` (owner, no RLS) in a request path for the `users` table. | Fixed: uses the app role (the table has no RLS). Remaining request-path `withSystem` calls are in `vendors/service.ts` (vendor org lookup and create, `activatePending`) and billing's plan-catalog sync. Both are justified, but the vendor ones could use `db`. | B2 (optional) |
+| S-26 | Low | Tenant isolation | Foreign keys aren't composite with `company_id`, so an insert can reference another company's id (for example `stations.location_id`, `order_items.blank_variant_id`). The FK check ignores RLS. Reads stay isolated, but it's an integrity gap. | Open: composite FKs `(company_id, id)` over time, or validate ids in services. | Backend (all) |
+| S-27 | Low | Vendors | `vendors.invite` links a shop to an existing vendor org by email match and sets it `active` without the vendor's consent. Sheet email links are presigned for 7 days, and with IAM-role credentials in AWS a presigned URL dies when the session credentials expire, so these links will break early. | Open | B2 |
+| S-28 | Low | Webhooks | `POST /webhooks/:channel` enqueues unverified bodies for any channel that registers a handler. Verification is left to the job. | Open: verify before enqueue once Etsy and others get handlers. | B1 |
+| S-29 | Low | PII | `buyer_pii.city/state/zip`, `orders.buyer_note` and `buyerName` are plaintext or unmasked (`buyerName` shows for every `orders.read` role). Drizzle error messages logged by `logUnexpected` include query parameters. | Open (accepted for v1; revisit before the SP-API application) | B1 / Backend |
+| S-30 | Low | Ops | `/health` reveals which integrations are mocked. The SSE floor token travels in the query string (open issue #4). `clientIp` trusts `X-Forwarded-For` (audit IPs and Better Auth rate limits), so it's only safe behind the ALB. `FLOOR_TOKEN_SECRET` falls back to `BETTER_AUTH_SECRET`. | Open | DevOps / Backend |
+| S-31 | Low | Files | SVG designs are allowed and would render inline from the bucket origin. | Open: serve SVG as attachment or from a sandbox domain. | Backend |
+| S-32 | Low | Dependencies | `pnpm audit --prod`: the backend has esbuild ≤0.24.2 (moderate) and <0.28.1 (low), reached only through the dev tools drizzle-kit and vitest via better-auth's optional peers, so not in the runtime bundle. Web and floor are clean. Imaging (`pip-audit` via `uvx`) is clean. | Open (dev only) | DevOps |
+
+Counts: 4 High (3 fixed, 1 open for B1), 15 Medium (10 fixed, 1 mitigated, 4 open), 13 Low (6 fixed, 7 open).
+
+## What was verified
+
+- **RLS**: all 61 tables in `public` were enumerated. Every table with `company_id` has RLS enabled and an `invai_app` policy. The only tables without RLS are the 7 Better Auth identity tables, which the tenancy module scopes explicitly. `invai_app` owns no table and has neither superuser nor BYPASSRLS, so FORCE RLS isn't needed. `plans` and `trademark_marks` are read-only, and `audit_log` and `order_item_transitions` can't be updated or deleted. All of this is a test (`src/db/rls-coverage.test.ts`), so a new unprotected table fails CI. Vendor abuse cases (self-granted access, cross-shop sharing, `company_id` rewrite, revocation) are tested.
+- **Permission guard**: `src/api/authz.test.ts` walks `listProcedures(contract)` (170+ procedures) and calls every one through the real router:
+  - Anonymous calls get `UNAUTHORIZED`, except `floor.login` and `floor.staff`.
+  - A user without the permission gets `FORBIDDEN`.
+  - Floor sessions can't reach any `auth: user` procedure.
+  - A bare station token reaches nothing.
+  - The vendor role reaches only the vendor portal and its own org's team, locations, stations, files and alerts.
+  - Only `me.*` and `floor.*` declare `permission: none`.
+- **Tenancy**: tests in `src/modules/tenancy/security.test.ts` cover role escalation, the last-owner rule, PIN lockout, logout revocation, live role and deactivation checks, and immediate station revocation. `me.switchOrg` only accepts orgs from the caller's active memberships, and Better Auth `set-active` to an org where the user is deactivated falls back to an active membership.
+- **Crypto**: AES-256-GCM with a random 12-byte IV, 16-byte tag and key id. Floor tokens are HMAC-SHA256 with a `timingSafeEqual` compare and an expiry. Station tokens are 256-bit random values stored as SHA-256. PINs are HMAC'd with a server secret. Passwords use Better Auth's scrypt. Channel credentials and supplier API keys are `encryptedText` columns. The supplier key is write-only in the API (`hasApiKey`) and masked in audit data. `FIELD_ENCRYPTION_KEY` never appears in logs.
+- **PII**: buyer name, email, phone, company and street are encrypted in `buyer_pii`. `Order.shipTo` is only returned with `orders.manage`. AI structured prompts and now assistant messages are scrubbed. Assistant tools are read-only, company-scoped (`withTenant` per tool) and take no free-form SQL. Audit rows and logs showed no buyer data.
+- **Injection and SSRF**: every `sql.raw` uses constants, and `ilike` values are parameterized. Outbound URLs are fixed bases (EasyPost, S&S, imaging from env) or a Shopify shop domain matching `^[a-z0-9-]+\.myshopify\.com$`. The Shopify webhook HMAC is checked on the raw body with `timingSafeEqual` before any work. The OAuth callback checks the query HMAC and the stored state.
+- **Exercised for real** (API on :3104 against the dev DB):
+  - Sign-up with `plan: enterprise, type: vendor` created a `shop` on `trial`.
+  - `organization/update-member-role` returned 404.
+  - The 11th wrong sign-in returned 429.
+  - 10 wrong PINs locked the demo station, and even the right PIN got 429 (the lock was cleared afterwards).
+  - `floor/logout` made the session token return 401.
+  - Headers and CORS were checked with curl.
+  - Presigned uploads were tested against MinIO.
+- **Checks**: `pnpm typecheck`, `pnpm lint` and `pnpm test` are green (26 files, 139 tests).
+
+## Exact asks for B1 and B2
+
+- **B1 (S-04, High)**:
+  - In `processWebhook`, match only `status = 'connected'` connections.
+  - In `connect`, check globally (not under RLS) whether the shop domain is already connected. Use a system lookup or a unique partial index on `(channel, external_shop_id) where status = 'connected'`.
+  - Only set `external_shop_id` on the pending row after OAuth proves ownership. `completeShopifyOAuth` already verifies the HMAC and state.
+- **B1 (S-12)**: call `isCompanyKey(ctx.companyId, backgroundKey)` in personalization template create/update.
+- **B1 (S-13)**: bound regex SKU rules. Patterns up to 200 chars, SKUs up to 128 chars, and reject nested quantifiers or use RE2.
+- **B1 (S-16)**: the purge fallback for orders that never get delivered, plus deleting `csv` uploads and `label` PDFs with the PII (or a lifecycle rule).
+- **B1 (S-28)**: verify signatures in `/webhooks/:channel` before enqueueing once more channels get handlers.
+- **B2 (S-27)**: ask the vendor to accept before a connection becomes `active`. Use short-lived portal links, or re-sign on click, instead of 7-day presigned links.
+- **B2 (S-25, optional)**: use `db` instead of `withSystem` for the Better Auth tables in `inviteVendor`.
+- **Migration numbering**: `0003_vendor_policy_owner_match` is committed by the security review. An uncommitted `0004_print_size_numeric` (from the `order_items.print_*_in` → double change) already sits on top of it in the journal. Its owner should commit it as 0004.
+
+## Before applying for Amazon SP-API restricted (PII) access
+
+1. **Close S-04, S-15 and S-16.** They are the PII-relevant open items. Amazon asks about buyer data isolation, account security and retention.
+2. **KMS instead of a static key.**
+   - Replace `FIELD_ENCRYPTION_KEY` with KMS envelope encryption: a per-tenant or per-month data key, the encrypted key stored with the ciphertext, and decrypt permission only for the API and worker roles.
+   - Keep the `<keyId>:` format and re-encrypt lazily with `needsReencrypt()`.
+   - Turn on KMS at rest for RDS, S3, ElastiCache and backups (architecture section 11).
+3. **Secrets management.** Put `BETTER_AUTH_SECRET`, `FLOOR_TOKEN_SECRET` (make it required and separate), channel secrets and supplier keys in AWS Secrets Manager with a rotation runbook, and use no long-lived AWS keys (`S3_ACCESS_KEY_ID` only locally).
+4. **MFA** for owner and admin accounts (Better Auth two-factor plugin). Amazon's DPP expects MFA for access to PII.
+5. **Independent penetration test** of the API, web, floor and vendor portal after the fixes above, and a vulnerability scan at least every 180 days (architecture section 11). Add CI dependency scanning (`pnpm audit --prod`, `pip-audit`) and container scanning (Trivy or ECR scanning), failing on High.
+6. **Incident response plan** (written):
+   - Roles and severity levels.
+   - Amazon notification within 24 hours of a PII incident (security@amazon.com).
+   - Evidence preservation.
+   - Customer notification templates.
+   - A yearly tabletop exercise.
+7. **Logging and monitoring**:
+   - Centralized, tamper-evident logs (CloudWatch with retention and an S3 Object Lock archive).
+   - Alerts on auth anomalies, lockouts (S-06 emits a warn log) and 5xx spikes.
+   - A way to redact query parameters from DB error logs (S-29).
+   - Logs of production scans and permission changes are already in `audit_log`.
+8. **Data retention evidence**: prove the 30-day purge (S-16) and the S3 lifecycle rules for `raw`, `csv` and `label`, and document the data flow (where the buyer address goes: DB, EasyPost, label PDF, packing slip).
+9. **Access control policy**: document the role matrix (contracts `ROLE_PERMISSIONS`), least-privilege IAM per service, quarterly access reviews and offboarding (deactivation now ends floor sessions at once).
+10. **Network**: WAF in front of the ALB with rate-based rules (Better Auth limits are per process, in memory; move them to Redis `secondary-storage` when there is more than one API task), TLS 1.2+ only, and private subnets for RDS and Redis.
