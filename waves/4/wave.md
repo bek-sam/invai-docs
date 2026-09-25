@@ -10,10 +10,10 @@
 ## Cards
 | Card | Owner | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|
-| T-4-1 Pack-complete, `wrong_style` and idempotent QC/bin (backend) | backend-engineer (production) | reviewer + architect, qa-engineer | floor-correctness | planned |
-| T-4-2 Offline queue that never jams | floor-engineer | reviewer + qa-engineer, security-reviewer | floor-correctness | planned |
-| T-4-3 Receiving station | floor-engineer | reviewer + product-designer, backend-engineer (inventory) | ui, floor-correctness | planned |
-| T-4-4 Pack station and floor polish | floor-engineer | reviewer + product-designer, qa-engineer | ui, floor-correctness | planned (after T-4-1) |
+| T-4-1 Pack-complete, `wrong_style` and idempotent QC/bin (backend) | backend-engineer (production) | reviewer + architect, qa-engineer | floor-correctness | done |
+| T-4-2 Offline queue that never jams | floor-engineer | reviewer + qa-engineer, security-reviewer | floor-correctness | done |
+| T-4-3 Receiving station | floor-engineer | reviewer + product-designer, backend-engineer (inventory) | ui, floor-correctness | done |
+| T-4-4 Pack station and floor polish | floor-engineer | reviewer + product-designer, qa-engineer | ui, floor-correctness | done |
 
 Only 3 builders at once. T-4-4 starts after T-4-1 lands, because it uses T-4-1's procedure.
 
@@ -131,9 +131,30 @@ export const STATIONS = ["pick", "press", "qc", "pack", "receiving"] as const;
 Already shipped (see "Hidden dependencies" above). No contract change.
 
 ## Integration gate
-- [ ] `df -h /` above 5 GB
-- [ ] Fresh reset, migrate, seed
-- [ ] API, browser and floor E2E pass, plus the new floor offline test (T-4-2)
-- [ ] Builds pass
-- [ ] Per-card DBs and worktrees removed
-- [ ] Pushed to `main`
+- [x] `df -h /` 12 GB free
+- [x] Fresh reset, migrate (to 0016), seed
+- [x] API 13/13, browser 15/15, floor 3/3 (floor, offline, press); wave 4 smoke all pass (`gate.md`)
+- [x] Builds pass
+- [x] Per-card DBs and worktrees removed
+- [x] Pushed to `main`
+
+## Retro
+- First-pass approvals: 2 of 4 (T-4-3, T-4-4). T-4-1 needed a comment fix and T-4-2 an alert fix.
+- Decision 0010 (hand to lead; no partial shipments) came out of a real model limit found during the build.
+- The permission check blocked one builder's commit; the tech lead committed it with the owner's approval.
+- Lessons: never `git stash` in a shared tree; cross-owner hunks go through explicit grants.
+
+## Build log
+- Contract stubs are committed: contracts `c181abf`, backend `e427b8f` (the `packOrder` NOT_IMPLEMENTED stub). They make the backend typecheck red until T-4-1's first commit, and the floor typecheck red (`api/demo.ts`, `StationShell.tsx`) until T-4-3's first commit; both are granted. The stubs are reviewed with T-4-1 by a different model.
+- Decision 0010: "pack anyway" becomes "hand to lead" and there are no partial shipments. The architect updates the stale contract comments on `PackOrderResult.override` and `Order.packOverride`.
+- T-4-3:
+  - `inventory.count` and `sheets.markReceived` have no idempotency key; a count replayed late could restore a stale number (architect + inventory owner).
+  - The sync badge calls receipts "scans" (T-4-2).
+  - The Receiving tile sits alone on the last row of the grid (designer).
+  - Lazy-loading the receiving station would save about 10 KB (floor).
+- T-4-1 review notes:
+  - Today's pack count uses `count(*)` and can exceed the unit count (pre-existing).
+  - Migrations have no `lock_timeout`; add it to the `zero-downtime-migration` playbook.
+  - `floor_requests` needs a retention purge (e.g. 30 days) (backend-foundation).
+- T-4-2 review: a pre-migration `pending` row with no `stationId` that hits a 401 can only be discarded, with no resend path (floor, optional). The product-designer should confirm the "lead" copy.
+- T-4-4: the permission check blocked the builder's `git commit`. With the owner's approval, the tech lead committed it (floor `df18e53`, ui `178c829`). Other notes: the live update-prompt flow wasn't triggered in a browser; a short pack replayed from offline uses T-4-2's "offline scan was rejected" title (copy follow-up); the `BIN_OCCUPIED` text is generic.

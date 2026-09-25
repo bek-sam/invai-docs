@@ -35,3 +35,6 @@
 - `pnpm typecheck && pnpm lint && pnpm test && pnpm build` in floor (and ui).
 - Floor E2E on your copy.
 - Screenshots in en and es.
+
+## Change after T-4-1 (decision 0010)
+- "Pack anyway" is now **"Hand to lead"**. It calls `packOrder` with `override: { reason }` (owner and admin only). A response with `packed: false` plus `override` means the order was handed over: show a translated "Handed to lead" state, and clear the station. The order is not packed and won't ship until the missing units are packed.
