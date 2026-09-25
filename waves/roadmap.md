@@ -28,6 +28,9 @@ Agents can't finish some things on their own. These are the owner's track (below
   - Invites: team and vendor invites are broken
 - **Missing:** Stripe billing, password reset, production reference data, production guards against mocks.
 
+## Owner decision (2026-09-25)
+Waves 10 (deployable) and 11 (operable) are **deferred** until the owner is ready to go live. The order is now 6 → 7 → 8 → 9 → 12 → 13 → 14 → 15, with waves overlapping: the next wave's builders start while the current gate runs. Items from 10/11 that are purely local stay in their original waves only if they block local work. The rest waits (B-01, B-02, B-03, B-57, B-58, B-59, B-73, B-74, B-75, B-76, B-77, B-18 AWS parts, B-21 deploy parts).
+
 ## Wave plan
 Each wave has at most 5 cards and 3–4 builders at once. Every card gets an independent review, and every wave ends with the integration gate (fresh seed plus the golden path) before anything is pushed. The order is P0 safety first, then scope completeness, then deploy, then hardening.
 
