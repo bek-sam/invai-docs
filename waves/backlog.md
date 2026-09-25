@@ -58,7 +58,7 @@ Status is `open`, `planned (wave n)`, `done (wave n)` or `accepted`.
 | B-30 | Composite tenant-scoped foreign keys | backend-foundation | S-26, S-G14 | open |
 | B-31 | Floor SSE auth without a query-string token | backend-foundation + floor-engineer | v1-#4, S-30, S-G9 | open |
 | B-32 | Blank shelf/bin locations in the pick list | backend-engineer (inventory) | v1-#7 | open |
-| B-33 | `wrong_style` scan mismatch reason | architect + floor-engineer | v1-#15 | open |
+| B-33 | `wrong_style` scan mismatch reason | architect + floor-engineer | v1-#15 | done (found already shipped in the wave 4 plan review; regression check in T-4-1) |
 | B-34 | Seed: no negative stock; scale seed profiles (small, mid, large) | qa-engineer + backend-foundation | v1-#10 | open |
 | B-35 | DTF defaults: 0.25 in gaps, 150 DPI floor, QC fail reasons, transfer-age warning, maintenance block | imaging-engineer + backend-engineer (production) | research 10 §DTF | open |
 | B-36 | Bella+Canvas via SanMar | integrations-engineer | M-29 | open |

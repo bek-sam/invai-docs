@@ -11,10 +11,10 @@
 ## Cards
 | Card | Owner | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|
-| T-3-1 Shopify adapter complete | integrations-engineer | reviewer + security-reviewer, compliance-officer | webhooks, pii, marketplace-policy | planned |
-| T-3-2 EasyPost live tracking | integrations-engineer | reviewer + security-reviewer | webhooks | planned |
-| T-3-3 Listings and availability push | backend-engineer (inventory) | reviewer + backend-foundation, architect | migration, marketplace-policy | planned (starts after T-3-1) |
-| T-3-4 Heavy work to jobs | backend-foundation | reviewer + qa-engineer | floor-correctness | planned |
+| T-3-1 Shopify adapter complete | integrations-engineer | reviewer + security-reviewer, compliance-officer | webhooks, pii, marketplace-policy | done (approved r1) |
+| T-3-2 EasyPost live tracking | integrations-engineer | reviewer + security-reviewer | webhooks | done (approved r1) |
+| T-3-3 Listings and availability push | backend-engineer (inventory) | reviewer + backend-foundation, architect | migration, marketplace-policy | done (approved r1) |
+| T-3-4 Heavy work to jobs | backend-foundation | reviewer + qa-engineer | floor-correctness | done (approved r2) |
 
 Only 3 builders run at once (lesson: usage limit). T-3-3 starts when T-3-1 lands, because it needs T-3-1's fixed `setAvailability`.
 
@@ -47,13 +47,49 @@ Both changes must stay **additive** (contract rule: new optional fields, new enu
 - **Carrier webhook dedupe table (new, T-3-2), following decision 0009's pattern exactly:** `carrier_webhook_events` — `id`, nullable `companyId` (set once routed to a shipment's company; FK `companies.id` cascade), `provider` (enum, just `["easypost"]` for now), `eventId` (text, EasyPost's `id`, e.g. `evt_...`), `status` (`received|processed|ignored|failed`, default `received`), `receivedAt` (default now), `processedAt`, `detail` (text, no PII). Unique index on `(provider, eventId)`; index on `receivedAt`; index on `(companyId, receivedAt)`; RLS `tenantPolicy("carrier_webhook_events")`, `.enableRLS()`. Migration revokes insert/update/delete from `invai_app` (system-only writes), same as migration 0007 did for `webhook_deliveries`. Purge rows older than 7 days in the same daily job as `purgeWebhookDeliveries`, or a sibling one.
 
 ## Integration gate
-- [ ] `df -h /` above 5 GB
-- [ ] Fresh reset, migrate, seed (imaging up, worker stopped)
-- [ ] `run-golden-path` passes (API, browser, floor)
-- [ ] Builds pass
-- [ ] Per-card test DBs and worktrees removed
-- [ ] Pushed to `main`
+- [x] `df -h /` 14 GB free
+- [x] Fresh reset, migrate (0000–0014), seed; listings 147–148
+- [x] API 13/13, browser 15/15, floor 1/1; wave 3 smoke all pass (`gate.md`)
+- [x] Builds pass
+- [x] Per-card DBs and worktrees removed
+- [x] Pushed to `main`
 
 ## Retro
-- What slipped:
-- Lessons added:
+- What slipped: the usage limit (a second time) and several agent stalls; the gate agent kept ending its turn to wait on monitors. Everything was resumed without lost work.
+- First-pass approvals: 3 of 4 (T-3-4 needed a round for the web poll).
+- Lessons added: stage only your own hunks in shared files; agents poll inside their turn instead of ending it to wait.
+
+## Follow-ups found during the build
+- T-3-2:
+  - Add a `label_stuck` alert kind to contracts; stuck intents reuse `tracking_push_failed` for now (architect).
+  - Decide whether `EASYPOST_WEBHOOK_SECRET` is required in production; for now the route is off without it and the daily poll covers tracking (backend-foundation).
+  - Add it and `/webhooks/easypost` to the runbook's mock → real table (docs-writer).
+  - The owner provides an EasyPost test key and webhook secret for a real run.
+- T-3-1 known gaps:
+  - Check `appUninstall` on a dev store once the app is registered (OI-2).
+  - Shopify throttle tracking is per process; move it to a Valkey bucket before running more than one worker (B-20).
+  - A 401 mid-call doesn't trigger a token refresh (the scheduled refresh covers it).
+  - No alert kinds exist for privacy requests or expiring refresh tokens (architect).
+  - Redact doesn't delete rendered artwork files.
+  - `shopify.app.toml` has a placeholder client id and URLs (owner, OI-2).
+- T-3-4:
+  - BullMQ once took 7.5 minutes to pick up a job again after a worker kill (it couldn't be reproduced; look at lock and stalled-job settings under B-17).
+  - The old sync `batchBuy` in `shipping/service.ts` is unused and can be deleted (shipping owner).
+  - Bug: in `orders/import.ts:144,335`, re-importing a CSV with a `ship_by` column marks every order "updated" and overwrites the computed ship-by (orders owner; with B-26).
+  - Single-item re-render, edit and preview still call imaging inside a transaction (personalization owner).
+- T-3-1 review: `customers/redact` should enqueue an immediate purge of that order's label PDFs and artwork instead of waiting for the 30-day object sweep (compliance). The PM should confirm that PARTIALLY_REFUNDED orders are imported.
+- T-3-3: turning stock-push opt-in on should push right away (have `channels.updateConnection` emit an event, or add an hourly reconcile job); listing variants the channel reports `not_found` are re-sent every window, so they need backoff or a flag (inventory owner). `seed-output.json` was overwritten by a test seed, and the gate reseed fixes it.
+- T-3-4 review: duplicate concurrent job runs can mislabel batch results (no double buy); the outbox relay overrides defined job ids, so the scrap-hash id has no effect today (backend-foundation, B-17). The API golden-path spec reads `seed-output.json` from the main checkout, so reviewers can't run it from a worktree (qa-engineer).
+- T-3-4 review notes 3–6, for B-17:
+  - the outbox overrides job ids;
+  - a nest failure isn't retried;
+  - a mid-build crash leaves an orphan sheet;
+  - the read-back after an unknown-outcome batch buy should be immediate;
+  - a process crash on the small-file inline import path isn't handled.
+  Environment note: one agent saw S3 `RequestTimeTooSkewed` and 403s from imaging after a clock resync; restarting imaging fixed it.
+- T-3-4 r2 notes:
+  - The final-failure hook runs at most once, so B-17 should sweep stuck rows.
+  - A second batch on the same order reports "failed" instead of "skipped".
+  - The render job has no failure hook.
+  - The poll ignores `Retry-After`.
+  - The postage lookup makes one request per label.
