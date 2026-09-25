@@ -151,3 +151,91 @@ checks (billing render + mock plan change, Stripe webhook 401, password reset vi
 page, label buy/void) pass for real with screenshots. The one failure seen was a pre-existing,
 now-confirmed-flaky QA test helper (`clickIfShown`, no wait) in the browser E2E suite, not a
 regression in wave 2's product code — filed above for a follow-up fix, and doesn't block the push.
+
+## §6 Flake fix — `clickIfShown` (`golden-path.spec.ts`)
+
+- Run by: qa-engineer, 2026-09-24 (about 22:24–22:42 local)
+- Result: **fixed and verified. `invai-web` commit `33d15a4` (not pushed).**
+
+### Root cause (unchanged from §4)
+`clickIfShown` (`invai-web/e2e/golden-path.spec.ts:60`) did a single instantaneous
+`button.isVisible().catch(() => false)` with no wait. Right after a navigation or reload, a
+vendor-portal button (Acknowledge, Mark printed, Mark shipped, Mark received) can still be
+rendering; the instant check read that as "already done, not needed" and silently skipped the
+click, leaving the send → acknowledge → print → ship → receive chain partway executed with no
+failure at the point of the actual skip.
+
+### Fix
+`clickIfShown` now waits (bounded, 8 s default) for the button to actually appear instead of
+taking one instant snapshot — a button that is genuinely not needed (already done on a re-run)
+still returns `false` quickly once the timeout elapses, but a button that is mid-render is no
+longer mistaken for "not shown". On top of that, step 6 (send to vendor / vendor portal) and
+step 7 (owner marks received) now assert the resulting domain state via `poll` after every
+**required** click (sheet off `"ready"` after send, sheet `"printed"`/`"shipped"`/`"received"`
+after Mark printed, sheet `"shipped"`/`"received"` after Mark shipped, item transferred in after
+Mark received) — so a click that is still wrongly skipped fails loudly at that step instead of
+surfacing several steps later or passing silently. Acknowledging remains genuinely optional (the
+backend accepts "Mark printed" straight from `"sent"` too) and is left without an extra assertion
+beyond its own toast.
+
+Only `invai-web/e2e/golden-path.spec.ts` was touched — test code, qa-engineer's own path. No
+product code was changed.
+
+### Verification
+- `invai-web`: `pnpm typecheck` — pass (`tsc --noEmit`, no errors). `pnpm lint` — pass (`biome
+  check .`, 117 files, no fixes needed).
+- Clean start: infra (`local-postgres-1`, `local-valkey-1`, `local-minio-1`, `local-mailpit-1`)
+  was healthy throughout; ports 3000–3199, 5173, 5174, 8000 were free before starting; no stale
+  api/worker processes. Node v24.21.0, pnpm 12.6.0.
+- Three full cycles of **reset → migrate → seed (imaging up, worker stopped) → restart worker with
+  `MOCK_CARRIER_TRANSIT_HOURS=0.001` → `pnpm e2e`**, each on its own fresh seed, 65 s apart:
+
+  | Run | Seed | `pnpm e2e` result |
+  |---|---|---|
+  | 1 | fresh seed 1 | **15/15 passed** (49.5 s) — 13 golden-path steps + `screens.smoke.spec.ts` (owner, 27+ routes, and the vendor portal), "No screen issues." |
+  | 2 | fresh seed 2 | **15/15 passed** (48.1 s) |
+  | 3 | fresh seed 3 | **15/15 passed** (48.1 s) |
+
+  All three runs hit step 6 (send to vendor → acknowledge → print → ship in the vendor portal) and
+  step 7 (owner marks received) cleanly with no retries, sleeps or `.skip` added.
+- `E2E_API=1 pnpm e2e e2e/api-golden-path.spec.ts` (once, required): first attempt on the seed
+  left over from run 3 failed at step 3 as expected (that suite needs an *untouched* fresh seed,
+  per `run-golden-path`'s own note — run 3's seed had already been driven through the whole
+  browser golden path). Reseeded fresh and re-ran: failed once more at step 9
+  (`shipping.mockTracking`, timed out waiting for the carrier scan) with `Missing lock for job
+  mock-tracking-<id>-in_transit` errors in the worker log — a stale BullMQ lock in Valkey left
+  over from my own repeated `kill`/restart cycling of the worker process across the three reseeds
+  above (`db:reset` clears Postgres, not Valkey's job queue; a `kill`'d worker doesn't always
+  release its BullMQ locks cleanly, and the next worker instance then collides with a leftover
+  delayed job from an earlier, now-deleted seed generation). This is an artifact of my own
+  environment handling this run, not a bug in the fix or in product code. Fixed by stopping
+  everything, `docker exec local-valkey-1 valkey-cli FLUSHALL` (safe here: no other agents were
+  running, and the shared dev DB is Postgres, not Valkey), and restarting the whole stack as one
+  fresh `pnpm dev:all` process before the final reset/migrate/seed. On that clean environment:
+  `E2E_API=1 pnpm e2e e2e/api-golden-path.spec.ts` — **13/13 passed** (12.2 s), including step 9
+  (shipping: rates, buy, label PDF, tracking pushed, items shipped) with `MOCK_CARRIER_TRANSIT_HOURS=0.001`.
+- Lesson for next time (not logged separately since this is a verification note, not a product
+  finding): after several manual `kill`/restart cycles of just the worker process against the
+  same Valkey instance, flush or fully restart `dev:all` before the next E2E run rather than only
+  bouncing the worker — matches the existing `run-golden-path` guidance to restart the whole stack
+  once after a reset, which this run under-applied until step 9 caught it.
+
+### Cleanup
+- Every process started during this fix (the initial `dev:all` tree, each of the four standalone
+  `pnpm dev:worker` restarts across the four seed cycles, and the final `dev:all` tree) was
+  stopped by its own PID. Nothing else was touched.
+- Final state: ports 3000–3199, 5173, 5174, 8000 all free; no `tsx`, `uvicorn` or `vite` process
+  remains. Infra (Docker) left running, all four containers healthy.
+- The dev DB was left freshly reset, migrated and seeded one more time after the API golden-path
+  run (`{"orders":360,"items":663,"transitions":3874,"dueSoon":88}`, 25 sheets, 581 transfers, 264
+  shipments), so the shared dev DB is not left in the "driven through the whole golden path"
+  state the verification runs put it in. `seed-output.json` has the current station token.
+- `invai-web` working tree: only `e2e/golden-path.spec.ts` was changed and committed
+  (`git add e2e/golden-path.spec.ts`); `git status --short` is otherwise clean. Commit `33d15a4`,
+  **not pushed** (per instruction for this task).
+
+### Disposition
+Fixed within the 14-day window set in §4. The flaky-test quarantine noted there can be closed once
+this fix is reviewed; recommend the same reviewers as the rest of wave 2 (feature owner +
+`reviewer`) confirm the new assertions don't change what the golden path actually proves before
+it's considered closed.
