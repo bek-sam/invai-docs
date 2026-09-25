@@ -1,0 +1,15 @@
+counts ad_spend=75 alerts=15 audit=3950 blanks=108 designs=40 items=679 listings=151 members=9 movements=743 orders=360 products=53 reprints=17 scans=56 sheets=25 shipments=264 sku_rules=3 staff_pins=8 station_tokens=1 stock=108 transfers=592 transitions=3900 users=9 vendor_access=25
+orders dfb5d8593db9a7893ca7a3cbb4f56892
+items cfab57ab175b5b0f7a19054f1a1642cd
+transitions 1e395008edb0c680733a55207a8b9e01
+timeline_offsets 9c09909f1229c1a6e47eaa101d8111b4
+sheets cea68122e71d3a3a31ad8c119bbb0f74
+shipments 389667c8c957f0d26ba0697c58dc2863
+stock 68b92034957954bdfac822e5e93dde35
+movements consume=-549 receive=2816 reserve=86
+alerts 2bcb310257421d1d8249956962ed2ff3
+ad_spend 5cb36a04d7e31f2a424976e2c7aa71e8
+usage 296|223|892|25|37
+connections amazon|Desert Bloom Tees (US)|csv_only|A2DESERTBLOOM|mock,etsy|DesertBloomTees|csv_only|DesertBloomTees|mock,shopify|Desert Bloom Tees|connected|desert-bloom-tees.myshopify.com|mock,tiktok|desertbloomtees|csv_only|7495012|mock
+vendor Sun City DTF|vendor@suncitydtf.test|active|portal|t
+location Main Shop|{"zip": "85016", "city": "Phoenix", "name": "Desert Bloom Tees", "email": "hello@desertbloom.test", "phone": "602-555-0142", "state": "AZ", "company": "Desert Bloom Tees LLC", "country": "US", "street1": "2140 E Camelback Rd", "street2": "Suite 110"}

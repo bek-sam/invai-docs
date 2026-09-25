@@ -166,9 +166,17 @@ Web file ownership, since four cards share invai-web:
 - T-5-4's owned paths must add the `invitations` table's migration (a new partial unique index) — already implied by "the invitation unique index migration" in the card, now confirmed as net-new (no such index exists).
 
 ## Integration gate
-- [ ] `df -h /` above 5 GB
-- [ ] Fresh reset, migrate, seed
-- [ ] API, browser and floor E2E pass
-- [ ] Builds pass
-- [ ] Per-card DBs and worktrees removed
-- [ ] Pushed to `main`
+- [x] Gate green (`gate.md`): API 13/13, browser 15/15, floor 3/3, 6 smoke checks.
+- [x] Pushed up to the last wave 5 SHAs: contracts `352c331`, backend `711c37c`, web `7bf4b3d`, floor `effa695`, ui `eaad60d`. The gate's web test fix `06e83e6` goes out with wave 6, because it sits after wave 6 commits.
+
+## Retro
+- First-pass approvals: 3 of 4 (T-5-4 needed a round for the revoke race).
+- The overlap with wave 6 started early. Wave 6 commits landed in the shared tree mid-gate, which caused a few transient API restarts. From now on, the gate pins by SHA and pushes per SHA.
+- Token budget (decision 0011) applied from mid-wave on.
+
+## Build log
+- Stubs: contracts `2f84ae6` and backend `796ba2c` (NOT_IMPLEMENTED handlers). T-5-3 fixed the resulting tenancy typecheck in backend `1539d39`.
+- `demo.*` moved from `org.read` to `today.read` (contracts `352c331`), because vendors held `org.read` and `authz.test.ts` caught the leak. The stubs are reviewed with T-5-3, with a security co-review.
+- T-5-2: the backend refuses to restart Shopify OAuth for a store in error or with lost access, so the UI tells users to disconnect and reconnect. Allow re-auth on an existing connection (integrations-engineer).
+- T-5-1: shipping should add an explicit "address changed" guard and re-check the address at buy time. Some tests in `channels`/`files` are flaky under long loaded runs (expired signed links); look at this under B-22 (qa-engineer).
+- T-5-4: the backend doesn't close open SSE streams when a station token is revoked, so an idle tablet only notices on its next request (backend-foundation, with B-31).
