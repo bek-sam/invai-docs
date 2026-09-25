@@ -200,3 +200,57 @@ A throwaway Playwright script (deleted afterwards) selected 3 rows on `/shipping
 - **`invai-backend/seed-output.json`:** restored from a backup after the copy seeds; `git status` shows it clean.
 - **Deleted:** temp driver scripts (`invai-web/.t34-*.ts`, `e2e/t34-batch.tmp.spec.ts`). Logs and screenshots in `/tmp/t34` are removed after this report.
 - **Shared dev DB `invai`:** untouched (used only as the template for the copy).
+
+---
+
+# Round 2 (after `reviews/T-3-4-*-r1.md`)
+Commits on `main` (not pushed):
+- **invai-backend `f036fbd`:** failed jobs no longer leave their rows running, plus reviewer note 2 hardening.
+- **invai-web `6718293`:** the batch poll is bounded, retries transient errors, stops on unmount and prints on click. **Web-engineer, please re-review:** `src/routes/_app/shipping.tsx`, the new `src/lib/poll-job.ts` and its test, and the one i18n key.
+
+## Web blocker fixed (`shipping.tsx`, batch mutation)
+- **Helper.** `src/lib/poll-job.ts` exports `pollJob(fetchJob, { signal, intervalMs = 1.5 s, deadlineMs = 3 min, maxBackoffMs = 15 s })`. It returns `finished` (done or failed), `timeout` or `aborted`.
+- **Transient errors.** `isTransientError` covers network errors (a `TypeError` or `NETWORK`) and HTTP 408, 429, 502, 503 and 504. These are retried with exponential backoff (interval × 2ⁿ, capped) until the deadline. A server that is still down at the deadline ends as `timeout`, never as an error. Any other error (403, 404, 500) throws at once.
+- **Deadline.** At 3 min the page shows the info toast "Still buying labels in the background. They'll show up under Shipments when they're done." (new key `ship.batchStillBuying`, English and Spanish) and clears the selection.
+- **Unmount.** An `AbortController` in a ref is aborted in the `useEffect` cleanup. The abort also wakes the pending sleep, and an aborted poll ends quietly, with no toast and no error.
+- **Queue refresh.** `onSettled` calls `invalidate()`, so the queue refreshes on done, timeout, abort and error.
+- **Popup blocker.** No tab opens on its own any more. The success toast carries a "Print N labels" action (30 s), and the toolbar shows a "Print N labels" button until it is used. Both reuse the existing `ship.printSelected` string, and the click is the user gesture that opens the PDF.
+- **Real job failure.** `status: "failed"` is the only thing that throws to the global error toast.
+- **Postage.** It is read with `allSettled`; if any shipment can't be read, postage is left out of the toast rather than failing it.
+- **i18n.** I added the one key by hand to `en.ts`, `es.ts` and `scripts/i18n-es.json`. A full `pnpm i18n` would also have written others' unmerged strings (74 missing Spanish keys, stale `en.ts` lines) into my commit, so I didn't commit its output.
+
+## Backend: jobs BullMQ gives up on (reviewer note 1)
+- **`JobDefinition.onFinalFailure(input, error)`** (`lib/queues.ts`) is a new optional hook.
+- **Worker `failed` listener** (`worker/job-failures.ts`). It acts only when `job.finishedOn` is set. BullMQ sets that only for a failure it won't retry: the last attempt, a job that stalled too often ("job stalled more than allowable limit"), or bad input. It then:
+  - marks the `jobs` row named by `data.jobId` or `data.importRunId` as failed, only if the row is still `queued` or `running`, and publishes `job.progress`;
+  - calls the job's `onFinalFailure`.
+- **Per-job hooks:**
+  - CSV import → `failCsvImport` (run and job row);
+  - `buildSheets` → the batch is marked failed if it is still `building`;
+  - `regenerateSheet` → the sheet goes from `building` to `failed`;
+  - the batch buy is covered by the generic job-row update.
+- **Stalled jobs** are now logged at warn level.
+- **Reviewer note 2:**
+  - an import chunk stops if its run is no longer `running`;
+  - a batch result recorded as `labeled` is never downgraded by a duplicate run, and the final summary is read back from the job row.
+- **Not done (still B-17 or later):** reviewer notes 3 (outbox jobId override), 4 (a nest failure isn't retried; orphan sheet after a mid-build crash), 5 (read back an unknown-outcome batch buy at once) and 6 (inline-path process crash).
+
+## Checks
+| Repo | Command | Result |
+|---|---|---|
+| invai-backend | `pnpm typecheck`, `pnpm lint`, `pnpm build` | clean; "Checked 242 files … No fixes applied."; "Build success" |
+| invai-backend | `pnpm test` (`invai_test_t34`, Redis `/4`) | **62 files, 435 tests passed** (new: `worker/job-failures.test.ts` 3, `import-csv.test.ts` +1) |
+| invai-web | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` | clean; 119 files; **10 files, 55 tests passed** (new: `lib/poll-job.test.ts` 8: finish, deadline, transient retry and backoff, down-server timeout, real error, abort before and during a wait, error after abort); "built in 1.16s" |
+
+## Browser check
+Stack: DB copy `invai_t34_copy`, API :3140, web :5140 (Vite dev), imaging :8140. I used throwaway Playwright specs, since deleted, and looked at the screenshots.
+- **Worker stopped.** I selected 2 orders and clicked "Buy & print 2". After **180 s** the info toast appeared: "Still buying labels in the background. They'll show up under Shipments when they're done." The spinner stopped, the selection cleared, "Buy & print all" was enabled again and the queue refreshed.
+- **Unmount.** Seen by accident on the first try: Vite reloaded the page because Playwright wrote a trace HTML file into `e2e/.results`, which Vite watches. The poll ended quietly, with no error toast and no stuck spinner. Tracing was off for the real runs.
+- **Worker running.** "Buy & print 2" led to the toast "2 labels bought · Postage $24.75" with a "Print 2 labels" action, and **no tab opened by itself**. The queue went from 14 to 10 orders packed. Clicking the toolbar's "Print 2 labels" returned 200 from `batchLabelPdf`, opened one tab, and the button went away. No order had more than one live label afterwards.
+- **Environment note.** Mid-check, my imaging process started failing S3 calls: `RequestTimeTooSkewed`, then 403 on HeadObject. The container and host clocks agreed when I checked, so it looks like a temporary VM clock resync. The two batches queued while the worker was stopped ran into it and ended "0 labeled, 2 failed" (unknown outcome, "Buy again to check"). Restarting my imaging process fixed it. The next batch picked those same orders up through the `buying` resume path and labeled them once each.
+
+## Processes and data (round 2)
+- **Stopped:** API, worker, web and imaging. Nothing listens on 3140, 5140 or 8140.
+- **Dropped:** `invai_t34_copy` and `invai_test_t34`. **Flushed:** Redis DB 4.
+- **Unchanged:** `seed-output.json` and the shared dev DB.
+- **Deleted:** temp specs and logs.
