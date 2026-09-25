@@ -13,6 +13,7 @@ Risk flags → co-reviewers: auth, pii → security-reviewer
 Commits (invai-backend, `main`, not pushed):
 - `6ff0890` schema + migration `0011_auth_security` (two_factors table, users.two_factor_enabled, backfill: users with an accepted invite are verified)
 - `3c45e05` everything else
+- `240a19e` `rls-coverage.test.ts`: `two_factors` added to `GLOBAL_TABLES`, with a comment (the tech lead approved it; security-reviewer co-reviews the line)
 
 ## Built
 - **Email verification** (`src/auth.ts`, `src/lib/auth-mail.ts`): sign-up emails `${WEB_ORIGIN}/verify-email?token=<jwt>` in en/es (link works for 24 h). Unverified users can sign in. Autosign-in after verification is off, so a leaked link can't skip the password or 2FA.
@@ -67,7 +68,7 @@ I verified on a clean worktree holding HEAD plus only my files, because the shar
 |---|---|
 | `tsc --noEmit` | exit 0 |
 | `biome check .` | Checked 209 files, no fixes |
-| `vitest run` (invai_test_t23) | 43 files passed, 1 failed. **303 passed, 1 failed:** `rls-coverage.test.ts` "tables without RLS are only the Better Auth identity tables" → `expected [ 'two_factors' ] to deeply equal []` (see Blocked) |
+| `vitest run` (invai_test_t23) | Before `240a19e`: 303 passed, 1 failed (`rls-coverage.test.ts`: `expected [ 'two_factors' ] to deeply equal []`). After it: `rls-coverage`, `auth` and `email-gate` test files 37/37 passed (REDIS_URL `/3`) |
 | `tsup` | Build success |
 
 In the shared tree, `pnpm typecheck` and `pnpm lint` currently fail only in T-2-5's uncommitted `shipping/router.ts:58` and `shipping/service.ts:1310`.
@@ -97,8 +98,9 @@ API on :3230 against `invai_t23_copy`, with Mailpit:
 - The API worked with every email provider mocked. The only mail was local Mailpit; nothing outbound.
 
 ## Blocked by other owners
-- `src/db/rls-coverage.test.ts:13-21` (**security-reviewer**): add `"two_factors"` to `GLOBAL_TABLES`. It's a Better Auth identity table (user-keyed, like `accounts`, with no `company_id`) and the two-factor plugin needs it. Until then this one test fails. I didn't edit it.
-- The instructions gave `REDIS_URL=redis://localhost:6379/23`, but Valkey only has 16 databases (0–15): `ERR DB index is out of range`. I used `/13` and flushed it afterwards. Other cards given `/2k` indexes will hit the same error.
+- None left.
+  - The RLS coverage exemption for `two_factors` was done in `240a19e`, with the tech lead's approval. App-role access: Better Auth reads and writes the table through `db` (the `invai_app` connection, not the system one), exactly like `accounts` and `sessions`. `invai_app` has SELECT, INSERT, UPDATE and DELETE on it through the default privileges. The only code that touches it is `src/auth.ts` (the adapter schema). The TOTP secret and backup codes are encrypted with `BETTER_AUTH_SECRET`. For the security-reviewer: a stolen app-role connection could delete rows (turning two-step sign-in off), the same exposure as `accounts` today.
+  - The instructions' `REDIS_URL` `/23` failed (Valkey has only databases 0–15). I used `/13`, then `/3` as the tech lead asked, and flushed both afterwards.
 
 ## Processes and data
 - Stopped: my API on :3230 (port free).
