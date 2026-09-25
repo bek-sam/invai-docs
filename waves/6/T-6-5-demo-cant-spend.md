@@ -24,3 +24,6 @@ Scope: always-in-scope, security and money. Model: opus.
 
 ## Verify
 Run tsc, lint, test and build. Tests cover every guarded path. Curl on a DB copy: in a sample workspace, buy a label and check the mock was used; checkout returns `DEMO_MODE`.
+
+## Tech-lead decision (2026-09-25, given in the build prompt, recorded here)
+Supplier ordering is **in scope** for this card. It's always-in-scope security and money: a sample workspace must never place a real supplier order. `integrations/suppliers/index.ts` and the supplier call sites in `modules/inventory/service.ts` were granted to T-6-5. No scope-change request is needed: this is a money-safety control, not new MVP scope.
