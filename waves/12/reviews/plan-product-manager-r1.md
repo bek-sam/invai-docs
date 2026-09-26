@@ -1,0 +1,24 @@
+# Wave 12 plan review — product-manager, r1
+
+Scope: reliability at scale, local only (AWS parts of waves 10/11 stay deferred). Read `team/agent-brief.md`, `waves/roadmap.md`, `waves/12/wave.md` + 5 cards, `research/11-platform-scale-playbook.md` §§ queues/timeouts/rate-limits, and the follow-up sections of waves 1/2/3/6/8. Code (`lib`, `worker`, `api`, `db`) read-only, no DB touched, nothing committed except `waves/12/**`.
+
+## Verdict: approve with the changes now applied to the cards
+
+## What was wrong or under-specified, and what changed
+
+1. **Acceptance criteria weren't testable.** Every card was a one-paragraph feature list with a single "Tests." line. Rewrote all 5 cards into numbered criteria, each naming the concrete assertion (exact status codes, error shapes, wall-clock bounds, row counts) a reviewer can check off independently — not "add tests" as an afterthought.
+2. **Follow-ups from earlier waves were named but not placed.** `wave.md`'s intro line named six items folded in from waves 1-8 but didn't say which card owns each. Placed them explicitly: stuck intents/job rows and the outbox job-id override and final-failure sweep → T-12-1; the Valkey fail-open alert (found in wave 8's T-8-2 review, for the AI spend breaker, not obvious from the name) → T-12-1; `floor_requests` retention (wave 4) → T-12-4; the migrate advisory lock (wave 1's T-1-5 review) → T-12-2.
+3. **T-12-1's "stuck ai_jobs, production.jobs rows" was ambiguous** — it reads like per-module work (touching `modules/ai`, `modules/production`, owned by other tracks), but both resolve to sweeps over shared tables (`ai_jobs`, and the generic `jobs` table in `db/schema/tenancy.ts`) that backend-foundation already owns. Clarified so the card stays inside `lib`/`worker`/`api` as the wave intends. Also flagged that shipping's buy/void/push-intent sweep already exists (`shipping/jobs.ts`, built wave 2/3) — the card should confirm coverage, not rebuild it.
+4. **T-12-4's "owner-triggered" needed a real permission decision.** There's no platform-super-admin role in `invai-contracts`; "owner-triggered" is the company's own `owner` role. Added `org.export`/`org.delete` permissions, owner-only (mirroring how `billing.manage` is carved out of `admin`), so the eventual PR doesn't invent an ad hoc check.
+5. **DLQ redrive would have been built as a fictitious tenant permission.** See the architect review for the technical reasoning — flagged from the PM side because a "platform.admin" permission would have quietly implied every InvAI shop owner could see every other shop's failed jobs, or the wave would have shipped an unreviewed cross-tenant surface. Redirected to an internal-only route (design in `wave.md` stub A), which is also the right shape for who actually uses it (the tech lead, via curl/script), not a UI a shop owner ever sees.
+6. **Scope creep risk from the research doc.** §§2.3-3.4 list several "SHOULD (next)" items (per-tenant DB-time dashboard, `tier` column, BullMQ Pro groups, queue sharding) alongside the "MUST (now)" ones the cards actually need. Added an explicit out-of-scope line to every card so a builder agent doesn't over-deliver into wave-13+ territory, and a wave-level "Scope: AWS-deferred" section so nothing here quietly grows an AWS dependency (checked: none of the 5 cards need one beyond what already exists locally via MinIO).
+7. **Fairness mechanism was left open ("BullMQ groups or a round-robin scheduler") without checking availability.** Confirmed only open-source `bullmq@6.3.8` is installed (see architect review); T-12-3 now specifies the concrete free mechanism instead of leaving the choice, and a load-test artifact requirement (not just a passing unit test) since "one shop can't starve others" is a load-bearing product claim, not a unit-testable one alone.
+
+## Fairness for the wave itself
+
+Sequencing (T-12-1 first, then T-12-2/T-12-3/T-12-4 in parallel) is now explicit in `wave.md`, with named coordination files for the two unavoidable shared touches (`worker/index.ts`, `modules/channels/jobs.ts`) so three builders can actually run at once without stepping on each other mid-flight, per the wave's own "3-4 agents at once" rule.
+
+## Residual risk for the owner/tech lead, not fixed here
+
+- T-12-1 and T-12-4 are both flagged `opus`/higher-risk (floor-correctness; pii+tenancy) and both add new alert kinds and audit actions to `invai-contracts` — a contract change needs the same-day fix-forward the workspace rules require if T-12-5 (web/floor) or anything in wave 13 reads `ALERT_KINDS` exhaustively (e.g. a switch statement without a default). Worth a note to web-engineer before the wave starts.
+- The P2 card (import races) has no reviewer assigned in the table; leaving as-is since it's explicitly "if a slot frees," not a commitment.
