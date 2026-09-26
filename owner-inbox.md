@@ -62,3 +62,9 @@ Entry format:
 - Context: T-7-1 builds the tracking export files. Etsy's, TikTok Shop's and Walmart's bulk-upload templates are only downloadable while signed in to a seller account, so our column names come from public docs and aren't verified against the live templates. Amazon's flat file is public and verified.
 - Ask: from each seller dashboard, download the blank tracking or shipping-confirmation upload template and put it in `invai-docs/research/templates/`. The team then matches the columns exactly (a small card).
 - Answer:
+
+## OI-5 (FYI, decided): NUL-byte crash class, handled at the input boundary   status: answered (tech lead)
+- From: tech-lead, 2026-09-26. The rule says 2 failed review rounds escalate; this records the decision.
+- Context: a raw NUL byte in user text crashes Postgres writes. T-8-2 fixed the AI gateway and the assistant chat. The round-3 review found another path (listing-draft `brief`). Fixing paths one at a time doesn't close the class.
+- Decision: T-8-2 is accepted for its scope. A new card, T-8-6, strips NUL (and other characters Postgres rejects) from **every string input** at the API contract boundary, as one shared schema transform, with tests. No action needed from the owner.
+- Answer: decided by tech lead (reversible).
