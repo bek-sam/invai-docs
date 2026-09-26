@@ -1,5 +1,42 @@
 # T-9-2: Sheet barcode, scannable QRs, label gap (B-79)
 
+## Update (2026-09-26): tech lead's 0.33mm correction
+Tech lead: the 0.5mm floor was a spec error; changed to **0.33mm** (13 mil, a common handheld
+2D scanner minimum) so the 0.35in `label_height_in` default would work, and granted
+`invai-backend/src/modules/production/sheets.ts` sending `filename_hint`.
+
+**Landed** (commit `d670063`, imaging): `MIN_MODULE_MM = 0.33`. Also stopped `label_gap_in` from
+shrinking the label's *content* height — it now only positions the label (and cut guide) below
+the design, so AC1's floor and AC3's gap no longer compete for the same space. Tried dropping the
+QR's quiet zone (`border=0`) to close the remaining gap; verified live (inside a real composed
+sheet, not just the isolated bitmap) that it stops decoding — the QR's own corners then touch the
+sheet's black background with no white margin left to separate the finder patterns, so zxingcpp
+loses it. Reverted; kept `border=1`.
+
+**Confirmed by decoding real composed sheets at 150/200/300 DPI, honestly: still short at
+defaults.** A real (random) UUID transfer_id needs 31 modules with the quiet zone kept, i.e.
+`31 * 0.33mm = 0.403in` of label content — geometry, independent of DPI. The default
+`label_height_in` (0.35in, shared by imaging `NestRequest`/`ComposeRequest` and backend
+`LABEL_HEIGHT_IN`, none owned/granted here) is **0.053in (1.35mm) short**. New parametrized test
+`test_default_label_height_still_short_for_a_real_uuid` (150/200/300 DPI) pins this down exactly
+and will start failing (a good thing — flip the assertion) once it's closed. All fixtures using a
+taller `label_height_in` (e.g. this card's own tests, 0.8in) already pass at all three DPIs.
+
+**Smallest closing move, for the tech lead:** bump `label_height_in`'s default from 0.35in to
+somewhere >= 0.41in (0.45in for margin) in both imaging (`NestRequest`/`ComposeRequest`) and
+backend (`sheets.ts`'s `LABEL_HEIGHT_IN`) — coordinated, neither owned/granted to T-9-2. A lower
+floor won't reach it without dropping the quiet zone (unsafe, see above); encoding the UUID more
+compactly (e.g. uppercasing so QR alphanumeric mode applies, `n` drops to 25 and fits, 0.325in)
+would work but changes what the QR decodes to (no longer byte-identical to `transfer_id`) —
+flagging, not doing, since floor-scanning's match logic (a different repo/card) may depend on
+exact case.
+
+**Landed** (commit `4a73828`, backend): `sheets.ts`'s `composeSheet()` now sends
+`filename_hint: [sheet.name, ...uniqueOrderNos].join(" ")` (truncated to 150 chars) to
+`imaging.compose()`; `client.ts`'s `compose()` input type gained the field. `pnpm typecheck`
+clean; `TEST_DATABASE_URL`/`TEST_MIGRATION_DATABASE_URL=invai_test_t92` (dropped after) —
+`pnpm vitest run` on `production/{print-bins,jobs,production,matcher,pack}.test.ts`: 38/38 passed.
+
 ## What changed
 
 **invai-imaging** (commit `6b9c8f3`, on top of T-9-1 `bbb85a3` and T-9-3 `10c1aa2`)
