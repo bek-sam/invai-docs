@@ -147,3 +147,4 @@ AC5 needs a way to surface "the channel tried to change this unit but it was alr
 - T-7-1: Etsy, TikTok and Walmart template columns are unverified until the owner downloads the templates (OI-4).
 - T-7-4: `settings.shipsSaturday` is read but has no UI yet (web follow-up). The staleness approach was approved as "newest channel timestamp applied", not `orders.updated_at`.
 - **Grant (tech lead, 2026-09-26), recorded here:** T-7-4 was granted `integrations/channels/**` for the hold signals (`holds` on `ParsedCsv` and `FetchOrdersResult`, TikTok on-hold, Amazon buyer-cancel requests) and the Walmart CSV per-line cancel fix, plus `db/schema/orders.ts` `channel_updated_at` with migration 0022 and about 3 lines in `sync.ts`.
+- **Grant (tech lead, 2026-09-26):** T-7-5 may edit invai-ui `Progress`, the Tabs wrapper, `Badge` and the `theme.css` success color (axe AC6), plus simple fixes for the web typecheck errors.
