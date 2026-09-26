@@ -22,6 +22,7 @@ These are the working rules for every build, review or gate agent. Open other do
 - **Blocked actions:** if a permission check blocks a command, stop and report it. Don't route around it.
 - **Tests:** own test DB per card (`TEST_DATABASE_URL=postgres://invai_app:invai@localhost:5432/<db>`, `TEST_MIGRATION_DATABASE_URL=postgres://invai:invai@localhost:5432/<db>`). Drop it at the end.
 - **Shared links:** never re-link or edit a shared repo's `node_modules` (for example `@invai/contracts`), even briefly. To test other contracts, give your worktree its own `node_modules` directory.
+- **Pinning contracts:** to test against other contract versions, give the worktree a real `node_modules` directory whose `@invai/contracts` points at your contracts worktree. Never change the shared repo's link. Every gate checks that all links point to `../../../invai-contracts`.
 - **Worktrees:** next to the repos (`../<repo>-<card>`), never in `/tmp`. Symlink `node_modules` and run `node_modules/.bin/*` directly.
 - **Long commands:** keep each under about 2 minutes. Poll long jobs inside your turn with short sleeps; don't end your turn to wait.
 - **Cleanup:** kill only your own PIDs, drop your DBs, flush your Redis DB and remove your worktrees.
