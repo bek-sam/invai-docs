@@ -68,3 +68,10 @@ Each one was needed to make the design work. Only my hunks were staged.
 - **Ops consequence:** the minimum defaults to the backend's own contracts version. Each contracts bump (T-13-3 next) therefore makes tablets update on the next backend deploy, unless `MIN_FLOOR_CONTRACT_VERSION` is pinned lower. For additive bumps, pin it to the previous version. The runbook should mention the env var; I didn't edit `runbook.md` because it isn't owned.
 - T-13-3: bump from **0.3.0** and add your CHANGELOG entry above mine.
 - `invai-floor/vite.config.ts` is modified in the working tree by someone else. I didn't touch or stage it.
+
+## Round 2 (review r1 blocker)
+- `FLOOR_COMPAT_BASELINE = "0.3.0"` was added to contracts `compat.ts`. It's bumped by hand only when a floor-facing breaking change's window closes, and it has a CHANGELOG line.
+- The backend `MIN_FLOOR_CONTRACT_VERSION` default now points to it instead of `CONTRACT_VERSION`.
+- New backend test: with `@invai/contracts` mocked to `CONTRACT_VERSION: "9.9.0"`, the re-imported env minimum is still the baseline, and a tablet on today's version passes both floor and station procedures.
+- ADR 0012 §2, §5, §6 and Consequences were updated. The "Ops consequence" note in round 1 no longer applies.
+- Tests: contracts vitest 36/36 and tsc pass. Backend `contract-version`, `email-gate` and `env` tests pass 23/23 (own DB, dropped afterwards), and tsc passes.
