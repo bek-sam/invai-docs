@@ -196,3 +196,9 @@ Same filters as `finance.profit`, so the export always matches what's on screen.
 - [ ] Builds pass
 - [ ] Cleanup
 - [ ] Pushed
+- T-6-3: `orders.list` has no design or blank filter, so those profit dimensions drill down by period only (B-110-sized follow-up). T-6-2's `c130bde` picked up T-6-3's nav and route-tree hunks, fixed forward in `f2ef447`; the gate verifies HEAD builds.
+- T-6-2: there's no settings toggle for `printsInHouse` yet (web-engineer; wave 7 follow-up or the P2 sweep).
+- T-6-4 review: a mid-turn disconnect can undercount assistant tokens (security, follow-up). Etsy `production_partner` text issue M-23, already B-14 (wave 8).
+
+## Status (2026-09-26)
+All 5 cards approved: T-6-1 r1, T-6-2 r2, T-6-3 r1, T-6-4 r2, T-6-5 r2. Wave 7 commits are interleaved on main, so waves 6 and 7 share **one combined integration gate** (in `waves/7/gate.md`) and push together. This saves a gate run (decision 0011, token budget).
