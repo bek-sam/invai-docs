@@ -1,0 +1,69 @@
+diff --git a/e2e/helpers/api.ts b/e2e/helpers/api.ts
+index 7500b79..7cc389f 100644
+--- a/e2e/helpers/api.ts
++++ b/e2e/helpers/api.ts
+@@ -9,7 +9,10 @@ import type { ContractRouterClient } from "@orpc/contract";
+ export const API_URL = process.env.E2E_API_URL ?? "http://localhost:3000";
+ export const WEB_ORIGIN = process.env.E2E_WEB_URL ?? "http://localhost:5173";
+ export const WORKSPACE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+-export const BACKEND = path.join(WORKSPACE, "invai-backend");
++// A card running its own stack in a sibling worktree (e.g. `invai-web-t134`) points this at its
++// own `invai-backend-<card>` checkout, so `seedOutput()` reads that worktree's
++// `seed-output.json` (its own DB's station token) instead of the shared repo's.
++export const BACKEND = process.env.E2E_BACKEND_DIR ?? path.join(WORKSPACE, "invai-backend");
+ export const FIXTURES = path.join(BACKEND, "src/integrations/channels/csv/fixtures");
+ 
+ export const OWNER = { email: "owner@desertbloom.test", password: "demo1234!" };
+diff --git a/e2e/helpers/i18n.ts b/e2e/helpers/i18n.ts
+new file mode 100644
+index 0000000..0a86d8d
+--- /dev/null
++++ b/e2e/helpers/i18n.ts
+@@ -0,0 +1,47 @@
++import { en } from "../../src/i18n/en";
++import { es } from "../../src/i18n/es";
++
++/**
++ * Flattens the generated translation dictionaries (nested objects of strings, some with
++ * `{{placeholder}}` interpolation) into a flat list of leaf strings.
++ */
++function leaves(obj: unknown, out: string[] = []): string[] {
++  if (typeof obj === "string") {
++    out.push(obj);
++  } else if (obj && typeof obj === "object") {
++    for (const v of Object.values(obj)) leaves(v, out);
++  }
++  return out;
++}
++
++/**
++ * English phrases that are actually translated (differ from their Spanish counterpart) and are
++ * long/distinctive enough that finding one verbatim on a Spanish-locale page is real evidence of
++ * an English leak, not a coincidental shared acronym (SKU, PDF, QR) or a short word that happens
++ * to be spelled the same in both languages.
++ */
++export const TRANSLATED_ENGLISH_PHRASES: string[] = (() => {
++  const enLeaves = leaves(en);
++  const esLeaves = new Set(leaves(es));
++  const seen = new Set<string>();
++  const out: string[] = [];
++  for (const phrase of enLeaves) {
++    const clean = phrase.replace(/\{\{[^}]+\}\}/g, "").trim();
++    if (clean.length < 8) continue; // too short/generic to be safe evidence on its own
++    if (!/[a-zA-Z]/.test(clean)) continue;
++    if (esLeaves.has(phrase)) continue; // not actually translated (e.g. a proper noun)
++    if (seen.has(clean)) continue;
++    seen.add(clean);
++    out.push(clean);
++  }
++  return out;
++})();
++
++/**
++ * Returns every translated English phrase found verbatim inside `text` (expected: none, on a
++ * Spanish-locale page). Short-circuits common noise: numbers, order codes and the app name are
++ * never flagged because they were filtered out of the phrase list above.
++ */
++export function englishLeaksIn(text: string): string[] {
++  return TRANSLATED_ENGLISH_PHRASES.filter((phrase) => text.includes(phrase));
++}

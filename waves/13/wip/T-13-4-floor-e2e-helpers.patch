@@ -1,0 +1,72 @@
+diff --git a/e2e/helpers/api.ts b/e2e/helpers/api.ts
+index 0802814..1a5ad73 100644
+--- a/e2e/helpers/api.ts
++++ b/e2e/helpers/api.ts
+@@ -7,10 +7,12 @@ import { RPCLink } from "@orpc/client/fetch";
+ import type { ContractRouterClient } from "@orpc/contract";
+ 
+ export const API_URL = process.env.E2E_API_URL ?? "http://localhost:3000";
+-const BACKEND = path.resolve(
+-  path.dirname(fileURLToPath(import.meta.url)),
+-  "../../../invai-backend",
+-);
++// A card running its own stack in a sibling worktree (e.g. `invai-floor-t134`) points this at its
++// own `invai-backend-<card>` checkout, so `seedStationToken()` reads that worktree's
++// `seed-output.json` instead of the shared repo's.
++const BACKEND =
++  process.env.E2E_BACKEND_DIR ??
++  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../invai-backend");
+ 
+ export const PRESSER_PIN = "1155";
+ export const OWNER_PIN = "1111";
+diff --git a/e2e/helpers/i18n.ts b/e2e/helpers/i18n.ts
+new file mode 100644
+index 0000000..27536db
+--- /dev/null
++++ b/e2e/helpers/i18n.ts
+@@ -0,0 +1,45 @@
++import { en } from "../../src/i18n/en";
++import { es } from "../../src/i18n/es";
++
++/**
++ * Flattens the generated translation dictionaries (nested objects of strings, some with
++ * `{{placeholder}}` interpolation) into a flat list of leaf strings.
++ */
++function leaves(obj: unknown, out: string[] = []): string[] {
++  if (typeof obj === "string") {
++    out.push(obj);
++  } else if (obj && typeof obj === "object") {
++    for (const v of Object.values(obj)) leaves(v, out);
++  }
++  return out;
++}
++
++/**
++ * English phrases that are actually translated (differ from their Spanish counterpart) and are
++ * long/distinctive enough that finding one verbatim on a Spanish-locale screen is real evidence
++ * of an English leak, not a coincidental shared acronym (SKU, PIN, QR) or brand name.
++ */
++export const TRANSLATED_ENGLISH_PHRASES: string[] = (() => {
++  const enLeaves = leaves(en);
++  const esLeaves = new Set(leaves(es));
++  const seen = new Set<string>();
++  const out: string[] = [];
++  for (const phrase of enLeaves) {
++    const clean = phrase.replace(/\{\{[^}]+\}\}/g, "").trim();
++    if (clean.length < 8) continue;
++    if (!/[a-zA-Z]/.test(clean)) continue;
++    if (esLeaves.has(phrase)) continue;
++    if (seen.has(clean)) continue;
++    seen.add(clean);
++    out.push(clean);
++  }
++  return out;
++})();
++
++/**
++ * Returns every translated English phrase found verbatim inside `text` (expected: none, on a
++ * Spanish-locale screen).
++ */
++export function englishLeaksIn(text: string): string[] {
++  return TRANSLATED_ENGLISH_PHRASES.filter((phrase) => text.includes(phrase));
++}
