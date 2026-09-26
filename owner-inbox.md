@@ -56,3 +56,9 @@ Entry format:
 - Recommendation: A plus C. B-68 helps every CSV channel either way, and the adapter is ready the day Etsy approves.
 - Cost of waiting: Etsy shops keep uploading CSVs and typing tracking codes, which is the biggest daily pain for Etsy-first shops.
 - Answer:
+
+## OI-4: Download the marketplace tracking-upload templates   status: open
+- From: tech-lead, 2026-09-26. Deadline: before the first Etsy, TikTok or Walmart pilot. Default if no answer: we keep our best-source approximations, which may need a fix on first upload.
+- Context: T-7-1 builds the tracking export files. Etsy's, TikTok Shop's and Walmart's bulk-upload templates are only downloadable while signed in to a seller account, so our column names come from public docs and aren't verified against the live templates. Amazon's flat file is public and verified.
+- Ask: from each seller dashboard, download the blank tracking or shipping-confirmation upload template and put it in `invai-docs/research/templates/`. The team then matches the columns exactly (a small card).
+- Answer:
