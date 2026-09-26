@@ -82,3 +82,8 @@ Net: **12 of 13 to wire up, 1 (`production.scanBatch`) to remove.** Flag to the 
 - **Decisions (tech lead, 2026-09-26):**
   - T-13-3 removes only `production.scanBatch` (via contract-deprecation) and does the drift items (events, `demoOwned`, attributes, imaging contract test). The other 12 unused procedures stay, harmless, and become backlog B-112 (wire UIs as screens need them).
   - T-13-4's 15-minute CI budget is per repo job; parallelize the specs that don't depend on shared state.
+- **Decision (tech lead, 2026-09-26):** T-13-5 seed film efficiency of 83% average (77–87%) with real imaging `/nest` is accepted as realistic. The 85–92% target isn't reachable with this art mix because 12 in back prints can't pair. Commit `3bc8f53` needs a light review. The seed took 211 s under host contention; watch it in CI.
+- **Grants approved after the fact (tech lead, 2026-09-26):** T-13-1's CORS header line in backend `app.ts`, the `email-gate.test.ts` floor header, and the floor `App.tsx`, `UpdatePrompt.tsx`, `sync.ts` and `SyncStatus.tsx`. Runbook: add `MIN_FLOOR_CONTRACT_VERSION` (B-106).
+- The workspace moved to `/Users/bekbolsun/invai` on 2026-09-26 (owner), out of the iCloud-synced Desktop. All paths in prompts use the new location.
+- **Grant (tech lead, 2026-09-26):** T-13-4 may edit the web and floor `e2e/**`, the CI workflow E2E steps in backend, web and floor, and the load-flaky Shopify OAuth-state tests.
+- **Grant (tech lead, 2026-09-26):** T-13-3 may make the consumer updates in backend, web and floor for its contract changes (`demoOwned` detection, attributes shape).

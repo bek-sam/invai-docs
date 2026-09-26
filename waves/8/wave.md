@@ -68,3 +68,12 @@ T-8-4 must re-check the draft's **current** `trademark` field at publish/export 
 - `REDIS_URL` `/<k>`.
 - **Grant (tech lead, 2026-09-26):** T-8-5 may edit `invai-backend/.github/workflows/ci.yml` (one eval step in mock mode) and the `package.json` scripts.
 - **Grant (tech lead, 2026-09-26):** T-8-2 may add `AI_DAILY_PLATFORM_CAP_CENTS` and `AI_DAILY_TENANT_CAP_CENTS` to `src/env.ts` (defaults $500 and $50). T-8-1 should give the assistant a `spend_cap` error code instead of "internal".
+- T-8-2 review notes: the breaker has a bounded check-then-act race (accepted); a Valkey failure opens the breaker and logs it without alerting. Add an alert under B-17 or B-18.
+- T-8-5 findings: a NUL byte in AI vars crashes the `ai_jobs` jsonb insert (sent to T-8-2 to fix). `ListingCopy.attributes` (`{key,value}[]`) vs contracts `Record<string,string>` drift (architect, P2). The `personalization_check` route doesn't exist yet, and its eval cases are staged.
+- T-8-1 notes: 7 Shopify OAuth-state test failures seen on the full suite (the T-8-1 review is investigating). The trademark notice on flagged listings moves to T-8-4.
+- T-8-5 review: the eval harness never deletes its throwaway tenant (13 were left in the dev DB). Clean it up on exit (ai-engineer, small follow-up).
+- **Grant (tech lead, 2026-09-26):** T-8-2 may edit `ask()` in `modules/ai/service.ts` (NUL sanitizing for stored chat text), hunk-only, while T-8-4 edits the rest of the file.
+- T-8-1 review:
+  - Approved.
+  - Follow-ups: `PARTNER_DISCLOSURE` should depend on `printsInHouse` and mention the ship-from location (M-23); `AI_DISCLOSURE` fires unconditionally, which over-discloses.
+  - The Shopify OAuth-state tests (`webhooks.test.ts`, `shopify.test.ts`) are load-flaky when several full suites run at once; make their timing load-tolerant (qa-engineer, B-22).

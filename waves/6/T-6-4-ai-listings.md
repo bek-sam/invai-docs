@@ -20,3 +20,6 @@ Scope: item 10. Backlog: B-89, B-101.
 
 ## Verify
 Run tsc, lint, test and build. Browser pass on a DB copy: approve a draft, copy, export an Etsy CSV (check the SKUs), view the credits history. At most 6 screenshots.
+
+## Added from T-6-5
+- AC 7: AI calls from a sample workspace (`demoOwnerUserId` set, or retired) use the mock AI provider, or a hard cap of free demo credits. They never spend the platform Anthropic key without limit. Use the company context helper added in T-6-5.

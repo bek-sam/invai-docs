@@ -108,3 +108,16 @@ T-12-3 uses the research doc's free "cheap version" instead:
 - **T-12-3**: per-tenant DB-time dashboard and a `tier` column on `companies` (research §2.3/2.5, both "SHOULD next") are out of scope this wave; only the MUST-now Valkey token bucket + semaphore land.
 - **T-12-4**: already correctly scopes out AWS KMS. The export/delete object-storage work runs entirely against the existing MinIO-backed `lib/s3.ts` abstraction — no new AWS dependency now, and the same code will run unchanged once S3 replaces MinIO in wave 10.
 - **T-12-5**: no AWS dependency — headers are set by the app itself, not a CDN/ALB policy. Confirm this stays true (no assumption of a CloudFront header policy) during review.
+- **Grants (tech lead, 2026-09-26):** T-12-1 `worker/index.ts` edit `319027a` approved; T-12-1 may add the new alert kinds to the web `alertKindLabel` (en/es) and `biome format` contracts `vendors.ts`. Migration 0024 also carries T-9-2's missing `vendor_connections.spec` default change.
+- T-12-2: grant approved after the fact for the SSE retry-hint edit in `api/events.ts`. Cleanup still owed: `invai_test_t122` and Valkey db 13. The builder's drop was blocked by the permission guard, so the gate cleanup asks the owner.
+- T-12-2 review: the migrate advisory-lock wait uses the `invai` role, capped at `statement_timeout` 5 min by 0025. Add `SET LOCAL statement_timeout = 0` plus a `lock_timeout` in `migrate.ts` (backend-foundation follow-up).
+- **Grant approved after the fact (tech lead, 2026-09-26):** T-12-3 `1d077e2` sets bulk priority in `lib/queues.ts` for reports and `modules/ai/jobs.ts`.
+- **Grant (tech lead, 2026-09-26):** T-12-5 may add a security-headers middleware hunk in backend `api/app.ts`, and change backend SVG file serving to attachment.
+- **Grants (tech lead, 2026-09-26):**
+  - T-12-4 may add the `KIND_PERMISSIONS` `tenant-export` line in `files/service.ts` (hunk-only).
+  - T-12-4's edits to `contract.test.ts` (path param), `roles.test.ts` (one assertion) and `modules/jobs.ts` (one import) are approved after the fact.
+- T-12-4 follow-ups:
+  - A soft-deleted company must block sign-in during the 30 days (security, P1).
+  - Deleting a company must cancel its Stripe subscription (billing).
+  - The export zip is capped at 4 GB.
+- Grant approved after the fact: T-12-5 r2 edits to the web and floor Dockerfiles, plus the `nginx.conf` templating (`scripts/render-nginx-conf.ts`).
