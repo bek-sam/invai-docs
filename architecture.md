@@ -103,7 +103,7 @@ Each module owns its tables and exposes functions and events. Other modules call
 | --- | --- | --- |
 | `tenancy` | companies, users, roles, locations, stations, plans | `company.created` |
 | `catalog` | designs, print files, placements, blanks, products | `design.updated` |
-| `channels` | connections, OAuth tokens, listings, listing variants, SKU rules | `listing.synced` |
+| `channels` | connections, OAuth tokens, listings, listing variants, SKU rules | `connection.connected`, `import.completed` |
 | `orders` | orders, order items, state machine, holds | `order.imported`, `item.ready`, `order.cancelled` |
 | `personalization` | templates, answers, rendered artwork, proofs | `artwork.rendered`, `artwork.flagged` |
 | `production` | gang sheets, transfers, batches, station scans, reprints | `sheet.built`, `item.pressed`, `item.qc_failed` |
