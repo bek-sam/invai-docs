@@ -19,7 +19,7 @@ TIERS = [(3_000, 149), (10_000, 349), (30_000, 699), (float("inf"), 1_499)]
 # Shipping labels (EasyPost Forge; per-label fee is unverified)
 LABEL_FREE = 3_000
 LABEL_COST = 0.08      # what EasyPost charges us per label (U)
-LABEL_PRICE = 0.15     # what we charge the shop per label
+LABEL_PRICE = 0.10     # what we charge the shop per label (PLAN_CATALOG.labelFeeCents; see OI-1)
 
 # Monthly vendor costs per scenario (Pilot, Growth, Scale), from the research
 FIXED = {
@@ -108,7 +108,7 @@ def fmt(rows, model):
         ("Shops", "shops", "{:,.0f}"),
         ("Orders (labels) per month", "orders_month", "{:,.0f}"),
         ("Subscription revenue", "sub_rev", "${:,.0f}"),
-        ("Label fee revenue ($0.15)", "label_rev", "${:,.0f}"),
+        (f"Label fee revenue (${LABEL_PRICE:.2f})", "label_rev", "${:,.0f}"),
         ("**Total revenue**", "revenue", "**${:,.0f}**"),
         ("Platform costs (hosting, AI, services)", "platform", "${:,.0f}"),
         ("EasyPost label fees ($0.08)", "label_cost", "${:,.0f}"),
