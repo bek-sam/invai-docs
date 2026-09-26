@@ -19,3 +19,6 @@ Runs **solo, last** (see `wave.md` §Plan review r1) — it wraps `app/main.py` 
 **AC2 concrete gaps to close before the "oversized input" test is writable:** as of this read, `ComposePlacementModel`'s `placements: list[...]` has no `max_length`, and `ComposeRequest.width_in`/`NestRequest.sheet_width_in` have no `le=60` (only `gt=0`) — DPI bounds (36–1200) are already present on `ComposeRequest`/`PersonalizationRequest`. Add the missing bounds first, then the test.
 
 **Contracts mirror:** the same width ≤ 60in and DPI 36–1200 bounds belong on `invai-contracts/src/schemas/vendors.ts` (`SheetSpec.widthIn`, `.dpi`) and `schemas/personalization.ts` (`PersonalizationTemplateInput.widthIn/heightIn`, `.dpi`) — already specified in `wave.md`; this card doesn't own those files but should confirm at review time that T-9-2/T-9-3/T-9-4 actually added them.
+
+## Added from the T-9-1 review
+- AC 7: `rasterize_pdf` (pypdfium2) bypasses the libvips decode limit. Add an explicit page-width × page-height × DPI pixel check before rendering, and reject over-budget pages with a clear error.
