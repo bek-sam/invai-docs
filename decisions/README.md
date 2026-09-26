@@ -23,3 +23,4 @@ One file per decision: `NNNN-<slug>.md`, numbered in order. Use the `record-deci
 | [0006](0006-v1-cuts.md) | v1 cuts: AI design generation, direct SP-API, SanMar, GPU upscaling… | product | accepted |
 | [0007](0007-ai-model-policy.md) | AI model policy: one config, effort per route, evals before cheaper models | architecture | accepted |
 | [0008](0008-sign-in-rate-limit.md) | Sign-in rate limit is 20/min per IP (supersedes S-19's 10/min) | security | accepted |
+| [0012](0012-floor-contract-compat.md) | Floor contract handshake: CLIENT_TOO_OLD 426, 14-day compat window, stale_version parking | architecture | accepted |
