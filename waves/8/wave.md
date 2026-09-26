@@ -66,3 +66,4 @@ T-8-4 must re-check the draft's **current** `trademark` field at publish/export 
 - Test DB `invai_test_t8<k>`.
 - API port `31<k>8`.
 - `REDIS_URL` `/<k>`.
+- **Grant (tech lead, 2026-09-26):** T-8-5 may edit `invai-backend/.github/workflows/ci.yml` (one eval step in mock mode) and the `package.json` scripts.
