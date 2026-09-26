@@ -1,5 +1,49 @@
 # T-9-2: Sheet barcode, scannable QRs, label gap (B-79)
 
+## Update 3 (2026-09-26): dedicated top header strip (header_height_in, 0.45in)
+Tech lead: don't grow `margin_in` on every side; add a dedicated top-edge `header_height_in`
+(default 0.45in) instead, holding the sheet-id QR + name, with nesting starting below it.
+
+**Landed:**
+- `app/nesting.py` (`3793c47`): `nest()` gains `header_height_in` (default 0.45in). Usable
+  packing height now subtracts it too (`max_length_in - 2*margin_in - header_height_in`), and
+  every placement's `y_in` and the sheet's `length_in` add it -- a fixed, one-time cost per
+  sheet, not per row.
+- `app/compose.py`: `compose_sheet()` gains `header_height_in` (default
+  `DEFAULT_HEADER_HEIGHT_IN = 0.45`), used directly for the header band's pixel height instead
+  of the old "infer it from the topmost placement's y_in" workaround (that workaround is why
+  the previous round's header didn't decode at default `margin_in` -- now moot, since
+  `header_height_in` is its own explicit, dedicated contract between `/nest` and `/compose`,
+  the same way `label_height_in` already is).
+- `app/main.py`: `NestRequest`/`ComposeRequest` both gain `header_height_in` (default 0.45,
+  `ge=0, le=6` matching T-9-5's bounds style) and pass it through. Landed on top of T-9-5's
+  `87e01e0` (auth/limits) without touching their hunks -- they'd already isolated and left my
+  4 in-flight `header_height_in` lines alone per their own note.
+- Tests: `test_nesting.py`'s `assert_valid`/length assertions account for the new offset. A new
+  `test_default_settings_header_and_transfer_qrs_all_decode` (150/200/300 DPI) runs real
+  `nesting.nest()` output through `compose_sheet()`, both at their own defaults, with fresh
+  random UUIDs, and decodes the header and every transfer QR.
+- `app/labels.py` (`c872d19`, granted separately): `ruff format` fix, unrelated pre-existing
+  formatting drift at HEAD.
+
+**invai-backend** (`5ba3c8f`): `sheets.ts` gains `HEADER_HEIGHT_IN = 0.45`; `fitsSpec()`'s
+`maxLen` and `roughEstimate()`'s length both subtract/add it; every `imaging.nest()` and the
+`imaging.compose()` call now sends `header_height_in`. `db/seed/builder.ts`'s own greedy
+row-layout simulation starts `y` below the header too, for consistency. `client.ts`'s
+`nest()`/`compose()` input types already picked up `header_height_in` when T-9-5 committed
+`2b98c13` on top of my in-flight working-tree edit (verified both occurrences are there).
+
+**Proved for real** (uvicorn + real MinIO, with the new `X-Imaging-Secret` header T-9-5 landed):
+`/nest` with **default settings** (3 items, fresh random UUID ids) gave `length_in=3.37` (up
+from 2.92 pre-header by exactly 0.45in). `/compose` at 150/200/300 DPI, **default settings**,
+with a `filename_hint`: downloaded each PNG from MinIO and decoded with `zxingcpp` --
+**all 3 transfer QRs and the header all decoded at every DPI** (4/4 codes found each time).
+This is the fix for the previous round's flagged gap (header not decoding at default
+`margin_in`); no longer applicable since the header no longer depends on `margin_in` at all.
+
+**Re-ran the production tests** (fresh scratch DB, dropped after): 38/38 passed, both before and
+after this round's backend changes.
+
 ## Update 2 (2026-09-26): label_height_in default raised to 0.42in everywhere
 Tech lead: raise `label_height_in`'s default to **0.42in** everywhere (imaging
 `NestRequest`/`ComposeRequest`/`nesting.nest()`, backend `LABEL_HEIGHT_IN`, and anywhere else
