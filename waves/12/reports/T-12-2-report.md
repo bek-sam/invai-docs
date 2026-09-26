@@ -124,11 +124,11 @@ it, then re-diffed both staged and unstaged to confirm the split before committi
 - Full backend `vitest run` on `invai_test_t122`, `REDIS_URL=.../13`: **90 files, 645 tests
   passed** (tree also had other agents' uncommitted wave-12 work, per above).
 - Real runs: see "Real verification" above. Cleanup: all my processes stopped (checked `ps`
-  after each), the scratch shutdown-verify script and its Redis keys removed, `invai_test_t122`
-  left in place per the card's own instruction (tests re-migrate it idempotently; I did not
-  drop it since T-12-1/3/4 may still be relying on their own DBs existing independently — mine
-  is `invai_test_t122` specifically and isn't shared, so I'll leave dropping it to whoever runs
-  the final gate unless told otherwise).
+  after each), the scratch shutdown-verify script and its Redis keys removed. **`invai_test_t122`
+  is still around** -- `DROP DATABASE invai_test_t122` was blocked by the environment's own
+  mass-delete permission guard (a classifier, not me deciding to skip it), and I did not try to
+  route around it. Someone with that permission (or the tech lead) should drop it, and flush
+  Valkey db 13, when convenient.
 
 ## Cross-card notes
 - **T-12-3:** confirmed no overlap in `worker/index.ts` — you own the `Worker(...)` processor
