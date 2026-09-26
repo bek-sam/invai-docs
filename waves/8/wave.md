@@ -67,3 +67,4 @@ T-8-4 must re-check the draft's **current** `trademark` field at publish/export 
 - API port `31<k>8`.
 - `REDIS_URL` `/<k>`.
 - **Grant (tech lead, 2026-09-26):** T-8-5 may edit `invai-backend/.github/workflows/ci.yml` (one eval step in mock mode) and the `package.json` scripts.
+- **Grant (tech lead, 2026-09-26):** T-8-2 may add `AI_DAILY_PLATFORM_CAP_CENTS` and `AI_DAILY_TENANT_CAP_CENTS` to `src/env.ts` (defaults $500 and $50). T-8-1 should give the assistant a `spend_cap` error code instead of "internal".
