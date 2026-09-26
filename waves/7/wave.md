@@ -137,3 +137,13 @@ AC5 needs a way to surface "the channel tried to change this unit but it was alr
 - API port `31<k>0`, web `51<k>3`.
 - `REDIS_URL` `/<k>`.
 - DB copy `invai_t7<k>_copy`.
+
+## Build log and follow-ups
+- T-7-2:
+  - Grant approved after the fact for the refund-ingest hunks in `channels/sync.ts` and the `ChannelRefund` type in `integrations/channels/types.ts`.
+  - Contracts `CHANNEL_RULES` TikTok `transactionPct` should be 6, not 8 (architect).
+  - The Walmart refund-fee rule is an assumption, since it isn't documented (to verify with a pilot).
+  - Shopify refund webhooks aren't handled; the poll covers them (integrations-engineer).
+- T-7-1: Etsy, TikTok and Walmart template columns are unverified until the owner downloads the templates (OI-4).
+- T-7-4: `settings.shipsSaturday` is read but has no UI yet (web follow-up). The staleness approach was approved as "newest channel timestamp applied", not `orders.updated_at`.
+- **Grant (tech lead, 2026-09-26), recorded here:** T-7-4 was granted `integrations/channels/**` for the hold signals (`holds` on `ParsedCsv` and `FetchOrdersResult`, TikTok on-hold, Amazon buyer-cancel requests) and the Walmart CSV per-line cancel fix, plus `db/schema/orders.ts` `channel_updated_at` with migration 0022 and about 3 lines in `sync.ts`.
