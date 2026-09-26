@@ -1,5 +1,65 @@
 # T-9-2: Sheet barcode, scannable QRs, label gap (B-79)
 
+## Update 2 (2026-09-26): label_height_in default raised to 0.42in everywhere
+Tech lead: raise `label_height_in`'s default to **0.42in** everywhere (imaging
+`NestRequest`/`ComposeRequest`/`nesting.nest()`, backend `LABEL_HEIGHT_IN`, and anywhere else
+0.35 lived), keep the 0.33mm floor, and prove a real compose decodes every transfer QR and the
+header at 150/200/300 DPI with default settings.
+
+**Landed:**
+- imaging (`d4e3ddb`, `0e5a93e`, `19d53af`): `NestRequest`/`ComposeRequest.label_height_in` and
+  `nesting.nest()`'s own default, all 0.35 -> 0.42; README's three mentions updated to match.
+- imaging tests (`c974ff4`): `test_nesting.py`'s `LABEL` fixture constant matches; the AC1
+  default-height test (previously `..._still_short_for_a_real_uuid`, documenting the gap) now
+  flips to `test_default_label_height_decodes_a_real_uuid` and asserts success — 0.42in gives
+  0.403in-need a real UUID a 0.017in margin at the 0.33mm floor.
+- backend (`8b728b1`): `LABEL_HEIGHT_IN = 0.42`; `db/seed/builder.ts`'s own hardcoded `0.35` (a
+  second, undeclared copy of the same constant in its greedy row-layout simulation) now imports
+  `LABEL_HEIGHT_IN` instead of duplicating the number.
+- `grep`ped both repos for every other `0.35`/label-height reference (`.claude/skills/
+  imaging-change-with-budget/SKILL.md:25` also names 0.35 in prose, but that's outside any repo
+  I commit to — not touched, flagging for whoever owns skill docs).
+
+**Proved for real** (not just pytest): started `uvicorn app.main:app --port 8000` against real
+MinIO, uploaded a design, called the live `/nest` then `/compose` with **default settings** (no
+`label_height_in`/`label_gap_in` override) for 3 items each with a **fresh random UUID**
+`transfer_id`, at `dpi` 150, 200 and 300, with a `filename_hint`. Downloaded each resulting PNG
+from MinIO and decoded with `zxingcpp`:
+- **All 3 transfer QRs decoded correctly at all three DPIs** (150/200/300) — AC1 confirmed at
+  the new default, for real, not a cherry-picked fixture.
+- **The header QR did not decode at any DPI.** Root cause, independent of `label_height_in`: the
+  header's available height is the sheet's actual top *margin* (`margin_in`, default 0.25in in
+  both `NestRequest` and `SheetSpec`/`DEFAULT_SHEET_SPEC`) — compose sizes the header to
+  whatever clearance already exists above the first placement, specifically to avoid bleeding
+  into a design (see the original report's design rationale). Even the smallest possible QR
+  (version 1, `border=1`, `n=23`) needs `23 * 0.33mm = 0.299in` — already more than the 0.25in
+  margin, for *any* non-trivial string, including a bare 7-char sheet id alone. This is a
+  **third constant** (not `label_height_in`, not the module floor) blocking AC2's header at
+  defaults; already flagged as a known gap in this report's original "Other gaps" section, now
+  confirmed empirically. Not fixed here: `margin_in` is a whole-sheet edge margin (affects film
+  cost/waste on all four sides, not just labels) and wasn't in this round's grant — flagging for
+  a tech-lead decision rather than bumping it unilaterally. Smallest fix: `margin_in` default
+  >= ~0.30in would fit a short sheet id; the fuller `filename_hint` (sheet name + order numbers)
+  would need more.
+
+**Re-ran the production tests** (fresh scratch DB, dropped after): `pnpm vitest run
+production/{print-bins,jobs,production,matcher,pack}.test.ts` — 38/38 passed with the 0.42in
+default.
+
+**Seed gang-sheet efficiency: 69.1% avg (61.0-80.0% range, 25 sheets)** — below the 86-91%
+documented in `team/lessons.md`. **Isolated the cause with an A/B control run**: reset+migrated+
+seeded a second scratch DB with `LABEL_HEIGHT_IN` temporarily reverted to 0.35 (not committed,
+restored immediately after) — result was 69.6% avg (61.0-81.0%), statistically the same. **The
+0.42in change is not the cause.** `git log -- src/db/seed/builder.ts` shows only this card's
+commit and the original T-5-3 "reusable seed builder" commit ever touched this file's greedy
+row-packing/utilization math — so this seed has produced ~69% since T-5-3, regardless of
+`label_height_in`, at either 0.35 or 0.42 (a +0.07in row overhead is negligible against this
+seed's actual item sizes, which sampled at 3-14in tall, averaging ~11in -- not the small
+logo-sized items the 0.35->0.42 change was reasoned about). The 86-91% figure in
+`team/lessons.md` predates or measures something different than this exact builder path; T-9-2
+didn't cause the gap and isn't the card to chase it down further (seed realism isn't owned
+here) — flagging for whoever owns seed data / that lesson entry.
+
 ## Update (2026-09-26): tech lead's 0.33mm correction
 Tech lead: the 0.5mm floor was a spec error; changed to **0.33mm** (13 mil, a common handheld
 2D scanner minimum) so the 0.35in `label_height_in` default would work, and granted
