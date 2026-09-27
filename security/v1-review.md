@@ -40,8 +40,9 @@ Severity: **High** means cross-tenant data or PII exposure, or privilege escalat
 | S-30 | Low | Ops | `/health` reveals which integrations are mocked. The SSE floor token travels in the query string (open issue #4). `clientIp` trusts `X-Forwarded-For` (audit IPs and Better Auth rate limits), so it's only safe behind the ALB. `FLOOR_TOKEN_SECRET` falls back to `BETTER_AUTH_SECRET`. | Open | DevOps / Backend |
 | S-31 | Low | Files | SVG designs are allowed and would render inline from the bucket origin. | Open: serve SVG as attachment or from a sandbox domain. | Backend |
 | S-32 | Low | Dependencies | `pnpm audit --prod`: the backend has esbuild ≤0.24.2 (moderate) and <0.28.1 (low), reached only through the dev tools drizzle-kit and vitest via better-auth's optional peers, so not in the runtime bundle. Web and floor are clean. Imaging (`pip-audit` via `uvx`) is clean. | Open (dev only) | DevOps |
+| S-33 | Medium | AI / unbounded abuse | `Range` (the `from`/`to` input shared by all `assistantTools`, `invai-backend/src/modules/ai/assistant-tools.ts`) has no span cap — `Range.extend(...).parse({from:"1900-01-01T00:00:00.000Z", to:"2026-01-01T00:00:00.000Z"})` is accepted (proved 2026-09-26 against the installed zod 4.6). The model picks this range itself, so a hostile or confused prompt can force a 100+ year scan. Pre-existing on `get_profit`/`get_orders_summary`/`get_channel_performance`; T-17-2 (2026-09-26) added 4 more tools on the same schema, including `get_fulfillment_health`'s per-row correlated reprint-cost subquery and `get_design_insights`'s cross-listing joins, raising the per-call cost. Every list output is still capped (`MAX_ROWS`/`i.limit`), so this is a single-tenant availability/cost concern, not a data leak. | Open: add a span cap (proposed ~400 days) to `Range`/`toPeriod` in `assistant-tools.ts`. | ai-engineer |
 
-Counts after the follow-up: 4 High (all fixed), 15 Medium (13 fixed, 1 mitigated, 1 open: S-15), 13 Low (7 fixed, 6 open).
+Counts after the follow-up: 4 High (all fixed), 15 Medium (13 fixed, 1 mitigated, 2 open: S-15, S-33), 13 Low (7 fixed, 6 open).
 
 ## What was verified
 
