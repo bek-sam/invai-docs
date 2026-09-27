@@ -1,0 +1,31 @@
+# 0015: One global demand cache without `company_id`: `market_series_cache`, taxonomy queries only, public-read RLS, written only by the nightly job
+
+- Status: accepted (2026-09-27; security-reviewer co-review on T-18-1 confirms)
+- Type: architecture
+
+## Context
+- CLAUDE.md rule 7: every tenant table has `company_id` and RLS. `invai-backend/src/db/rls-coverage.test.ts` fails on any table with a `company_id` column and no policy, and lists the global catalogs (`plans`, `trademark_marks`) that are read-only for the app role.
+- Market signals (`specs/market-signals.md`, "Jobs and data") need outside demand series (Google Trends, Pinterest Trends, Census NAICS 448, later licensed data) per niche query. The niche taxonomy is fixed (`product/market-niches.md`, 69 niches, 3–5 canonical queries each), so the same series serve every shop. Fetching per shop would multiply provider calls by the number of tenants for identical data and blow the alpha quotas in research 14 §1.2; the refresh is one nightly job with no company in scope.
+- ADR 0014 fences: marketplace-origin data (API or a shop's CSV) is used only for the shop it came from; no cross-seller aggregation. A global table is therefore only safe if nothing shop-specific can ever be written into it.
+- Precedent: `trademark_marks` (`src/db/schema/ai.ts`) has no tenant column, `publicReadPolicy` + `.enableRLS()`, and is filled through `withSystem` (`src/db/client.ts`, the owner connection). The app role `invai_app` gets `SELECT` only.
+- Mock rule (wave 18 hard fences, spec AC29): a mock outside source is used and shown only when `!env.isProd || env.allowMocks || await isSampleWorkspace(companyId)`. `env.allowMocks` is the existing ops-only `ALLOW_MOCKS` boot flag for demo and staging stages (`src/env.ts`), not a new bypass. Because the cache is global, the rule cannot be applied at write time; it is applied at read time by one predicate.
+- Links: card T-18-1 (architect), spec `specs/market-signals.md`, research `research/14-market-signals.md` §4.3, wave `waves/18/wave.md`, ADR 0014. Decided by the architect; co-reviewed by security-reviewer (tenancy) and backend-foundation (new table).
+
+## Decision
+1. **Exactly one table may exist without `company_id`: `market_series_cache`.** Any other table missing `company_id` is a bug, unless it is one of the existing global catalogs (`plans`, `trademark_marks`) or Better Auth's own tables.
+2. **Columns are only:** `source` (`SignalSource`), `query` (text), `granularity` (`week | month`), `period` (ISO week `2026-W38` or month `2026-09`), `value` (double), `asOf` (timestamptz), `fetchedAt` (timestamptz), `licence` (`Licence`), `mock` (boolean), plus `id` and `createdAt`/`updatedAt`. No tenant id, no connection id, no user id, no free text of any kind from any shop: `query` must equal one of the canonical queries of a taxonomy niche, exactly (`NICHES[*].queries` in `src/modules/market/niches.ts`). Comparables, own sales and anything marketplace-origin never enter this table; they live in tenant tables with `company_id`.
+3. **RLS:** `publicReadPolicy("market_series_cache")` + `.enableRLS()`, like `trademark_marks`. The app role has `SELECT` only (no `INSERT`, `UPDATE`, `DELETE`). Reads from request paths and per-shop jobs run under `withTenant`; the policy is `using (true)` for `SELECT`.
+4. **Writes** happen only in the nightly `market.refreshDemand` job under `withSystem`, with a comment saying why (`// global cache, ADR 0015`). Idempotent upsert on the unique index `(source, query, granularity, period)`; a re-run changes nothing but `fetchedAt`.
+5. **Validation:** the job rejects (skips and logs) any series whose `query` is not a canonical taxonomy query, and a market test asserts (a) the table has no `company_id` column, (b) every stored `query` is in the taxonomy, (c) an insert with a non-taxonomy query is refused by the job.
+6. **Retention:** weekly rows are refreshed when older than 7 days, Census monthly rows when older than 30 days (source TTLs; reads older than 2× the TTL are `stale`). Periods older than 5 years are purged by the same nightly job. Nothing here is PII, so no purge-on-request applies.
+7. **Mock visibility:** rows with `mock = true` are stored in dev, tests and any stage with `ALLOW_MOCKS`; at read time `mockSourcesAllowed(companyId)` (`src/modules/market/config.ts`) decides whether they count. For a real shop in production a mock row is skipped: no signal, no R2/R4 recommendation, `PricePosition.available = false, reason: no_compliant_source`.
+
+## Consequences
+- Easier: one fetch per (query, source) a night for all shops; outside data is shared without any cross-tenant read of shop data; the cache can be dropped and rebuilt at any time.
+- Harder: a second global table would need a new ADR; the taxonomy is the only key space, so a new niche means a PM edit to `product/market-niches.md` and a data-file change, not free text.
+- Enforcement (owners):
+  - `invai-backend/src/db/rls-coverage.test.ts`: `market_series_cache` in `PUBLIC_READ_TABLES` and in the "app role cannot write the global catalogs" array (`ins/upd/del = false`). Two-edit grant to T-18-3 (backend-engineer), co-reviewed by security-reviewer and backend-foundation (wave 18 grants).
+  - `invai-backend/src/modules/market/*.test.ts`: no `company_id` column, taxonomy-only queries, refused non-taxonomy insert, run-twice idempotency of `refreshDemand` (backend-engineer, T-18-3).
+  - `invai-contracts/src/market.test.ts`: `SIGNAL_SOURCES` and `LICENCES` fixed order (architect).
+  - Schema and migration: `invai-backend/src/db/schema/market.ts` with `publicReadPolicy` and `.enableRLS()` in the same migration that creates the table (backend-engineer; backend-foundation co-reviews).
+- Follow-up: if a licensed source (Jungle Scout, OI-11) ever returns seller-level rows, they may not be cached here; they go to a tenant table or are not stored (architect decides, new ADR).
