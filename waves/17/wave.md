@@ -36,3 +36,4 @@
 
 ## Grants
 - 2026-09-26: T-17-2 gains criteria 12–13 from the PM's plan review (spec AC9, AC10). No new paths.
+- 2026-09-26: T-17-2 and T-17-3 may update the assistant entry in `invai-backend/evals/baseline.json` (criterion 10 needs it; the file sits outside `evals/assistant/**`).
