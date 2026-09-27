@@ -39,3 +39,4 @@
 (none yet)
 - 2026-09-26: T-16-1 also owns the new shared `invai-docs/team/hooks/invai_hooklib.py`. `sync.sh` copies `hooks/*.py` since `1c14f5d`, so it is installed with the hooks.
 - 2026-09-26: T-16-2 round 2 also owns a new `invai-docs/team/hooks/guard-memory-path.py` (PreToolUse on Write|Edit|MultiEdit: deny writes into any `.claude/agent-memory/` outside `$CLAUDE_PROJECT_DIR/.claude/agent-memory/`), its tests, and its entry in `invai-docs/team/settings.json`. Source: lesson row 2026-09-26 "agent memory landed in subfolder .claude dirs".
+- 2026-09-27: T-16-2 round 3: `security-reviewer` approves (`40a89b5`); `reviewer` verified the fix with no findings but must return `escalate` at round 3 (`c55a0a4`). The tech lead (not the author) accepts T-16-2 on that evidence. Known limits kept in the report: script files, base64 + eval, and commands built by `$(...)` substitution.
