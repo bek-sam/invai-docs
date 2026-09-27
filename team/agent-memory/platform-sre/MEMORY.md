@@ -13,3 +13,4 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-24 W2: Check `df -h /` before a wave (need > 5 GB); drop per-card test DBs and worktrees at every gate.
 
 ## Learned on cards
+- [Claude Code hook facts](claude-code-hook-facts.md) — verified hook inputs, feedback channels, Stop blocking, exit-1 fails open, sync.sh trap

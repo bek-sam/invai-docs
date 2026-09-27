@@ -13,3 +13,5 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-26 W7: A `db/schema` change ships with its generated migration in the same commit, and you run the backend tests, not only typecheck (68 tests broke once).
 
 ## Learned on cards
+- [T-13-2 tooling not built](project_t13_2_not_built.md) — the version-check script/CI gate cards reference doesn't exist; verify before relying on it.
+- [Contract version bump convention](feedback_contract_version_bump_convention.md) — bump minor (never patch) on 0.x, breaking or additive alike; only touch FLOOR_COMPAT_BASELINE for floor-facing shape changes.

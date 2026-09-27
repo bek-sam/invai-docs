@@ -12,3 +12,6 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-26 W6/7: A path edited outside the card needs a grant written in `wave.md`; if there is none, flag it.
 
 ## Learned on cards
+- [Two memory systems](two_memory_systems.md) — InvAI's in-repo `team/agent-memory` seeds vs my own SDK memory store; don't conflate them
+- [Parallel wave cards aren't settled fact](parallel-wave-cards-not-settled-fact.md) — check a card doesn't cite a same-wave sibling's unreviewed behavior as established
+- [guard-bash.py adversarial checklist](guard-bash-adversarial-checklist.md) — always probe `<<<`/heredoc forms; shlex parser has a real bypass there (T-16-2 r1)

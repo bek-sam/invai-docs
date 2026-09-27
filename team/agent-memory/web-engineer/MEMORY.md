@@ -12,3 +12,6 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-24 v1: Check the installed library API in `node_modules` before writing code (oRPC 1.15, drizzle 0.45, Zod 4, TS 7, Better Auth 1.7 are newer than training data).
 
 ## Learned on cards
+- [Dev CSP needs build+preview](feedback_dev_csp_needs_build_preview.md) — `pnpm dev` CSP is hard-coded to :3000; use `vite build`+`preview` with `VITE_API_URL` and set `WEB_ORIGIN` on the API for a custom-port browser pass.
+- [Never pkill](feedback_never_pkill.md) — always `lsof` for the PID then `kill <pid>`; never `pkill`/`killall`, even with a specific-looking filter.
+- [T-17-4 assistant starters](project_t17_4_assistant_starters.md) — wave 17 tool-chip/starter-question pattern for the assistant screen; follow it for future analyst tools.
