@@ -6,15 +6,17 @@ cd "$(dirname "$0")/../.."   # the invai/ workspace
 B=invai-docs/team
 case "${1:-}" in
   backup)
-    rm -rf "$B/agents" "$B/skills" "$B/hooks"
+    rm -rf "$B/agents" "$B/skills"   # hooks/ keeps its tests/ folder, so it is not wiped
     mkdir -p "$B/agents" "$B/skills" "$B/hooks"
     cp .claude/agents/*.md "$B/agents/"
     cp -R .claude/skills/. "$B/skills/"
-    cp .claude/hooks/* "$B/hooks/"
+    cp .claude/hooks/*.py "$B/hooks/"
     cp .claude/settings.json "$B/settings.json"
     cp CLAUDE.md "$B/CLAUDE.md"
+    # Memory is merged, never wiped: live files overwrite their backup copies, and backup-only
+    # files (seeds not yet restored, or a memory deleted live) stay. Remove stale entries by hand.
     if [ -d .claude/agent-memory ]; then
-      rm -rf "$B/agent-memory" && mkdir -p "$B/agent-memory"
+      mkdir -p "$B/agent-memory"
       cp -R .claude/agent-memory/. "$B/agent-memory/"
     fi
     echo "Backed up. Now commit invai-docs." ;;
@@ -22,7 +24,7 @@ case "${1:-}" in
     mkdir -p .claude/agents .claude/skills .claude/hooks
     cp "$B"/agents/*.md .claude/agents/
     cp -R "$B/skills/." .claude/skills/
-    cp "$B"/hooks/* .claude/hooks/ && chmod +x .claude/hooks/*
+    cp "$B"/hooks/*.py .claude/hooks/ && chmod +x .claude/hooks/*.py   # hook scripts only, not tests/
     cp "$B/settings.json" .claude/settings.json
     cp "$B/CLAUDE.md" CLAUDE.md
     if [ -d "$B/agent-memory" ]; then

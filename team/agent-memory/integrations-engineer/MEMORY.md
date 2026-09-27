@@ -1,6 +1,6 @@
 # integrations-engineer memory
 
-Seeded 2026-09-26 from `team/lessons.md` (T-16-3). Add your own entries under "Learned on cards": date, card, what you learned. No PII or secrets.
+Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row there. Add your own entries under "Learned on cards": date, card, what you learned. No PII or secrets.
 
 ## Lessons that apply to you
 - 2026-09-26 W8: Never `git stash`, `reset` or `checkout --` in a shared tree; compare in your own worktree at the base commit.

@@ -1,6 +1,6 @@
 # ai-engineer memory
 
-Seeded 2026-09-26 from `team/lessons.md` (T-16-3). Add your own entries under "Learned on cards": date, card, what you learned. No PII or secrets.
+Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row there. Add your own entries under "Learned on cards": date, card, what you learned. No PII or secrets.
 
 ## Lessons that apply to you
 - 2026-09-26 W8: Never `git stash`, `reset` or `checkout --` in a shared tree; compare in your own worktree at the base commit.
@@ -11,8 +11,5 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3). Add your own entries under "L
 - 2026-09-25 W3: Poll long jobs inside your turn with short sleeps; don't end your turn to wait.
 - 2026-09-24 v1: Check the installed library API in `node_modules` before writing code (oRPC 1.15, drizzle 0.45, Zod 4, TS 7, Better Auth 1.7 are newer than training data).
 - 2026-09-26 W7: A `db/schema` change ships with its generated migration in the same commit, and you run the backend tests, not only typecheck (68 tests broke once).
-- 2026-09-26 W17 plan: Assistant evals have only run in mock mode (`qualityPass: null`); never claim quality without a real-key run.
-- 2026-09-26 W17 plan: Bump the prompt `version` on every text change; `ai_jobs` records `promptId@version`.
-- 2026-09-26 B-101: `personalization_check` and `sku_suggestion` have job kinds and eval files but no prompt route yet.
 
 ## Learned on cards
