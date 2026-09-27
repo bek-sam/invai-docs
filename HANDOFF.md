@@ -43,6 +43,8 @@ Last updated: 2026-09-26, when the tech-lead session paused. A new session resum
 | 13 | Contracts and quality | 13-1 and 13-5 done; 13-3 mostly done (review pending); 13-4 barely started; **13-2 not started** |
 | 14 | Evidence and docs (B-71, B-10, B-29, B-98, B-106, B-47) | Not planned yet |
 | 15 | P2 sweep (see `waves/backlog.md`) | Not planned yet |
+| 16 | Team harness: edit checks, verification gate, guard, agent memory | Done 2026-09-27; hooks installed live (`sync.sh restore`) |
+| 17 | Assistant as business analyst (B-113) | Done and pushed 2026-09-27 (contracts `8713a63`, backend `97780c1`, web `11ffbfe`) |
 
 ## State at pause
 All code repos are **pushed and clean** as of 2026-09-26.

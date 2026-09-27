@@ -51,6 +51,8 @@ Each wave has at most 5 cards and 3–4 builders at once. Every card gets an ind
 | **13** | Contracts and quality | B-82 floor version handshake · B-83 contract CI · B-104 contract drift · B-22 E2E in CI, property tests, axe · B-97 E2E coverage |
 | **14** | Evidence and docs | B-71 side-effect tests · B-10 + B-29 policies and docs · B-98 help center · B-106 seed and runbook · B-47 path guard |
 | **15** | P2 sweep | B-25, B-27, B-30, B-31, B-32, B-34, B-35, B-36 (out of scope unless approved), B-37, B-38, B-41, B-49, B-100, B-102, B-103, B-107 |
+| **16** | Team harness (done 2026-09-27) | Fast check after each edit, verification gate, guard blocks recurring lessons, agent memory that loads |
+| **17** | Assistant as business analyst (done 2026-09-27) | B-113: compare periods, ad performance, design insights, fulfillment health, prompt v4 |
 | **(owner)** | Direct Etsy API | B-108, only if the owner approves OI-3; then it slots in after wave 3 |
 
 ## Owner's track (can't be done by agents)
