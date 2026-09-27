@@ -37,3 +37,4 @@
 
 ## Grants
 (none yet)
+- 2026-09-26: T-16-1 also owns the new shared `invai-docs/team/hooks/invai_hooklib.py`. `sync.sh` copies `hooks/*.py` since `1c14f5d`, so it is installed with the hooks.
