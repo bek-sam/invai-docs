@@ -129,9 +129,9 @@ class FastCheck(unittest.TestCase):
         self.assertLessEqual(post[0]["timeout"], 20)
         src = (HOOKS / "post-edit-check.py").read_text()
         self.assertIn("Fails OPEN, unlike guard-bash.py which fails closed", src)
-        guard = s["hooks"]["PreToolUse"]
-        self.assertEqual(guard, [{"matcher": "Bash|mcp__.*", "hooks": [
-            {"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.py"}]}])
+        guard = s["hooks"]["PreToolUse"][0]
+        self.assertEqual(guard, {"matcher": "Bash|mcp__.*", "hooks": [
+            {"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-bash.py"}]})
 
 
 if __name__ == "__main__":

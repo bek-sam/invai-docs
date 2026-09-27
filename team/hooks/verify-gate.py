@@ -44,6 +44,8 @@ def main():
     for root, kind, missing in pending:
         cmds = " && ".join(h.check_command(root, kind, c) for c in missing)
         lines.append(f"- {os.path.basename(root)}: cd {root} && {cmds}")
+    lines.append("Run them without a pipe: `| tail` or `| head` hides the exit code, so a piped run doesn't count "
+                 "(unless the command starts with `set -o pipefail;`).")
     lines.append("If you can't make them pass, stop and report the failure honestly.")
     print(json.dumps({"decision": "block", "reason": "\n".join(lines)}))
 

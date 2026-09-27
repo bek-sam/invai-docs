@@ -107,7 +107,7 @@ class TestGate(HookEnv):
     def test_separate_commands_and_forms_count(self):
         self.edit(f"{self.backend}/src/a.ts")
         self.bash("pnpm -C invai-backend typecheck")
-        self.bash("pnpm --dir invai-backend lint 2>&1 | tail -3", stdout="Checked 10 files. No fixes applied.")
+        self.bash("set -eo pipefail; pnpm --dir invai-backend lint 2>&1 | tail -3")
         self.bash("node_modules/.bin/vitest run", cwd=self.backend)
         self.assertIsNone(self.stop())
 
@@ -120,13 +120,38 @@ class TestGate(HookEnv):
         self.assertIn("pnpm test", out["reason"])
         self.assertNotIn("pnpm typecheck", out["reason"])
 
-    def test_piped_failure_is_not_counted(self):
+    def test_piped_run_is_not_counted_without_pipefail(self):
         self.edit(f"{self.backend}/src/a.ts")
         self.bash("pnpm typecheck && pnpm lint", cwd=self.backend)
-        self.bash("pnpm test 2>&1 | tail -5", cwd=self.backend, stdout=" Tests  2 failed | 40 passed\n ELIFECYCLE")
-        self.assertEqual(self.stop()["decision"], "block")
+        # a failing run truncated by head: exit 0, no failure marker left in the output
+        self.bash("pnpm test | head -3", cwd=self.backend, stdout=" RUN  v5.0.0\n ✓ src/a.test.ts (3)")
         self.bash("pnpm test 2>&1 | tail -5", cwd=self.backend, stdout=" Tests  42 passed (42)")
+        out = self.stop()
+        self.assertEqual(out["decision"], "block")
+        self.assertIn("pnpm test", out["reason"])
+        self.assertIn("without a pipe", out["reason"])
+        self.assertNotIn("pnpm typecheck", out["reason"])
+
+    def test_piped_run_counts_under_pipefail(self):
+        self.edit(f"{self.backend}/src/a.ts")
+        self.bash("set -o pipefail; pnpm typecheck && pnpm lint && pnpm test 2>&1 | tail -5", cwd=self.backend)
         self.assertIsNone(self.stop())
+
+    def test_pipefail_must_come_first_and_stay_on(self):
+        self.edit(f"{self.backend}/src/a.ts")
+        self.bash("pnpm test | tail -3; set -o pipefail", cwd=self.backend)
+        self.bash("set -o pipefail; set +o pipefail; pnpm test | tail -3", cwd=self.backend)
+        state = h.read_state(Path(self.state) / "verify__s1__main.json")
+        self.assertNotIn("test", state["repos"][self.backend]["ok"])
+
+    def test_here_string_to_a_shell_counts(self):
+        self.edit(f"{self.backend}/src/a.ts")
+        self.bash("bash <<< 'pnpm typecheck && pnpm lint'", cwd=self.backend)
+        self.bash("sh -c 'cd invai-backend && pnpm test'")
+        self.assertIsNone(self.stop())
+        self.edit(f"{self.backend}/src/a.ts")
+        self.bash("cat <<< 'pnpm typecheck && pnpm lint && pnpm test'", cwd=self.backend)  # not run by a shell
+        self.assertEqual(self.stop()["decision"], "block")
 
     def test_partial_or_masked_runs_do_not_count(self):
         self.edit(f"{self.backend}/src/a.ts")

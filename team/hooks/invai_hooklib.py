@@ -134,13 +134,6 @@ def pending_checks(state):
 # ---------- verification command parsing ----------
 
 SEPARATORS = {"&&", "||", ";", "|", "&", "|&", ";;", "&;"}
-FAIL_MARKERS = re.compile(
-    r"ELIFECYCLE|ERR_PNPM|error TS\d+|\bFAIL\b|\b[1-9]\d* failed\b|Tests?\s+[1-9]\d*\s+failed|"
-    r"Found [1-9]\d* errors?|Some errors were emitted|error during build|Command failed|"
-    r"exited with code [1-9]|\berrors? occurred\b|Traceback \(most recent call last\)"
-)
-
-
 def _tokens(cmd):
     cmd = re.sub(r"\\\n", " ", cmd).replace("\n", " ; ")
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
@@ -149,19 +142,20 @@ def _tokens(cmd):
 
 
 def _segments(cmd):
-    """Split into simple commands: [{words, op}] where op is the operator after the command.
+    """Split into simple commands: [{words, op, here}] where op is the operator after the command.
 
     '(' and ')' are kept as marker segments; the operator after ')' is given to the command before it.
+    `here` holds here-strings (`bash <<< 'pnpm test'`), so a shell fed one can be re-read.
     """
-    segs, cur = [], []
+    segs, cur, here = [], [], []
     toks = _tokens(cmd)
     i = 0
     while i < len(toks):
         t = toks[i]
         if t in SEPARATORS:
             if cur:
-                segs.append({"words": cur, "op": t})
-                cur = []
+                segs.append({"words": cur, "op": t, "here": here})
+                cur, here = [], []
             elif segs and segs[-1]["words"] == [")"]:
                 for s in reversed(segs):
                     if s["words"] not in (["("], [")"]) and s["op"] is None:
@@ -169,9 +163,13 @@ def _segments(cmd):
                         break
         elif t in ("(", ")"):
             if cur:
-                segs.append({"words": cur, "op": None})
-                cur = []
-            segs.append({"words": [t], "op": None})
+                segs.append({"words": cur, "op": None, "here": here})
+                cur, here = [], []
+            segs.append({"words": [t], "op": None, "here": []})
+        elif t == "<<<":
+            if i + 1 < len(toks):
+                here.append(toks[i + 1])
+            i += 1
         elif t[:1] in ("<", ">") or t in ("&>", "&>>"):
             if cur and cur[-1].isdigit():
                 cur.pop()
@@ -180,12 +178,12 @@ def _segments(cmd):
             cur.append(t)
         i += 1
     if cur:
-        segs.append({"words": cur, "op": None})
+        segs.append({"words": cur, "op": None, "here": here})
     return segs
 
 
 def _known_success(segs):
-    """Given the whole command exited 0, which segments certainly succeeded (or plausibly, when piped)."""
+    """Given the whole command exited 0: "sure" segments succeeded; "piped" ones only did under pipefail."""
     real = [s for s in segs if s["words"] not in (["("], [")"])]
     # group into pipelines
     pipes, cur = [], []
@@ -341,11 +339,13 @@ IMAGING_TOOLS = {"ruff", "pytest", "py.test"}
 
 
 def parse_verifications(cmd, cwd, output=""):
-    """[(root, kind, check)] that a successful (exit 0) Bash command proves."""
+    """[(root, kind, check)] that a successful (exit 0) Bash command proves.
+
+    `output` is unused since round 2: a piped check is credited only under `set -o pipefail`.
+    """
     segs = _segments(cmd)
     known = _known_success(segs)
-    pipefail = "pipefail" in cmd
-    piped_ok = pipefail or not FAIL_MARKERS.search(output or "")
+    pipefail = False  # a piped check counts only under `set -o pipefail`: `| tail` or `| head` hides the exit code
     stack = [cwd]
     found = []
     for s in segs:
@@ -366,8 +366,21 @@ def parse_verifications(cmd, cwd, output=""):
             elif stack[-1] is not None:
                 stack[-1] = os.path.normpath(os.path.join(stack[-1], target))
             continue
+        if w and w[0] == "set" and "pipefail" in w:
+            k = w.index("pipefail")
+            pipefail = k > 0 and (w[k - 1] == "-o" or re.fullmatch(r"-[a-z]*o", w[k - 1]) is not None)
+            continue
         status = known.get(id(s))
-        if status is None or (status == "piped" and not piped_ok):
+        if status is None or (status == "piped" and not pipefail):
+            continue
+        if w and os.path.basename(w[0]) in ("sh", "bash", "zsh"):
+            bodies = list(s.get("here", []))
+            c_at = next((k for k, x in enumerate(w[1:], 1) if re.fullmatch(r"-[a-z]*c[a-z]*", x)), None)
+            if c_at is not None and c_at + 1 < len(w):
+                bodies.append(w[c_at + 1])
+            for body in bodies:
+                if stack[-1] is not None:
+                    found.extend(parse_verifications(body, stack[-1]))
             continue
         c = classify(w)
         if not c:

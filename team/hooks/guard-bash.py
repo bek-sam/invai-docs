@@ -129,7 +129,10 @@ def _substitutions(cmd):
 
 
 def _lex(cmd):
-    """[(words, op_before)] simple commands, or None if shlex can't parse it."""
+    """[(words, op_before, here_strings)] simple commands, or None if shlex can't parse it.
+
+    A here-string (`bash <<< 'git push'`) stays attached to its command, so a shell fed one can be re-read.
+    """
     cmd = cmd.replace("\n", " ; ")
     try:
         lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
@@ -137,16 +140,21 @@ def _lex(cmd):
         toks = list(lex)
     except ValueError:
         return None
-    out, cur, op = [], [], None
+    out, cur, op, here, want_here = [], [], None, [], False
     for t in toks:
-        if t and set(t) <= OPS:
-            if cur:
-                out.append((cur, op))
-            cur, op = [], t
+        if want_here and not (t and set(t) <= OPS):
+            here.append(t)
+            want_here = False
+        elif t == "<<<":
+            want_here = True
+        elif t and set(t) <= OPS:
+            if cur or here:
+                out.append((cur, op, here))
+            cur, op, here = [], t, []
         else:
             cur.append(t)
-    if cur:
-        out.append((cur, op))
+    if cur or here:
+        out.append((cur, op, here))
     return out
 
 
@@ -154,10 +162,24 @@ def _fallback(cmd):
     """Quote-stripped regex split, used when shlex can't parse (heredocs with apostrophes and such)."""
     flat = re.sub(r"""["'\\]""", "", re.sub(r"\\\n", " ", cmd))
     out = []
-    for part in re.split(r"(&&|\|\||\||;|&|\n|\$\(|`|[(){}])", flat):
-        if part and part.strip() and not re.fullmatch(r"&&|\|\||\||;|&|\n|\$\(|`|[(){}]", part):
-            out.append((part.split(), None))
+    for part in re.split(r"(&&|\|\||\||;|&|\n|\$\(|`|[(){}]|<<<)", flat):
+        if part and part.strip() and not re.fullmatch(r"&&|\|\||\||;|&|\n|\$\(|`|[(){}]|<<<", part):
+            out.append((part.split(), None, []))
     return out
+
+
+WRAPPERS = {"npx", "bunx", "corepack", "pnpx"}
+PM_VALUE_OPTS = {"-C", "--dir", "--filter", "-F", "--prefix", "-w", "--workspace", "--cwd"}
+
+
+def _runner_at(w):
+    """Index of `dlx`/`exec`/`x` in `pnpm dlx ...`, `pnpm exec ...`, `npm exec ...`, `yarn dlx ...`, else None."""
+    i = 1
+    while i < len(w) and w[i].startswith("-"):
+        i += 2 if w[i] in PM_VALUE_OPTS else 1
+    if i < len(w) and w[i].lower() in ("dlx", "exec", "x"):
+        return i
+    return None
 
 
 def _strip_prefix(w):
@@ -182,6 +204,22 @@ def _strip_prefix(w):
                 opt = w.pop(0)
                 if opt in XARGS_VALUE_OPTS and w:
                     w.pop(0)
+        elif head in WRAPPERS:
+            w.pop(0)
+            while w and w[0].startswith("-"):
+                opt = w.pop(0)
+                if opt in ("-c", "--call") and w:
+                    return _strip_prefix(shlex.split(w[0]))
+                if opt in ("-p", "--package") and w:
+                    w.pop(0)
+        elif head in ("pnpm", "npm", "yarn") and _runner_at(w) is not None:
+            w = w[_runner_at(w) + 1:]
+            while w and w[0].startswith("-"):
+                opt = w.pop(0)
+                if opt in ("-c", "--call", "--shell-mode") and w:
+                    return _strip_prefix(shlex.split(w[0]))
+                if opt in ("-p", "--package") and w:
+                    w.pop(0)
         elif head == "perl" and any("ARGV" in x for x in w):
             k = next(i for i, x in enumerate(w) if "ARGV" in x)
             w = w[k + 1:]
@@ -201,7 +239,7 @@ def simple_commands(cmd, depth=0):
     env, result = {}, []
     for body in bodies:
         result.extend(simple_commands(body, depth + 1))
-    for idx, (words, op) in enumerate(items):
+    for idx, (words, op, here) in enumerate(items):
         if words and all(re.match(r"^[A-Za-z_]\w*=", x) for x in words[1:] if x) and words[0] in ("export", "declare", "local", "readonly"):
             words = words[1:]
         if words and all(re.match(r"^[A-Za-z_]\w*=", x) for x in words):
@@ -214,11 +252,15 @@ def simple_commands(cmd, depth=0):
             return re.sub(r"\$\{?([A-Za-z_]\w*)\}?", lambda m: env.get(m.group(1), m.group(0)), x)
 
         words = [expand(x) for x in words]
+        here = [expand(x) for x in here]
         w = _strip_prefix(words)
         if not w:
             continue
         result.append(w)
         head = os.path.basename(w[0]).lower()
+        if head in SHELLS and here:
+            for body in here:  # bash <<< 'git push': the shell runs the here-string
+                result.extend(simple_commands(body, depth + 1))
         if head in SHELLS:
             c_at = next((i for i, x in enumerate(w[1:], 1) if re.fullmatch(r"-[a-zA-Z]*c[a-zA-Z]*", x)), None)
             if c_at is not None and c_at + 1 < len(w):
@@ -226,7 +268,7 @@ def simple_commands(cmd, depth=0):
             elif op in ("|", "|&") and not [x for x in w[1:] if not x.startswith("-")]:
                 j = idx - 1  # a pipe into a shell: read every earlier word in the pipeline as a command
                 while j >= 0:
-                    for x in items[j][0]:
+                    for x in items[j][0] + items[j][2]:
                         result.extend(simple_commands(x, depth + 1))
                     if items[j][1] not in ("|", "|&"):
                         break
@@ -364,6 +406,8 @@ def lesson_rules(cmd):
             if not found and {"pgrep", "pidof", "ps"} & set(heads):
                 found = ("deny", "no kill by process pattern (pgrep, pidof, ps | grep): kill only PIDs you started, "
                                  "or look them up by your own port with lsof -ti :<port> (lesson: wave 2)")
+        elif head == "aws":
+            found = ("deny", "real AWS accounts are touched only by the owner")
         elif head == "git":
             found = git_rules(w)
         elif head in ("pnpm", "npm"):
