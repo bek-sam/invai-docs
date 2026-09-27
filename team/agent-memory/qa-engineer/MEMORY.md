@@ -10,7 +10,6 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-25 W6/7: Never run `pnpm` inside a worktree; call `node_modules/.bin/*` directly. Never re-link shared `node_modules`.
 - 2026-09-25 W3: Poll long jobs inside your turn with short sleeps; don't end your turn to wait.
 - 2026-09-25 W6/7: Gates check every `@invai/contracts` link points to `../../../invai-contracts`.
-- 2026-09-26: Seed with imaging up and the worker stopped; the E2E worker needs `MOCK_CARRIER_TRANSIT_HOURS=0.001`.
 - 2026-09-24 v1: `tsx watch` restarts during E2E; restart stale non-watch workers before a run.
 
 ## Learned on cards

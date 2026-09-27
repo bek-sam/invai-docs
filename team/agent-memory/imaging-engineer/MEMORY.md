@@ -9,7 +9,5 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-24 W2: Kill only PIDs you started (`lsof -ti :<your port>`); never `pkill`/`killall`.
 - 2026-09-25 W6/7: Never run `pnpm` inside a worktree; call `node_modules/.bin/*` directly. Never re-link shared `node_modules`.
 - 2026-09-25 W3: Poll long jobs inside your turn with short sleeps; don't end your turn to wait.
-- 2026-09-24 v1: Big images go through pyvips sequential access; measure peak RSS for compose changes.
-- 2026-09-24 v1: Imaging needs `IMAGING_SHARED_SECRET` in both `.env` files; the seed needs imaging up.
 
 ## Learned on cards
