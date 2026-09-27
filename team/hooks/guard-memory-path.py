@@ -20,17 +20,20 @@ def main():
     data = json.load(sys.stdin)
     ti = data.get("tool_input") or {}
     path = ti.get("file_path")
-    if not isinstance(path, str) or MARK not in path.replace(os.sep, "/"):
+    if not isinstance(path, str) or not path:
         return
     project = os.environ.get("CLAUDE_PROJECT_DIR")
     if not project:
         return
     cwd = data.get("cwd") or os.getcwd()
+    # resolve first, then check: a bare relative `.claude/agent-memory/...` from a subfolder is the incident shape
     full = os.path.realpath(path if os.path.isabs(path) else os.path.join(cwd, path))
+    if MARK not in full.replace(os.sep, "/") + "/":
+        return
     home = os.path.realpath(os.path.join(project, ".claude", "agent-memory"))
     if full == home or full.startswith(home + os.sep):
         return
-    rest = full.split(MARK, 1)[1] if MARK in full else path.split(MARK, 1)[1]
+    rest = (full + "/").split(MARK, 1)[1].rstrip("/")
     right = os.path.join(home, rest)
     print(f"Agent memory must live in {home}/, the only place Claude Code loads it from. "
           f"Write this file to {right} instead (lessons.md 2026-09-26: memory in subfolder .claude dirs is "

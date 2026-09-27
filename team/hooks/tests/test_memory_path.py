@@ -56,6 +56,26 @@ class MemoryPath(unittest.TestCase):
                 r = self.run_hook(ok)
                 self.assertEqual((r.returncode, r.stdout, r.stderr), (0, "", ""))
 
+    def test_relative_paths_are_resolved_against_cwd_first(self):
+        sub = os.path.join(self.proj, "invai-docs", "waves", "16")
+        os.makedirs(sub)
+        cases = [
+            (".claude/agent-memory/platform-sre/note.md", sub, 2),   # bare relative from a subfolder: the incident
+            ("./.claude/agent-memory/platform-sre/note.md", sub, 2),
+            (".claude/agent-memory/platform-sre/note.md", self.proj, 0),   # same path from the project root
+            ("./.claude/agent-memory/platform-sre/note.md", self.proj, 0),
+            ("../../../.claude/agent-memory/platform-sre/note.md", sub, 0),  # climbs back to the root
+            ("../.claude/agent-memory/platform-sre/note.md", sub, 2),        # lands in invai-docs/waves/.claude
+            ("../../.claude/agent-memory/reviewer/MEMORY.md", sub, 2),       # lands in invai-docs/.claude
+        ]
+        for path, cwd, rc in cases:
+            with self.subTest(path=path, cwd=cwd):
+                r = self.run_hook(path, cwd=cwd, tool="Edit")
+                self.assertEqual(r.returncode, rc, r.stderr)
+                if rc == 2:
+                    self.assertIn(f"{self.home}/", r.stderr)
+                    self.assertIn(os.path.basename(path), r.stderr)
+
     def test_fails_open(self):
         for raw in ("", "not json", "[1]", '{"tool_input": 7}', '{"tool_input": {"file_path": 7}}'):
             with self.subTest(raw=raw):
