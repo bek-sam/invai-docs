@@ -38,3 +38,4 @@
 ## Grants
 (none yet)
 - 2026-09-26: T-16-1 also owns the new shared `invai-docs/team/hooks/invai_hooklib.py`. `sync.sh` copies `hooks/*.py` since `1c14f5d`, so it is installed with the hooks.
+- 2026-09-26: T-16-2 round 2 also owns a new `invai-docs/team/hooks/guard-memory-path.py` (PreToolUse on Write|Edit|MultiEdit: deny writes into any `.claude/agent-memory/` outside `$CLAUDE_PROJECT_DIR/.claude/agent-memory/`), its tests, and its entry in `invai-docs/team/settings.json`. Source: lesson row 2026-09-26 "agent memory landed in subfolder .claude dirs".
