@@ -1,6 +1,6 @@
 # Wave 19: the weekly business review digest
 
-- Dates: 2026-09-27 → (starts after wave 18 is pushed)
+- Dates: 2026-09-27 → (wave 18 pushed 2026-09-27)
 - Goal (user outcome): every Monday an owner or office user opens InvAI and finds "Your week in review is ready": last week's numbers (equal to the profit page), up to 3 ranked actions with a button each, one win and a Market watch block, in English or Spanish. People who opt in get the same digest by email (locally: Mailpit only), with one-click unsubscribe.
 - Spec: `specs/weekly-digest.md` (status ready, AC1–AC33). Scope: `product/scope.md#weekly-digest` (item 17) and `#market-and-digest-fences`. Owner approval: OI-7. Decision: `decisions/0014`. Backlog: B-122..B-126.
 - Rules: `team/agent-brief.md`. **Every prompt says "Don't push; only the tech lead pushes after the gate."** Every grant is written below when given.
@@ -20,7 +20,7 @@
 | T-19-1 Digest contract | architect | fable | reviewer (opus) + backend-foundation, web-engineer (consumer) | contract | planned |
 | T-19-2 Shared analyst queries + `digest_narrative` (shadow) | ai-engineer | opus | reviewer (sonnet) + security-reviewer (injection, PII) | ai, tenancy | planned |
 | T-19-3 Digest module: schedule, snapshot, detectors, ranking, templates, deliveries | backend-engineer (digest) | opus | reviewer (sonnet) + backend-foundation (migration), security-reviewer (tenancy), architect (cross-module) | tenancy, migration, data-integrity | planned |
-| T-19-4 Email infra: preferences, signed links, unsubscribe, mail headers | backend-foundation | fable | reviewer (opus) + security-reviewer (auth-less endpoints, tokens, PII), integrations-engineer (mailer hunk) | auth, pii | planned |
+| T-19-4 Email infra: preferences, signed links, unsubscribe, mail headers; + B-133 rate-bucket bug | backend-foundation | fable | reviewer (opus) + security-reviewer (auth-less endpoints, tokens, PII), integrations-engineer (mailer hunk) | auth, pii | planned |
 | T-19-5 Web: digest pages, Today card, settings, account toggle, unsubscribe page | web-engineer | sonnet | reviewer (sonnet) + product-designer, qa-engineer (Today is a golden-path screen) | ui | planned |
 
 ## Order and ownership
@@ -34,7 +34,7 @@
 | T-19-1 | `invai-contracts/src/contract/digest.ts` (new), `src/schemas/digest.ts` (new), `src/contract.ts`, `src/index.ts`, `src/events.ts` + `src/realtime.ts` (`digest.ready` only), `src/contract/tenancy.ts` + `src/schemas/tenancy.ts` (`me.notifications.*` only), `src/schemas/ai.ts` (`digest_narrative` in `CREDIT_KINDS`), `src/roles.ts`/`roles.test.ts` if a permission is added, version 0.7.0, `CHANGELOG.md`, `README.md` rows |
 | T-19-2 | `invai-backend/src/modules/ai/analyst-queries.ts` (new), `src/modules/ai/assistant-tools.ts` (switch to the extracted functions only), `src/ai/**` (`digest_narrative` route, prompt, validator, breaker, mock), `invai-backend/evals/digest_narrative/**` (new), `evals/run.ts` (one registration line), `evals/baseline.json` (digest entry) |
 | T-19-3 | `invai-backend/src/modules/digest/**` (new; except QA's `*.acceptance.test.ts`), `src/db/schema/digest.ts` (new) + its migration |
-| T-19-4 | `invai-backend/src/lib/notify.ts` (new), `src/lib/links.ts` (new), `src/lib/crypto.ts` (signed-token helpers only), `src/api/links.ts` (new public routes) + its mount in `src/api/app.ts`, `src/db/schema/notifications.ts` (new) + its migration, `src/env.ts`/`env.test.ts` (digest switches), `src/modules/tenancy/**` only for the per-person preference procedures if the contract puts them under `me` |
+| T-19-4 | `invai-backend/src/lib/notify.ts` (new), `src/lib/links.ts` (new), `src/lib/crypto.ts` (signed-token helpers only), `src/api/links.ts` (new public routes) + its mount in `src/api/app.ts`, `src/db/schema/notifications.ts` (new) + its migration, `src/env.ts`/`env.test.ts` (digest switches), `src/modules/tenancy/**` only for the `me.notifications` procedures, `src/api/orpc.ts` (`bucketFor`, B-133) |
 | T-19-5 | `invai-web/src/lib/realtime.ts` (one `digest.ready` case), `invai-web/src/routes/_app/digests/**` (new), `src/routes/_app/settings/notifications.tsx` (new), `src/routes/_app/account.tsx`, `src/routes/_app/index.tsx` (Today card only), `src/routes/unsubscribe.tsx` (new, public), `src/components/digest/**` (new), settings nav entry, `src/i18n/en.ts` + `es.ts` (digest keys only) |
 | QA | `invai-backend/src/modules/digest/*.acceptance.test.ts`, `invai-web/e2e/digest*.spec.ts`, `invai-docs/build/qa-report.md` |
 

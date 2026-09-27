@@ -148,7 +148,7 @@ Not planted. On 2026-09-27 the tech lead's dispatch asking the T-18-3 owner to c
 - [x] Market jobs ran by the worker's own scheduler on the fresh seed (40 niches, 482 signals, 12 R1 recommendations, all labelled sample data); 3 starters in English and 1 in Spanish answered with sources, dates, "Sample data" and vote cards; designer refused
 - [x] Key screens looked at by the tech lead (gate-shots 01–03). Found: raw `**` markdown and an English demo footer in Spanish (B-135), an R1 act-by date in the past for a peak already under way (B-136). Low, filed.
 - [ ] QA scale run for AC28 (5,000 designs): not run as a separate QA pass in this wave; T-18-3's budget check timed `computeSignals` at 12.2 s for 5,000 designs × 156 weeks (target 15 min). Carried into wave 19's gate checklist.
-- [x] Pushed to `main` (commits: see "Pushed")
+- [x] Pushed to `main` 2026-09-27: invai-contracts `378d6ae`, invai-backend `0bc68e2`, invai-web `127ef08`, invai-docs `6aab9ee`; invai-floor unchanged (`68b9cbb`)
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
