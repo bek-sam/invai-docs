@@ -126,13 +126,72 @@ stopped; only the Docker infra (Postgres, Valkey, MinIO, Mailpit) is left runnin
 Written before the build from `specs/market-signals.md` AC1–AC33 (`waves/18/reports/QA-acceptance.md`
 has the AC → test table). All QA-owned; implementers don't edit them.
 
-| Suite | File | Tests | State on 2026-09-27 |
-|---|---|---|---|
-| Market module (T-18-3) | `invai-backend/src/modules/market/market.acceptance.test.ts` | 22 | red: `./jobs` missing (5 run against the stub and fail "not implemented") |
-| Mock rule in production (AC22, AC29) | `invai-backend/src/modules/market/market-prod-mode.acceptance.test.ts` | 3 | red: `./jobs` missing |
-| Provider outage (AC20) | `invai-backend/src/modules/market/market-outage.acceptance.test.ts` | 3 | red: `./jobs` missing |
-| Assistant market tools (T-18-4) | `invai-backend/src/modules/ai/market.acceptance.test.ts` | 9 | red: `../market/jobs` missing |
-| Browser: chips, badge, votes, niche chip (T-18-5) | `invai-web/e2e/market.spec.ts` | 5 | not yet run (needs the stack with market jobs run) |
+| Suite | File | Tests | State on 2026-09-27 (first pass) | State on 2026-09-27 (second pass, at HEAD `0fce415`) |
+|---|---|---|---|---|
+| Market module (T-18-3) | `invai-backend/src/modules/market/market.acceptance.test.ts` | 25 (22 + AC18's 2 new) | red: `./jobs` missing (5 run against the stub and fail "not implemented") | **green (25/25)**, alone or with the other 3 market files in one run |
+| Mock rule in production (AC22, AC29) | `invai-backend/src/modules/market/market-prod-mode.acceptance.test.ts` | 3 | red: `./jobs` missing | **green (3/3)** |
+| Provider outage (AC20) | `invai-backend/src/modules/market/market-outage.acceptance.test.ts` | 3 | red: `./jobs` missing | **green (3/3) alone or with `market-prod-mode`**; red 1/3 when run in the same `vitest run` after the other two market files (below) |
+| Assistant market tools (T-18-4) | `invai-backend/src/modules/ai/market.acceptance.test.ts` | 9 | red: `../market/jobs` missing | **green (9/9)** |
+| Browser: chips, badge, votes, niche chip (T-18-5) | `invai-web/e2e/market.spec.ts` | 5 | not yet run (needs the stack with market jobs run) | not yet run in this pass (needs the running stack; T-18-5 not landed as of this pass) |
+
+### Second pass (2026-09-27, at backend HEAD `0fce415`)
+Fixed in my fixtures (not product code), each run standalone with `TEST_DATABASE_URL=…/invai_t18_qa`,
+`REDIS_URL=redis://localhost:6379/15`:
+- **AC26/AC30 dollars-vs-cents**: `product()`'s `prices` field is `Cents` (`c2057df`); 7 call sites
+  across both files stored a dollar-shaped number (`24.99`, or `P0 / 100`) instead of the integer
+  cents. Fixed all 7 (`market.acceptance.test.ts` lines formerly 537/818/925/1083/1160/1211/1243,
+  `ai/market.acceptance.test.ts` lines formerly 407/414/539).
+- **AC17 the "last complete ISO week" was empty for a Tuesday `now`**: the `-3 days` fixed offset in
+  `sale()`/`weeklySales()` only lands `weeksAgo` in its intended ISO week when `now`'s ISO weekday is
+  Thursday-Sunday; for Monday-Wednesday it lands one week early, so `weeklySales(N, …)` populated
+  real weeks 2..N+1, not 1..N, and the true most recent complete week had 0 sales. Fixed with a
+  weekday-aware offset (`isoWeekday(now) - 4`, i.e. always mid-week of the intended ISO week) in both
+  files' `sale()`/`weeklySales()`; the "AC17 (hand SQL)" companion test now gets its window from
+  `completeWeeks()` itself instead of a second hand-rolled offset. Verified: AC17's `yoy` assertion
+  (12/12 - 1 = 0) now holds by direct computation, not luck.
+- **AC19, per the tech lead's decision** (`waves/18/wave.md` round log, 2026-09-27): rewritten to
+  assert on `filterComparables` (the normalize step, `./signals`) applied to the stored
+  `market_price_snapshots` row `getPricePosition` actually reads, not on the provider's raw output
+  (which is a deliberate mix per T-18-2 round 2). Needed a `listing()` + `product()` for the
+  personalized design in `beforeAll` (T-18-3's `refreshPricing` only fetches a price snapshot for a
+  design with an active listing on the channel).
+- **AC18 written** (`market.acceptance.test.ts`, new describe block): a pure `fitTrend` proof that a
+  null (out-of-stock) week shrinks the fit window while a same-value 0 counts as a real zero-sales
+  week, plus an end-to-end case (a blank with a reconstructed 2-week stockout via `inventoryMovements`
+  `receive`/`consume` rows) asserting the trend stays "flat" (not "insufficient" or "falling") and
+  `market_signals.value.outOfStockWeeks` is 2. The "R1 names the blank and links to reorder" half of
+  AC18 is already covered by AC3's `blankBelowReorderPoint` assertion.
+- **Two bugs found only once the price bug was fixed** (both fixture-only, found by re-running after
+  the AC26/AC30 fix let the tests run further than before):
+  - `THIN_COSTS`/`THIN` (both files): `market/compute.ts`'s margin signal never reads
+    `channelFeesCents` from `profitLines`; it recomputes the channel fee fresh from the default fee
+    schedule (Amazon apparel referral: 5% under $20). At the original $12.99/`fees:195` the *real*
+    margin came out ~29%, above the R2 threshold, so R2 never fired even with the cents fix. Lowered
+    the design price to $10.00 and rebalanced the absolute-cost fields (`blank/transfer/label/
+    packaging/labor`) to land at the intended ~19% under the *real* fee, and to keep the R2
+    test-price ceiling (`p0 × 1.1`) safely under the mock's own $12.00 comparable floor (a second,
+    independent reason R2 could fail to fire at $12.99 depending on the mock's per-ref random
+    median).
+  - `profitFor()` (`market.acceptance.test.ts`): AC26 calls it twice for the same design (once in
+    `thinAmazonDesign`, once after a day-by-day sales loop); the second call re-inserted profit
+    lines for items the first call had already covered, hitting `profit_lines_company_id_order_item_id_index`.
+    Added `.onConflictDoNothing()` on `(companyId, orderItemId)`. Only surfaced once the AC26 test
+    finally reached that line (previously it returned early on the undefined R2).
+  - `thinAmazonDesign`'s design also needed `runMarketJob(JOB.refreshPricing, …)` before
+    `computeSignals` in the AC26 test: `moose` is created mid-test, after `beforeAll`'s
+    `runShopJobs`, so its price-position snapshot was never fetched.
+
+**Cross-file interaction, not fixed (filed, not a fixture bug)**: `market-outage.acceptance.test.ts`
+passes alone or paired with `market-prod-mode.acceptance.test.ts`, but its `AC20` "older asOf" check
+went red once when run in the same `vitest run` as `market.acceptance.test.ts` and
+`ai/market.acceptance.test.ts` first. Cause: `market_series_cache` (ADR 0015) has no `company_id` by
+design, so `refreshDemand({})` calls from *different test files*, each frozen at a different `now`,
+upsert the *same* global cache rows; whichever file's `refreshDemand` call lands last in real
+wall-clock execution order wins the row, regardless of that file's own simulated calendar date. This
+is a real test-isolation gap in a global, cross-tenant table, not something a QA fixture can fix by
+itself. Filed to the tech lead for T-18-2/T-18-3 (owner: backend-engineer/architect, per ADR 0015);
+not reproduced when each acceptance file is run on its own test DB per its own card, which is how
+this pass verified all four green.
 
 Run the backend suites on your own test DB, never the shared one:
 ```
@@ -144,8 +203,8 @@ node_modules/.bin/vitest run src/modules/market src/modules/ai/market.acceptance
 cd invai-web && pnpm e2e e2e/market.spec.ts     # seeded stack, market jobs run, web on :5173
 ```
 
-Pending: AC18 (blank out-of-stock weeks excluded from the trend fit) is written in the second pass,
-once T-18-3's history schema exists. AC28 is a separate scale run (below). Held-back cases are kept
+AC18 (blank out-of-stock weeks excluded from the trend fit) was written in the second pass (below),
+once T-18-3's history schema existed. AC28 is a separate scale run (below). Held-back cases are kept
 outside the repos and added after each author reports done.
 
 ### AC28 scale run (planned, after T-18-3 is green)
