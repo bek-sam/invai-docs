@@ -120,3 +120,44 @@ pnpm e2e                                   # tablet: pair, PIN, press scan check
 web (23, plus `pnpm build`) and floor (41, plus `pnpm build`); imaging `uv run ruff check . && uv run
 pytest` (27). The dev database was reset, migrated and seeded last, and every app process was
 stopped; only the Docker infra (Postgres, Valkey, MinIO, Mailpit) is left running.
+
+## 6. Wave 18: market signals (acceptance tests first, 2026-09-27)
+
+Written before the build from `specs/market-signals.md` AC1–AC33 (`waves/18/reports/QA-acceptance.md`
+has the AC → test table). All QA-owned; implementers don't edit them.
+
+| Suite | File | Tests | State on 2026-09-27 |
+|---|---|---|---|
+| Market module (T-18-3) | `invai-backend/src/modules/market/market.acceptance.test.ts` | 22 | red: `./jobs` missing (5 run against the stub and fail "not implemented") |
+| Mock rule in production (AC22, AC29) | `invai-backend/src/modules/market/market-prod-mode.acceptance.test.ts` | 3 | red: `./jobs` missing |
+| Provider outage (AC20) | `invai-backend/src/modules/market/market-outage.acceptance.test.ts` | 3 | red: `./jobs` missing |
+| Assistant market tools (T-18-4) | `invai-backend/src/modules/ai/market.acceptance.test.ts` | 9 | red: `../market/jobs` missing |
+| Browser: chips, badge, votes, niche chip (T-18-5) | `invai-web/e2e/market.spec.ts` | 5 | not yet run (needs the stack with market jobs run) |
+
+Run the backend suites on your own test DB, never the shared one:
+```
+cd invai-backend
+TEST_DATABASE_URL=postgres://invai_app:invai@localhost:5432/invai_t18_qa \
+TEST_MIGRATION_DATABASE_URL=postgres://invai:invai@localhost:5432/invai_t18_qa \
+REDIS_URL=redis://localhost:6379/15 \
+node_modules/.bin/vitest run src/modules/market src/modules/ai/market.acceptance.test.ts
+cd invai-web && pnpm e2e e2e/market.spec.ts     # seeded stack, market jobs run, web on :5173
+```
+
+Pending: AC18 (blank out-of-stock weeks excluded from the trend fit) is written in the second pass,
+once T-18-3's history schema exists. AC28 is a separate scale run (below). Held-back cases are kept
+outside the repos and added after each author reports done.
+
+### AC28 scale run (planned, after T-18-3 is green)
+- Profile: `large` per `scale-test/profiles.md`: 5,000 active designs, 1,000 orders/day, 3 years of
+  weekly history, niches skewed like a real catalog (60% evergreen, 25% holidays, 15% unclassified),
+  Amazon and Etsy connections, mock outside sources. Seeded into a separate database
+  (`invai_t18_scale`), never the shared dev DB; location of the profile agreed with backend-foundation
+  (`invai-backend/src/db/seed/scale/`, backlog B-34).
+- Measures: `market.computeSignals` wall time for the shop (target ≤ 15 min on this machine, T-18-3
+  AC15 gives the smaller synthetic timing), and p95 of each market tool (`get_market_trend`,
+  `get_seasonality`, `get_price_position`, `simulate_price`) under a k6 `constant-arrival-rate` of
+  2 req/s for 5 min against a `PORT=3161` API (target p95 < 500 ms, ≤ 20 rows each). EXPLAIN
+  (ANALYZE, BUFFERS) as `invai_app` on the signal and recommendation reads for the large tenant and
+  a small one (indexes lead with `company_id`).
+- Report: this section (profile, SHAs, p50/p95/p99, break point, EXPLAIN findings, filed cards).
