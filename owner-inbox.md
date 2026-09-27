@@ -84,3 +84,11 @@ Entry format:
 - Recommendation: A. Wave 17 already ships the on-request version; let pilot usage prove demand before adding scheduled spend and an unattended-send risk.
 - Cost of waiting: none currently blocked; no wave depends on this.
 - Answer:
+
+## OI-8: Run the AI evals once against the real Claude model (needs an Anthropic API key and a small spend)?   status: open
+- From: tech-lead, 2026-09-26. Deadline: before a pilot shop uses the assistant or AI listings. Default if no answer: evals stay mock-only; AI quality is unmeasured.
+- Context: every eval so far ran on the mock provider (`evals/baseline.json`: `mode: "mock"`, `qualityPass: null`). Wave 17 adds four analyst tools and assistant prompt v4 (analyst mode, Spanish, injection cases). Mock runs prove the plumbing, not the answers. See `waves/17/reports/T-17-2.md` and `T-17-3.md`, "Known gaps".
+- Options: A) Provide a key with a spend cap; the ai-engineer runs all four eval sets once (about 80 cases) and reports quality, cost per call and latency. B) Wait until a pilot starts. C) Never; rely on mock evals.
+- Recommendation: A. It's a one-time cost of a few dollars at Opus list price, and it's the only way to know whether the assistant's advice is right before a shop sees it.
+- Cost of waiting: the assistant and listing drafts could give wrong or badly worded answers to the first real shop, and prompt-injection resistance is untested on a real model.
+- Answer:
