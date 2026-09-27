@@ -68,3 +68,19 @@ Entry format:
 - Context: a raw NUL byte in user text crashes Postgres writes. T-8-2 fixed the AI gateway and the assistant chat. The round-3 review found another path (listing-draft `brief`). Fixing paths one at a time doesn't close the class.
 - Decision: T-8-2 is accepted for its scope. A new card, T-8-6, strips NUL (and other characters Postgres rejects) from **every string input** at the API contract boundary, as one shared schema transform, with tests. No action needed from the owner.
 - Answer: decided by tech lead (reversible).
+
+## OI-6: Allow spend/risk to explore external market signals for the assistant (Etsy/Amazon trends, competitor prices)?   status: open
+- From: product-manager, 2026-09-26. Deadline: before any wave picks this up. Default if no answer: deferred; not built.
+- Context: wave 17's assistant spec flagged this as out of scope. It would need either a paid market-data API (unbudgeted recurring cost) or scraping Etsy/Amazon/TikTok/Walmart, which breaks their terms and could jeopardize the pending Etsy Commercial Access and Amazon SP-API applications. No pilot or ticket has asked for it yet (0 shops confirmed; see `product/scope-changes/SCR-001-assistant-external-market-signals.md`).
+- Options: A) Defer; revisit only after a live pilot asks for it and a compliant paid data source is priced. B) Approve budget to evaluate a paid, ToS-compliant market-data API now. C) Reject outright.
+- Recommendation: A. The risk to pending marketplace approvals outweighs an unconfirmed pain, and we have no pilot evidence yet.
+- Cost of waiting: none currently blocked; no wave depends on this.
+- Answer:
+
+## OI-7: Approve a scheduled weekly "business review" digest from the assistant (new recurring AI spend + new outbound surface)?   status: open
+- From: product-manager, 2026-09-26. Deadline: before any wave picks this up. Default if no answer: deferred; not built. The on-request "weekly business review" starter question ships in wave 17 regardless.
+- Context: this is a scheduled, unattended push (email/notification) of the same content the on-request assistant already produces in wave 17. It's a different shape than scope item 13's "read-only tools" (pulled by the owner), adds a new recurring per-tenant AI cost line, and sends AI-generated content to a shop with no human check first. See `product/scope-changes/SCR-002-assistant-weekly-digest.md`.
+- Options: A) Defer until pilot usage of the on-request starter question shows real demand. B) Approve as its own spec now, with an eval gate before any unattended send. C) Reject.
+- Recommendation: A. Wave 17 already ships the on-request version; let pilot usage prove demand before adding scheduled spend and an unattended-send risk.
+- Cost of waiting: none currently blocked; no wave depends on this.
+- Answer:
