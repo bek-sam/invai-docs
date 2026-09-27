@@ -13,3 +13,6 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-24 v1: `tsx watch` restarts during E2E; restart stale non-watch workers before a run.
 
 ## Learned on cards
+- [Stale dev processes](stale-dev-processes.md) — clean up orphaned tsx-watch procs by PID before a gate; never touch 31xx ports.
+- [invai-web build needs VITE_API_URL](web-build-needs-vite-api-url.md) — no local .env by default; set it explicitly for `pnpm build`.
+- [Golden-path order collision is expected](golden-path-order-collision.md) — API + browser suites share fixture order numbers; skip messages on a reused seed are normal.

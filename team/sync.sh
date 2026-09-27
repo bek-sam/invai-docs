@@ -29,7 +29,7 @@ case "${1:-}" in
     cp "$B/CLAUDE.md" CLAUDE.md
     if [ -d "$B/agent-memory" ]; then
       mkdir -p .claude/agent-memory
-      cp -Rn "$B/agent-memory/." .claude/agent-memory/   # never overwrite newer live memory
+      rsync -a --ignore-existing "$B/agent-memory/" .claude/agent-memory/   # never overwrite newer live memory (cp -n exits 1 on skips)
     fi
     echo "Restored the team into invai/." ;;
   *) echo "usage: bash invai-docs/team/sync.sh backup|restore" >&2; exit 1 ;;
