@@ -35,4 +35,4 @@
 - T-17-4: `product-designer` co-review is waived for this small change by the tech lead (token budget, decision 0011); the reviewer checks en/es and 390 px.
 
 ## Grants
-(none yet)
+- 2026-09-26: T-17-2 gains criteria 12–13 from the PM's plan review (spec AC9, AC10). No new paths.
