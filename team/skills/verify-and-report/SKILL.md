@@ -48,6 +48,11 @@ what is left.
    (`respect-ownership`).
 7. **Write the report** below, as your final message to the tech lead (the tech lead files it with the card).
    Paste real output, trimmed; never paraphrase a failure into a pass.
+8. **Save what you learned.** Before your final reply, add 0–3 entries to your agent memory
+   (`.claude/agent-memory/<your role>/MEMORY.md`): a mistake you made and how you fixed it, or a non-obvious
+   fact about your area that the next card will need. One line each, starting with the date and card
+   (`2026-09-26 T-17-2: ...`). No PII, secrets or customer data. Fix or delete an entry that turned out wrong;
+   keep the file under 150 lines. Something every role should know also goes to `log-lesson`.
 
 ## Report format
 ```

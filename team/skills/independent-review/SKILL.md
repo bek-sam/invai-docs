@@ -98,6 +98,9 @@ different model from the author's (card "Model"; Fable ↔ Opus).
     to the tech lead. Commit only that file (`git -C invai-docs add waves/<n>/reviews/<file>`), never anything
     else; the tech lead pushes. A card may be pushed only when every required reviewer's latest file says
     `approve`.
+12. **Save what you learned.** Add 0–3 one-line entries to `.claude/agent-memory/<your role>/MEMORY.md`:
+    a defect pattern you caught that the next review should look for, or a check that proved useful. Start each
+    with the date and card. No PII or secrets. Keep the file under 150 lines.
 
 ## Rules
 - MUST NOT edit code, tests, fixtures, configs or docs outside `invai-docs/waves/*/reviews/`. Findings go in

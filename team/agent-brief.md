@@ -28,6 +28,10 @@ These are the working rules for every build, review or gate agent. Open other do
 - **Cleanup:** kill only your own PIDs, drop your DBs, flush your Redis DB and remove your worktrees.
 - **Code rules:** money is in cents; every tenant table has `company_id` and RLS; side effects are idempotent and run outside DB transactions; heavy work goes to jobs; all UI text is en and es, added by hand (never run `pnpm i18n`).
 
+## Memory
+- Your role's memory is `.claude/agent-memory/<role>/MEMORY.md`. Claude Code loads its first 200 lines into every run of your role, so read it: it holds the lessons that apply to you.
+- Before your final reply, save 0–3 one-line entries (date, card, what you learned). No PII or secrets. Fix or delete entries that turned out wrong. `verify-and-report` and `independent-review` say the same.
+
 ## Token budget (owner's standing rule: do the same job with the least usage)
 - **Read** only your card, `wave.md` (your section plus the interfaces) and the files you change. Skip research docs unless your card cites them.
 - **Screenshots:** builders take at most 6 key ones. Reviewers look at at most 3 of the builder's, and take their own only when something looks wrong.
