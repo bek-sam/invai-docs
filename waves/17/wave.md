@@ -38,3 +38,4 @@
 - 2026-09-26: T-17-2 gains criteria 12–13 from the PM's plan review (spec AC9, AC10). No new paths.
 - 2026-09-26: T-17-2 and T-17-3 may update the assistant entry in `invai-backend/evals/baseline.json` (criterion 10 needs it; the file sits outside `evals/assistant/**`).
 - 2026-09-26: T-17-3 may edit `invai-backend/src/modules/ai/assistant-tools.ts` and its test to fix S-33 (cap the `Range` span for every assistant tool, about 400 days; a clear tool error, not a crash; test included).
+- 2026-09-26: T-17-3 follow-up may edit `invai-backend/src/ai/providers/mock.ts` so the mock's follow-up turn reuses the previous turn's tools/period from history (T-17-3 known gap).
