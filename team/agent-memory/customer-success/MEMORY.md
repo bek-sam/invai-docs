@@ -1,0 +1,2 @@
+- [Wave 18/19 spec reviews](wave-18-19-spec-reviews.md) — market-signals & weekly-digest: approve-with-changes, mock-data-badge risk
+- [Spec review lens](spec-review-lens.md) — checklist for co-reviewing PM specs on customer evidence/trust

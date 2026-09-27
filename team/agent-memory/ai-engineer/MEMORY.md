@@ -14,3 +14,5 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 
 ## Learned on cards
 - [Eval harness notes](eval-harness-notes.md) — run evals on your own test DB via NODE_ENV=test; evals/** isn't typechecked or linted
+- [Market signals notes](market-signals-notes.md) — trademark screen threshold 60 for market terms, answer-check number sources, vitest/scratchpad debug tricks
+- [Fallback must pass its own check](fallback-must-pass-own-check.md) — market answers need Sample data + date on every branch; baseline only from a fresh DB

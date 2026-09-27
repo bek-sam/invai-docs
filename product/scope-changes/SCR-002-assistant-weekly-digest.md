@@ -23,7 +23,14 @@ Mid shops most (owner/office does not always remember to open the assistant); sm
 Shops still get the same content by asking the assistant (the "Give me a weekly business review" starter question ships in wave 17); they just have to remember to ask.
 
 ## Decision
-Sent to owner (OI-7). Reason: this is scope beyond the MVP shape of item 13 (a pulled tool vs. a pushed, scheduled surface) and it adds a new recurring AI-spend line — both are owner calls per `product/scope.md` and the operating rules.
+**Accepted (owner approved, 2026-09-27, OI-7), in a changed shape.** The owner: "that's actually a good idea. Research deeply how to implement it... then build it." Guardrails: its own spec, opt-in/opt-out, an eval gate before any unattended send, a spending cap per tenant.
+- Research: `research/15-weekly-digest.md`. It replaces this request's "re-run the analyst assistant on a timer" with a hybrid: numbers and ranked actions computed in code, en/es templates, and an optional AI summary that only phrases placeholders. The AI summary runs in shadow mode (never sent) until the real-model eval (OI-8) passes.
+- Scope: `product/scope.md#weekly-digest` (item 17). Spec: `specs/weekly-digest.md`. Decision record: `decisions/0014-market-signals-and-digest-scope.md`.
+- Before the first real email to a pilot: postal address (OI-12), production email provider and sending subdomain (OI-13), counsel's view on CAN-SPAM classification (OI-14). In-app delivery and Mailpit locally need none of these.
+Decided by: owner (OI-7), recorded by product-manager.  Date: 2026-09-27
+
+### History
+Originally sent to owner (OI-7). Reason: this is scope beyond the MVP shape of item 13 (a pulled tool vs. a pushed, scheduled surface) and it adds a new recurring AI-spend line — both are owner calls per `product/scope.md` and the operating rules.
 Decided by: — (pending)  Date: —
 
 My recommendation to the owner: defer until after the first pilot's `weekly-metrics-review` shows the on-request "weekly business review" starter question actually gets used — if pilots aren't asking for it on demand, a push version isn't worth the added spend and risk. If pilots do use it heavily, revisit as its own spec with an eval gate before any unattended send.

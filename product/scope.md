@@ -34,12 +34,39 @@ Pilots target **mid** first. Small shops must be able to self-serve without a ca
 13. AI business assistant (read-only tools)
 14. Today command center, onboarding checklist, demo mode
 15. Plan limits (Stripe checkout when keys exist)
+16. <a id="market-signals"></a>**Market signals for the assistant** (SCR-001, owner OI-6, 2026-09-27; spec `specs/market-signals.md`): deterministic trend, seasonality, price-position and margin-at-price signals with a confidence band, from the shop's own data and ToS-compliant outside sources only (official APIs for the shop's own listings, public official datasets, licensed data). Four read-only assistant tools, recommendation rules R1–R5, a feedback record per recommendation. Every outside source has a mock; mock answers are labelled "sample data".
+17. <a id="weekly-digest"></a>**Weekly business review digest** (SCR-002, owner OI-7, 2026-09-27; spec `specs/weekly-digest.md`): a weekly digest per shop with numbers and ranked actions computed in code, rendered from en/es templates, shown in-app to everyone with profit access and emailed only to people who opt in (one-click unsubscribe). An AI-written summary runs in shadow mode (built, checked, never sent) until the real-model eval (OI-8) passes; the template is always the fallback. Includes a Market watch block fed by item 16.
+
+<a id="market-and-digest-fences"></a>
+### Fences on items 16 and 17 (hard limits, set with the owner's approval)
+- **No scraping, ever.** No scraper APIs, no unofficial Google Trends libraries, no reading marketplace or competitor web pages. Permanent, not a deferral.
+- **No cross-seller aggregation of marketplace data.** Data that came from a marketplace (API or the shop's own CSV export) is used only for that shop. It never feeds another shop's answer, a benchmark or a model.
+- **Cross-shop benchmarks deferred.** Benchmarks over InvAI-native production data (film use, reprint rate, press throughput) wait for: a ToS/DPA clause reviewed by counsel, a tenant opt-out, and at least 10 shops per cell. Trigger: 10+ live shops and counsel's clause.
+- **No automatic price or listing changes.** Market signals and the digest suggest; the shop acts. Nothing writes prices, listings, ads or POs.
+- **No Etsy competitor data** (other sellers' listings, prices or tags through the Etsy API) until Etsy agrees in writing (owner decides whether to ask).
+- **No real paid data source or new outside account without the owner** (Jungle Scout, Keepa, Google Trends alpha, Pinterest app, a production email provider). The mock stays in place until then.
+- **Mock outside data never reaches a real shop in production.** Mock market sources are used and shown only outside production and in sample workspaces (`isSampleWorkspace`); for a real shop in production a mock counts as "no source" (`specs/market-signals.md`, "Providers and mocks").
+- **No demand forecasting model.** Trend and seasonality are descriptive (what happened, with confidence). The only projection is the labelled price-response estimate in the spec, and only from the shop's own price history. The v1 cut of statistical forecasting (`decisions/0006-v1-cuts.md`) stands.
+- **The digest carries no promotions or upsells** (keeps it account information for CAN-SPAM; counsel to confirm before the first real email).
 
 ## MVP: out (see `decisions/0006-v1-cuts.md`)
 - AI design generation
 - Direct Amazon SP-API, until the security review and pen test are done
 - Direct Etsy, TikTok and Walmart APIs, until approvals land (the adapters stay ready)
 - SanMar, GPU upscaling, shape-aware nesting, statistical forecasting, silent label printing, buyer message drafts
+- Everything listed under "Fences on items 16 and 17" above
+
+## Later (deferred, with a trigger)
+| Item | Trigger to reconsider |
+|---|---|
+| Real Google Trends adapter | Owner applies to the alpha (OI-9), Google accepts, and the alpha terms allow use in a paid product |
+| Real Amazon pricing/catalog and Walmart pricing-insights adapters | SP-API app approval / Walmart Solution Provider approval |
+| Amazon Brand Analytics signals | A brand-registered pilot shop grants the role |
+| Pinterest trends | A pilot shows Pinterest-led niches matter, and the owner registers a Pinterest app |
+| Jungle Scout or another licensed source | Written embedding licence (OI-11) and the owner's spend approval |
+| Etsy competitor price analytics | Etsy's written permission (OI-10) |
+| Cross-shop production benchmarks | 10+ live shops per cell, counsel-reviewed ToS/DPA clause |
+| Digest: "production week" variant for leads, per-department digests for large shops, monthly variant, Slack/WhatsApp | Two pilot shops ask |
 
 ## Pricing hypothesis
 - **To test:** $149 / $349 / $699 per month for mid and large shops.
@@ -50,3 +77,7 @@ Pilots target **mid** first. Small shops must be able to self-serve without a ca
 | Date | Change | Approved by |
 |---|---|---|
 | 2026-09-24 | Baseline from v1-plan §2; segments added | tech-lead (PM to confirm) |
+| 2026-09-27 | Added item 16, market signals for the assistant (SCR-001), with its fences; research `research/14-market-signals.md` | owner (OI-6), product-manager |
+| 2026-09-27 | Added item 17, weekly business review digest (SCR-002); AI summary in shadow mode until OI-8; research `research/15-weekly-digest.md` | owner (OI-7), product-manager |
+| 2026-09-27 | Added the "Later" list with triggers; recorded in `decisions/0014-market-signals-and-digest-scope.md` | product-manager |
+| 2026-09-27 | Fence added: mock outside market data only outside production and in sample workspaces (spec reviews of market-signals and weekly-digest, customer-success blocker) | product-manager |

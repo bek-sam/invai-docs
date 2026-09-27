@@ -1,18 +1,3 @@
-# qa-engineer memory
-
-Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row there. Add your own entries under "Learned on cards": date, card, what you learned. No PII or secrets.
-
-## Lessons that apply to you
-- 2026-09-26 W8: Never `git stash`, `reset` or `checkout --` in a shared tree; compare in your own worktree at the base commit.
-- 2026-09-26 W8: Don't push. Only the tech lead pushes, after the gate (a builder once pushed 44 ungated commits).
-- 2026-09-25 W3: Shared files: stage only your hunks (`git add -p` / `git apply --cached`), check `git diff --cached`, then commit.
-- 2026-09-24 W2: Kill only PIDs you started (`lsof -ti :<your port>`); never `pkill`/`killall`.
-- 2026-09-25 W6/7: Never run `pnpm` inside a worktree; call `node_modules/.bin/*` directly. Never re-link shared `node_modules`.
-- 2026-09-25 W3: Poll long jobs inside your turn with short sleeps; don't end your turn to wait.
-- 2026-09-25 W6/7: Gates check every `@invai/contracts` link points to `../../../invai-contracts`.
-- 2026-09-24 v1: `tsx watch` restarts during E2E; restart stale non-watch workers before a run.
-
-## Learned on cards
-- [Stale dev processes](stale-dev-processes.md) — clean up orphaned tsx-watch procs by PID before a gate; never touch 31xx ports.
-- [invai-web build needs VITE_API_URL](web-build-needs-vite-api-url.md) — no local .env by default; set it explicitly for `pnpm build`.
-- [Golden-path order collision is expected](golden-path-order-collision.md) — API + browser suites share fixture order numbers; skip messages on a reused seed are normal.
+- [Fixture margin/fee schedule pitfall](fixture_margin_fee_schedule.md) — market margin signal ignores profitLines.channelFeesCents; fee is recomputed from the default schedule
+- [Fixture ISO-week offset pitfall](fixture_iso_week_offset.md) — a fixed day offset for weeksAgo fixtures only lands right for Thu-Sun `now`; use a weekday-aware offset
+- [Gate traps](gate-traps.md) — full `pnpm e2e` trips the shared `ai` rate bucket; screenshot timing; kill/ps hook rule; es vote aria-label; SSE curl shape

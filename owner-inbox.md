@@ -69,21 +69,21 @@ Entry format:
 - Decision: T-8-2 is accepted for its scope. A new card, T-8-6, strips NUL (and other characters Postgres rejects) from **every string input** at the API contract boundary, as one shared schema transform, with tests. No action needed from the owner.
 - Answer: decided by tech lead (reversible).
 
-## OI-6: Allow spend/risk to explore external market signals for the assistant (Etsy/Amazon trends, competitor prices)?   status: open
+## OI-6: Allow spend/risk to explore external market signals for the assistant (Etsy/Amazon trends, competitor prices)?   status: answered
 - From: product-manager, 2026-09-26. Deadline: before any wave picks this up. Default if no answer: deferred; not built.
 - Context: wave 17's assistant spec flagged this as out of scope. It would need either a paid market-data API (unbudgeted recurring cost) or scraping Etsy/Amazon/TikTok/Walmart, which breaks their terms and could jeopardize the pending Etsy Commercial Access and Amazon SP-API applications. No pilot or ticket has asked for it yet (0 shops confirmed; see `product/scope-changes/SCR-001-assistant-external-market-signals.md`).
 - Options: A) Defer; revisit only after a live pilot asks for it and a compliant paid data source is priced. B) Approve budget to evaluate a paid, ToS-compliant market-data API now. C) Reject outright.
 - Recommendation: A. The risk to pending marketplace approvals outweighs an unconfirmed pain, and we have no pilot evidence yet.
 - Cost of waiting: none currently blocked; no wave depends on this.
-- Answer:
+- Answer: (owner, 2026-09-27) Approved, overriding the defer recommendation. The business analytics should use all the data it can to help the shop's business. Build it if it helps the customer's business: research first, write a clear step-by-step market-analysis algorithm, plan, then implement. Guardrails set by the team when recording this: only ToS-compliant sources (official APIs, first-party data, licensed data). No scraping. Every provider gets a mock. Any real paid data subscription or key comes back here before it is bought.
 
-## OI-7: Approve a scheduled weekly "business review" digest from the assistant (new recurring AI spend + new outbound surface)?   status: open
+## OI-7: Approve a scheduled weekly "business review" digest from the assistant (new recurring AI spend + new outbound surface)?   status: answered
 - From: product-manager, 2026-09-26. Deadline: before any wave picks this up. Default if no answer: deferred; not built. The on-request "weekly business review" starter question ships in wave 17 regardless.
 - Context: this is a scheduled, unattended push (email/notification) of the same content the on-request assistant already produces in wave 17. It's a different shape than scope item 13's "read-only tools" (pulled by the owner), adds a new recurring per-tenant AI cost line, and sends AI-generated content to a shop with no human check first. See `product/scope-changes/SCR-002-assistant-weekly-digest.md`.
 - Options: A) Defer until pilot usage of the on-request starter question shows real demand. B) Approve as its own spec now, with an eval gate before any unattended send. C) Reject.
 - Recommendation: A. Wave 17 already ships the on-request version; let pilot usage prove demand before adding scheduled spend and an unattended-send risk.
 - Cost of waiting: none currently blocked; no wave depends on this.
-- Answer:
+- Answer: (owner, 2026-09-27) Approved: "that's actually a good idea." Research deeply how to implement it, whether better approaches exist, and how the app should do it; then build it. Guardrails set by the team: its own spec, opt-in/opt-out, an eval gate before any unattended send, and a spending cap per tenant.
 
 ## OI-8: Run the AI evals once against the real Claude model (needs an Anthropic API key and a small spend)?   status: open
 - From: tech-lead, 2026-09-26. Deadline: before a pilot shop uses the assistant or AI listings. Default if no answer: evals stay mock-only; AI quality is unmeasured.
@@ -92,3 +92,65 @@ Entry format:
 - Recommendation: A. It's a one-time cost of a few dollars at Opus list price, and it's the only way to know whether the assistant's advice is right before a shop sees it.
 - Cost of waiting: the assistant and listing drafts could give wrong or badly worded answers to the first real shop, and prompt-injection resistance is untested on a real model.
 - Answer:
+
+## OI-9: Apply for the Google Trends API alpha?   status: open
+- From: product-manager, 2026-09-27. Deadline: 2026-11-30 17:00 America/Phoenix (so a real trend source could be live before the 2027 Mother's Day season). Default if no answer: don't apply; the market signals keep using the mock Google Trends source, labelled "sample data".
+- Context: market signals (scope item 16, `specs/market-signals.md`) use outside search-demand data for trends and seasonality. Google's Trends API is the best official source, but it is an invite-only alpha: someone must apply with a description of the use, and its terms for use in a paid product aren't published (`research/14-market-signals.md` §1.2). Applying is an outside submission, so it's yours. Nothing in wave 18 waits on it.
+- Options: A) Apply now, describing InvAI's use (seasonality and trend signals for a shop's own design niches, cached, no resale of raw data); read the alpha terms before any real use. B) Wait until a pilot uses the market tools, then apply. C) Don't use Google Trends; rely on own data and Census.
+- Recommendation: B. The tools run on the mock and own data today; apply once a pilot shows the tools are used, so the application can describe real use.
+- Cost of waiting: trend and seasonality answers rely on own history and Census only; young shops get "not enough data" more often.
+- Answer:
+
+## OI-10: Ask Etsy in writing whether InvAI may show a shop other sellers' public listing prices?   status: open
+- From: product-manager, 2026-09-27. Deadline: none fixed; decide before the Etsy Commercial Access application is sent (B-108, OI-3). Default if no answer: don't ask; no Etsy competitor data is used, ever, until Etsy agrees in writing.
+- Context: Etsy's API terms restrict using the API for "analytics" and require minimum data; we couldn't read the live text (403). Showing "your price vs similar Etsy listings" would pull other sellers' public listings (`research/14-market-signals.md` §1.1). Asking Etsy is itself a signal in the pending Commercial Access review, so whether and when to ask is your call. Most target shops are Etsy-first, so this is the biggest gap in price position for small shops.
+- Options: A) Ask now, in a separate message from the application. B) Ask only after Commercial Access is granted. C) Never ask; Etsy price position stays unavailable.
+- Recommendation: B. Don't put the application at risk; ask once approved, with the compliance-officer's draft.
+- Cost of waiting: Etsy-only shops get margin-at-price but no price position against the market.
+- Answer:
+
+## OI-11: License a paid market-data source (Jungle Scout) for use inside InvAI?   status: open
+- From: product-manager, 2026-09-27. Deadline: none fixed; decide after 4 pilot weeks of market-tool use data. Default if no answer: no paid source; the Jungle Scout provider stays a mock.
+- Context: Jungle Scout's API gives Amazon keyword search volume ($29–199/month plus usage), but its terms forbid making its data available to third parties without approval, so embedding it for our shops needs a written data licence (`research/14-market-signals.md` §1.3). Keepa is similar (from about €49/month, licence unreadable). It would be new recurring spend.
+- Options: A) Ask Jungle Scout for an embedding licence and a price now. B) Decide after pilots show the market tools are used (target ≥ 15% of assistant conversations). C) "Bring your own key": a shop connects its own Jungle Scout account (needs a legal check of their terms).
+- Recommendation: B. Demand is unproven (0 shops asked); spend only once use is measured.
+- Cost of waiting: Amazon demand signals come from the mock and own data only.
+- Answer:
+
+## OI-12: What postal address goes in the footer of InvAI's digest emails?   status: open
+- From: product-manager, 2026-09-27. Deadline: before the first real digest email to a pilot shop (wave 19 builds it locally; no real email is sent before this is answered). Default if no answer: digests stay in-app only for pilots; email works locally in Mailpit with a placeholder address.
+- Context: the weekly digest (`specs/weekly-digest.md`) emails people who opt in. US law (CAN-SPAM) requires a valid physical postal address in commercial email, and we include one even if the digest counts as account information, because it's cheap insurance (`research/15-weekly-digest.md` §2). We have no address on file.
+- Options: A) A business street address. B) A registered PO box or commercial mail-receiving agency address. C) Keep digests in-app only.
+- Recommendation: B if you don't want a home or office address public; it's valid under CAN-SPAM.
+- Cost of waiting: pilots get the digest in-app only, not by email.
+- Answer:
+
+## OI-13: Which email provider and sending domain should digest emails use?   status: open
+- From: product-manager, 2026-09-27. Deadline: before the first real digest email to a pilot shop. Default if no answer: no real sending; locally Mailpit, pilots in-app only.
+- Context: the digest is a recurring email, the kind people sometimes mark as spam. To protect password-reset and invite emails, digests should go from a separate subdomain or stream (e.g. updates.<our domain> vs accounts.<our domain>) with SPF, DKIM and DMARC set (`research/15-weekly-digest.md` §2, §4.7). This needs a provider account and DNS changes: platform-sre prepares, you approve and create the account.
+- Options: A) Amazon SES (already planned for the AWS deploy, B-58) with a separate configuration set and subdomain. B) A dedicated provider (Postmark or Resend) with a separate message stream. C) Delay email until after public launch.
+- Recommendation: A, since SES is already in the deploy plan; the separate subdomain keeps account emails safe.
+- Cost of waiting: no email digests for pilots; in-app still works.
+- Answer:
+
+## OI-14: Have counsel confirm the digest email counts as account information (transactional) under CAN-SPAM?   status: open
+- From: product-manager, 2026-09-27. Deadline: before the first real digest email to a pilot shop. Default if no answer: treat it as commercial email anyway (opt-in only, one-click unsubscribe, postal address, no promotions), which the spec already does; send nothing real until OI-12 and OI-13 are answered.
+- Context: messages that are only account statements are mostly exempt from CAN-SPAM, but one promotional line can change that; penalties are up to $53,088 per email (`research/15-weekly-digest.md` §2). The spec keeps the digest free of promotions and still follows the commercial rules. The compliance-officer will prepare a one-page note for counsel with the email's content.
+- Options: A) Send the compliance-officer's note to counsel before the first pilot email. B) Skip counsel and follow the commercial-email rules (already built). C) Keep email off.
+- Recommendation: A. It's a short review, and the answer also covers future product emails.
+- Cost of waiting: none for the build; only the first real send waits.
+- Answer:
+
+## OI-15: How should the team plant "canary" bugs to measure review quality?   status: open
+- From: tech-lead, 2026-09-27. Deadline: before wave 20 planning (about 2026-09-30). Default if no answer: no canaries; review quality is measured only from escaped defects (bugs found after approval).
+- Context: the team rules (`team/operating-system.md`, review rules) say the tech lead plants a known bug every few waves to measure the reviewers' catch rate; none has ever been planted. In wave 18 the tech lead asked a builder to commit one hidden defect (to be reverted before any push), and the session's permission system denied it. We didn't try another way.
+- Options: A) You allow it explicitly: a canary is committed by the path's owner, recorded in a sealed note outside the repos, and reverted before the gate; B) Canaries only in a throwaway copy of a repo that is never pushed (reviewers review the copy); C) Drop canaries and rely on escaped-defect counts.
+- Recommendation: B. It measures the same thing without ever putting a known bug on `main`'s path, so the permission concern goes away.
+- Cost of waiting: none for the build; the wave metrics show "canary: not planted".
+- Answer:
+
+## OI-16 (FYI, decided): T-18-2 failed its second review round on a new, narrow date bug   status: answered (tech lead)
+- From: tech-lead, 2026-09-27. The rule says 2 failed review rounds escalate; this records the decision, like OI-5.
+- Context: round 1 of T-18-2 (market data providers) found 3 issues, all fixed in round 2. Round 2's reviewer found one new bug in that fix: in years whose 1 January is Friday to Sunday (2027, 2028) a weekly data date lands a week early, so weekly sources look a week older than they are. Evidence: `waves/18/reviews/T-18-2-reviewer-r2.md`. Mock data only today; no real source is connected.
+- Decision: one round 3, limited to this fix plus a round-trip test over 2020–2030; the same reviewer checks it. Anything else found goes to a new card, not another round. No action needed from you.
+- Answer: decided by tech lead (reversible).

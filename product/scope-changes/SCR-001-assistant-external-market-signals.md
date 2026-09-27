@@ -24,7 +24,16 @@ All segments in theory (small shops picking their next design, mid/large shops t
 Shops keep making design and pricing calls on gut feel plus whatever they already see on the marketplace itself; the assistant stays honest by only ever citing the shop's own numbers (which is also the current, tested trust model — spec item "never cite outside market facts").
 
 ## Decision
-Sent to owner (OI-6). Reason: unbudgeted recurring spend, a marketplace-ToS/scraping risk that could affect pending approvals, and evidence is a single inference rather than a pilot or ticket ask — this is squarely a cost-and-risk call reserved for the owner, not the PM.
+**Accepted (owner approved, 2026-09-27, OI-6), with fences.** The owner overrode the PM's defer recommendation: "The business analytics should use all the data it can to help the shop's business... research first, write a clear step-by-step market-analysis algorithm, plan, then implement."
+- Research: `research/14-market-signals.md` (sources, terms, algorithm, MVP slice).
+- Scope: `product/scope.md#market-signals` (item 16) and `#market-and-digest-fences`.
+- Spec: `specs/market-signals.md`. Decision record: `decisions/0014-market-signals-and-digest-scope.md`.
+- Fences: no scraping ever; no cross-seller aggregation of marketplace data; cross-shop benchmarks deferred; no automatic price/listing changes; no Etsy competitor data until Etsy agrees in writing; every outside source has a mock and no paid source or new account is used without the owner (OI-9, OI-10, OI-11).
+- Evidence note (unchanged): 0 shops have asked. Adoption of the four tools and thumbs up/down are measured from the first pilot week, and the PM revisits if use stays near zero after 4 pilot weeks.
+Decided by: owner (OI-6), recorded by product-manager.  Date: 2026-09-27
+
+### History
+Originally sent to owner (OI-6). Reason: unbudgeted recurring spend, a marketplace-ToS/scraping risk that could affect pending approvals, and evidence is a single inference rather than a pilot or ticket ask — this is squarely a cost-and-risk call reserved for the owner, not the PM.
 Decided by: — (pending)  Date: —
 
 My recommendation to the owner: defer. Don't build until (a) a paid, ToS-compliant market-data source is identified and priced, and (b) at least one live pilot explicitly asks for it. Revisit at the first `weekly-metrics-review`/`churn-risk-review` cycle after pilots go live.

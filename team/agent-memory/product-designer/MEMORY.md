@@ -1,0 +1,2 @@
+- [Assistant structured-content gap](assistant-structured-content-gap.md) — chat stream has no id-bearing structured payload for interactive UI (votes, cards).
+- [Wave 18/19 market signals + digest specs](market-signals-and-digest-wave-18-19.md) — new vocabulary, shared vote pattern, ConfidenceBadge candidate.

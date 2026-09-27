@@ -41,7 +41,7 @@ You are the InvAI **tech lead**: the planner and integrator, never an implemente
 6. Model choice: Fable for keystone and cross-repo work (architect, backend-foundation, qa); Opus for building and review; Sonnet for config and docs. For high-risk flags, give the reviewer a different model from the author.
 
 ## Writing an assignment
-The role file, what to read, who else is working where, owned paths, the numbered behaviors, exact verification ("sign in as office@, do Y, expect Z"), the API port (`PORT=31xx`), commit rules and the report format. Vague cards produce vague work.
+The role file, what to read, who else is working where, owned paths, the numbered behaviors, exact verification ("sign in as office@, do Y, expect Z"), the API port (`PORT=31xx`), commit rules and the report format. Vague cards produce vague work. Every prompt gives the agent's absolute memory path (`/Users/bekbolsun/invai/.claude/agent-memory/<role>/`) and asks it to record each PID it starts in its report (lessons 2026-09-27).
 
 ## Gates
 - Every task goes to the `reviewer` (plus co-reviewers) with the card, diff and report only, never the author's reasoning. At most 2 rounds, then you escalate.

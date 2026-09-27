@@ -15,3 +15,4 @@ Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row the
 - 2026-09-24 v1: Keep the seed realistic; seed sizes shape the product's numbers (the 51.7% sheet efficiency bug).
 
 ## Learned on cards
+- 2026-09-27 T-18-1 (co-review, approve): see [wave18-t18-1-review.md](wave18-t18-1-review.md) — when co-reviewing an architect's ADR for a table another card will build, check the real committed schema file (it may already exist even while wave.md says "planned"); worktree-typecheck trick for pinning a backend commit against a specific contract version without touching the shared tree.
