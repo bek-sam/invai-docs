@@ -26,3 +26,4 @@ One file per decision: `NNNN-<slug>.md`, numbered in order. Use the `record-deci
 | [0012](0012-floor-contract-compat.md) | Floor contract handshake: CLIENT_TOO_OLD 426, 14-day compat window, stale_version parking | architecture | accepted |
 | [0014](0014-market-signals-and-digest-scope.md) | Market signals and weekly digest in scope, with fences (no scraping, no cross-seller data, no auto changes) | owner | accepted |
 | [0015](0015-global-market-cache.md) | One global table without `company_id`: `market_series_cache`, taxonomy queries only, public-read RLS, written only by the nightly job | architecture | accepted |
+| [0016](0016-signed-link-routes-and-notification-preferences.md) | Email links are signed `/l/:token` HTTP routes outside oRPC (POST mutates, GET never); per-person email preferences keyed by kind, opt-in only; one send guard in `sendUserEmail` | architecture | accepted |
