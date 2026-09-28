@@ -487,7 +487,8 @@ def _kill_pids(w):
 def kill_by_pattern(cmd, line_heads):
     """B-116: a kill of literal PIDs is fine even if the same line lists processes to check them. A kill whose PIDs
     aren't literal is denied when a process lister feeds it: in its own segment (pipe, $(...), xargs), or anywhere
-    on the line when it kills a $variable (the variable may carry a lister's output across segments)."""
+    on the line unless the kill's own segment is a pure lsof port lookup (a lister's output can cross segments in
+    a $variable, a file, `cat` or xargs < file)."""
     for seg in _top_segments(cmd):
         cmds = simple_commands(seg)
         seg_heads = {os.path.basename(w[0]).lower() for w in cmds}
@@ -497,8 +498,13 @@ def kill_by_pattern(cmd, line_heads):
             pids = _kill_pids(w)
             if pids and all(re.fullmatch(r"\d+|%[\w+-]*", p) for p in pids):
                 continue
-            if LISTERS & seg_heads or (any("$" in p for p in pids) and LISTERS & line_heads):
+            if LISTERS & seg_heads:
                 return True
+            # A lister elsewhere on the line can reach this kill through a variable, a file or a substitution
+            # (T-20-4 r1 finding 1), so only a pure port lookup (lsof) may feed a non-literal kill then.
+            if LISTERS & line_heads:
+                if not pids or any("$" in p for p in pids) or not (seg_heads - {"kill"} - SHELLS) <= {"lsof"}:
+                    return True
     return False
 
 

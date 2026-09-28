@@ -87,6 +87,13 @@ CASES = [
     ("X09", "kill 12345; pkill node", BE, "deny"),
     ("X10", "kill -9 -1; ps", BE, "deny"),
     ("X11", "P=$(pidof node)\nkill -9 $P", BE, "deny"),
+    # T-20-4 r1 security finding 1: a lister's output relayed through a file or a `cat` substitution
+    ("X12", "pgrep -f tsx > /tmp/p; kill $(cat /tmp/p)", BE, "deny"),
+    ("X13", "pgrep -f tsx > /tmp/p\nkill $(cat /tmp/p)", BE, "deny"),
+    ("X14", "pgrep -f tsx > /tmp/p; xargs kill < /tmp/p", BE, "deny"),
+    ("X15", "ps aux | grep '[t]sx' | awk '{print $2}' > /tmp/p && kill $(cat /tmp/p)", BE, "deny"),
+    ("X16", "pgrep node > /tmp/p; bash -c 'kill $(cat /tmp/p)'", BE, "deny"),
+    ("X17", "pidof node > /tmp/p; kill `cat /tmp/p`", BE, "deny"),
 ]
 
 
