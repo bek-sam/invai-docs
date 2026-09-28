@@ -154,3 +154,24 @@ Entry format:
 - Context: round 1 of T-18-2 (market data providers) found 3 issues, all fixed in round 2. Round 2's reviewer found one new bug in that fix: in years whose 1 January is Friday to Sunday (2027, 2028) a weekly data date lands a week early, so weekly sources look a week older than they are. Evidence: `waves/18/reviews/T-18-2-reviewer-r2.md`. Mock data only today; no real source is connected.
 - Decision: one round 3, limited to this fix plus a round-trip test over 2020–2030; the same reviewer checks it. Anything else found goes to a new card, not another round. No action needed from you.
 - Answer: decided by tech lead (reversible).
+
+## OI-17: Which of five proposed scope additions (SCR-003 to SCR-007) do you approve?   status: open
+- From: product-manager, 2026-09-28. Deadline: 2026-10-02 18:00 PT (before wave 21 planning). Default if no answer: none approved. Only the four ideas already inside scope (dispatch-scan guard, carrier adjustments in profit, Q4 margin guard, agent-ready listing attributes) go to the normal ranking. No new spend, no new outside accounts, AI design generation stays cut.
+- Context:
+  - You asked for new ideas; the research is `research/16-growth-opportunities.md`. Top 10 in §0, scores in §6, "don't build" in §7. Proposed backlog rows B-143 to B-161 are not approved.
+  - **Your design question:** copying top Etsy sellers' designs must not be built in any form. It means statutory damages up to $150,000 per copied work for the shop, Etsy repeat-infringer bans, liability for us as the tool built for it, and a breach of Etsy's API terms that could cost every shop its Etsy order import (§5.1).
+  - The same speed done legally is SCR-007: a niche brief, an original AI design, a similarity and trademark gate, a mockup, a listing draft, a human click, publish. It costs about $0.06–0.20 per design, and it is live in seconds on Shopify, but only after approval on Etsy and in hours to days on Amazon, TikTok and Walmart (§5.2).
+  - **Bought designs:** a license bought on Etsy or Creative Fabrica doesn't protect the shop if the file infringes, and the caps (for example 500 or 5,000 units, or "only while subscribed") are real. SCR-003 tracks this (§5.3).
+- Options (tick any):
+  - A) **SCR-003** design license record: small, no spend.
+  - B) **SCR-004** handling-time advisor for Amazon's 2026-06-29 rule: medium, no spend.
+  - C) **SCR-005** remake and reship after shipment: medium, no spend, changes the golden path.
+  - D) **SCR-006** capacity planner: medium, no spend.
+  - E) **SCR-007 phase 1** design risk gate: medium, needs a Google Cloud Vision or TinEye account at a few dollars a month per shop.
+  - F) **SCR-007 phase 2** original AI designs: large, needs an image-model API account and about $30–40 a month for a shop making 200 designs, sold as AI credits. Reopens decision 0006.
+- Recommendation:
+  - A, B and C now. D after B. E with a spend cap you set.
+  - F deferred until E is live and one pilot shop agrees to test it on Shopify.
+  - This keeps the wedge first and puts the safety gate in place before any generator.
+- Cost of waiting: none of the in-scope work is blocked. Amazon's handling-time rule has applied since 2026-06-29 and Q4 starts now, so B loses value each week it waits.
+- Answer:
