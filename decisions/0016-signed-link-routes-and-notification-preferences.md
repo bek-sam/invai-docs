@@ -36,10 +36,16 @@
 3. `POST /l/:token` is the only mutating method and only for `k: "unsubscribe"` (`click` -> 405):
    idempotent, sets the person's preference off with source `unsubscribe_link`, 200 on repeat;
    `{ "undo": true }` on the same token is allowed within 24 h of that unsubscribe, else 409.
-   `GET /l/:token` never mutates: it redirects to `${WEB_ORIGIN}/unsubscribe?token=…` or, for a
-   click, to a same-origin path (`/` if the handler's path is not a plain `/path`). Invalid or
-   expired: GET -> `${WEB_ORIGIN}/unsubscribe?error=invalid`, POST -> 400. Per-IP `links` bucket,
-   60/min.
+   `GET /l/:token` never changes a person's email preference or unsubscribe state — only `POST`
+   with `k: "unsubscribe"` does that: for `unsubscribe` it redirects to
+   `${WEB_ORIGIN}/unsubscribe?token=…`; for `click` it performs exactly one write, recording the
+   click idempotently (first click wins, a repeat is a no-op; same semantics as
+   `digest.recordClick`) for the `digest_action_click_rate` metric, before redirecting to a
+   same-origin path (`/` if the handler's path is not a plain `/path`). This is intentional: RFC
+   8058 and link-scanner safety are about not letting an automated GET unsubscribe someone, not
+   about GET never writing anything; a scanner recording a spurious click has no user-facing or
+   destructive effect and costs nothing to repeat. Invalid or expired: GET ->
+   `${WEB_ORIGIN}/unsubscribe?error=invalid`, POST -> 400. Per-IP `links` bucket, 60/min.
 4. Per-person email preferences are keyed by kind: `NOTIFICATION_KINDS` in
    `invai-contracts/src/schemas/tenancy.ts` (`["digest"]` in 0.7.0, values appended at the end),
    default off, with `source: settings | unsubscribe_link | admin`. Only the person turns a kind on
