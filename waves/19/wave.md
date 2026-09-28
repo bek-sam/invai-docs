@@ -134,7 +134,7 @@ Mailpit UI: http://localhost:8025 (shared; tag test mail subjects with the card 
 - [x] Fresh reset, migrate, seed; API golden path 13/13 (film use 0.83), floor 3/3, full browser `pnpm e2e` in one run 27/28, with no rate-limit failures (B-133 fixed). The one red was QA's own digest.spec selector; fixed and re-run 8/8
 - [x] Digest built by the worker's own sweep at 07:05 Phoenix; numbers equal the profit page for the week; one Mailpit email with `List-Unsubscribe` and one-click headers and the placeholder postal address; POST twice = one change, GET = redirect only, Undo works; office has no plan usage, presser refused; AI summary `shadow`, no AI text anywhere
 - [x] Key screens looked at by the tech lead (gate-shots 01, 02, 05). Found and filed: stock "before September" on Sep 28 (B-140), English date in the Spanish heading and relative-percent copy (B-141)
-- [ ] Pushed to `main`
+- [x] Pushed to `main` 2026-09-28: invai-contracts `83eee25` (0.7.0), invai-backend `5a443ed`, invai-web `49b22c9`, invai-docs (this commit's parent chain); invai-floor unchanged (`68b9cbb`)
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
