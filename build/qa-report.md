@@ -296,6 +296,93 @@ See `.claude/agent-memory/qa-engineer/held-back/T-19-3.md` and `T-19-4.md`:
 - Office user with `finance.read` revoked mid-week (role change) — must not receive next week's
   email even though last week's preference was on.
 
+### Second pass (2026-09-28, at backend HEAD `776697b` / T-19-3 `cadc338`+`bef6158`, web HEAD `9b8a69e`)
+Fixed in my fixtures (not product code), backend files each run standalone on `TEST_DATABASE_URL=…/
+invai_t19_qa`, `REDIS_URL=redis://localhost:6379/15`:
+- **`mondayPhoenix(d)` offset, every file** (T-19-3's own report flagged this): the helper returns
+  shop-local **midnight** (07:00Z), not 07:00 local, so every `freeze(monday + 5min)` landed at
+  00:05 local — before the default 06:00-10:00 build window — and every `digest.get` after it was
+  `NOT_FOUND` for the wrong reason. Fixed all 18 occurrences across `digest.acceptance.test.ts`,
+  `digest-market.acceptance.test.ts` and `digest-prod-mode.acceptance.test.ts` to `+7h5m`.
+- **AC3 (DST) fixture had no sale**: the `it.fails` case built `skipped_quiet` (zero orders), not
+  the DST-off-by-an-hour failure it claimed to prove; added a sale inside the target week, confirmed
+  it now genuinely passes with `it` (not `.fails`), and removed the marker.
+- **AC10's net check used the wrong field and formula**: `Digest` has no `glance.netCents` (fixed to
+  the top-level `net.value`, contract 0.7.0), and `finance/profit.ts`'s `finalize()` computes net as
+  revenue minus every cost-bucket column — it never reads a profit line's cached `netCents` back for
+  aggregation (the same rule that already bit wave 18's market fee signal). Added a `costCents`
+  fixture option (stored as `blankCostCents`) and rewrote the reprint case as a free reprint
+  (`revenueCents:0, costCents:500` → net -500) instead of relying on a chosen `netCents`.
+- **AC18's weekKey was off by one**: `mondayPhoenix("2026-12-07")`'s last complete week is `2026-W49`
+  (verified against `week.ts`'s real `lastCompleteWeek`), not `2026-W50`.
+- **AC27/AC28 used the global sweep where a targeted build was needed**: the sweep also builds every
+  other due shop's own (quiet) digest for the same week, so `other`'s/`b`'s `digest.get`/`digest.list`
+  weren't actually empty for the reason the test claimed. Switched both to `digest.build` targeted at
+  the one company under test.
+- **AC30 had no digest built at all** before hammering `digest.sendPreview` three times, so the first
+  call answered `NO_DIGEST`, not `OK`, and the rate-limit assertion never got exercised for the real
+  reason. Added a build step first.
+- **AC14/AC15/AC16/AC17 (Market watch) had zero orders**: `build.ts`'s `isQuiet` gate skips
+  `marketOf(...)` entirely for a zero-order week, so every one of these shops built `skipped_quiet`
+  and Market watch was never evaluated — the assertions on AC14/AC16/AC17 either failed outright or
+  (AC15) passed by accident, since its own assertion doesn't require Market watch to be populated.
+  Added a minimal sale to each.
+- **AC17 additionally depended on the real wall-clock date**: `listDigestMarketItems` only shows
+  recommendations created within 7 days of the build instant; the fixture's default `createdAt: new
+  Date()` only fell inside that window because the *actual* run date happened to be close to the
+  target week — true for AC14 (run date 2026-09-27, target week ending 2026-09-28) but not for AC17
+  (target week ending 2026-10-19). Gave every recommendation in AC14/15/17 an explicit `createdAt`
+  inside the target week so the suite no longer depends on when it happens to run.
+- **AC31 (prod mock filter) had the same "zero orders" and "no counter-example" problems**: no sale
+  (so the week was always `skipped_quiet`, proving nothing about the mock filter specifically) and no
+  non-mock recommendation that should still show (so a completely broken filter would have looked
+  identical to a working one). Added a sale and a second, non-mock recommendation; the assertion now
+  proves the filter drops the mock item specifically.
+
+Result after fixes, run standalone twice on a fresh `invai_t19_qa`/Redis 15 (determinism check):
+```
+Test Files  4 passed (4)
+     Tests  25 passed | 1 todo (26)
+```
+AC21 stays `it.todo` (needs T-19-2's credit-ledger-draining helper, unrelated to this pass).
+
+**`invai-web/e2e/digest.spec.ts`**: T-19-5 landed (`9b8a69e`) by the time this pass ran, so every
+`test.fail()` marker was removed and the suite was run for real against my own stack (API `:3162` on
+a migrated dev-DB copy, `digest.build` forced for Desert Bloom Tees `2026-W39`; web built with
+`VITE_API_URL=http://localhost:3162` and served with `vite preview`, on `:4417`). Three real fixture
+bugs found and fixed the same way (wrong click target/locator, not the wrong behavior):
+- "Today card" clicked the headline paragraph, which isn't inside the link; the real link is a
+  sibling "See this week" — fixed to click that.
+- The digest-list row's accessible name is a formatted date ("Week of Mon, Sep 21…"), not the raw
+  ISO week key, in either language — matched by `a[href^="/digests/"]` instead.
+- "office cannot see Notifications" expected a non-200 HTTP status; a client-rendered SPA route
+  always answers the navigation itself with 200, then the guard renders the refusal after the oRPC
+  call returns — reworded to check the settings form never renders.
+- "invalid token" navigated with a garbage `?token=`, which shows the normal confirm state until
+  someone clicks Unsubscribe; the real invalid-link state is what the backend's GET redirect
+  produces for a mangled token (`?error=invalid`) — fixed to reproduce that directly.
+
+**Bug found and filed, not fixed (not my path)**: the "office cannot see Notifications" refusal
+currently renders the raw backend string verbatim and untranslated — "Missing permission org.manage
+for digest.settings.get" — because `invai-web/src/lib/errors.ts`'s `errorInfo()` has no `FORBIDDEN`
+case (falls through to the server's own message, `invai-backend/src/api/orpc.ts:128`). This is a
+pre-existing, cross-cutting gap (not introduced by T-19-5), but T-19-5's Notifications screen is the
+first real user path in this wave to surface it. Filed to the tech lead for web-engineer
+(`src/lib/errors.ts`): add a `FORBIDDEN` case with a plain-language, translated message, same shape
+as the existing `NOT_IMPLEMENTED`/`EMAIL_NOT_VERIFIED` cases.
+
+**Environment note for whoever runs this next**: `invai-web`'s `dist/` is a shared, gitignored build
+output directory — another agent rebuilding it (a different `VITE_API_URL`) mid-session silently
+redirected my browser's own API calls to their backend, since `VITE_API_URL` is baked in at build
+time and only affects the bundle, not `E2E_API_URL`/`E2E_WEB_URL` (those only steer Playwright's own
+`baseURL` and the `Session` helper). Build to an isolated `--outDir` (e.g. `dist-qa<port>`) and serve
+that with `vite preview --outDir dist-qa<port>` instead of the shared `dist/`.
+
+Result, `invai-web/e2e/digest.spec.ts` against the isolated stack:
+```
+8 passed (18.3s)
+```
+
 ### AC29 scale run (planned, after T-19-3 is green)
 - Profile: reuse wave 18's `large` scale profile where possible (same seed location,
   `invai-backend/src/db/seed/scale/`, backlog B-34), extended with a `weekly-digest`-shaped set of
