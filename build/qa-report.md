@@ -259,8 +259,21 @@ Test Files  4 failed (4)
 Every failure is `Cannot find module '.../digest/jobs'` (or `'.../lib/notify'`), or `procedure
 digest.X is not on the router (T-19-3/T-19-1 router.ts)` — the right reason, not a fixture bug.
 
-Known assumptions to reconcile once T-19-1/T-19-3/T-19-4 land (flagged in each file's header, not
-hidden):
+**Update (same day, T-19-1 landed mid-session, contract 0.7.0):** re-aligned all four backend files
+to the real `Digest`/`DigestSummary`/`DigestInsight` shapes (`marketWatch` not `market`, `planUsage`
+not `plan`, `net.value` not `glance.netCents`, `partialChannels` not `glance.partial`), imported the
+real types from `@invai/contracts`, and fixed AC17 to vote through `market.recommendations.vote`
+(per the contract's own doc comment — a Market watch vote is the shared market-signals record, never
+`digest.feedback`) and AC13 to test what the contract actually returns (`formatted.{en,es}` on every
+fact) rather than a server-rendered string that was never part of the design. T-19-3's day-1 stub
+(router + job registration placeholder) also landed mid-session: re-ran the suite against it and
+confirmed the permission guards already return `FORBIDDEN` correctly for presser/office before
+hitting the "not implemented"/"job not registered" wall — still 24 failed | 1 expected fail | 1 todo,
+same count, now failing one layer deeper (job not registered, not router-missing) and for the
+right reason at each point checked.
+
+Known assumptions to reconcile once T-19-3/T-19-4's full build (not just the day-1 stub) lands
+(flagged in each file's header, not hidden):
 - Job names `digest.sweep` / `digest.build` are QA's best guess (wave.md fixes router names, not
   job names). If the real names differ, the fix is a one-line rename in these test files, done by
   QA, not the implementer.
