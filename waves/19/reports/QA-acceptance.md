@@ -46,6 +46,25 @@ the feature works yet.
 | invai-backend | `TEST_DATABASE_URL=...invai_t19_qa ... vitest run src/modules/digest/` | `Test Files 4 failed (4)` / `Tests 24 failed \| 1 expected fail \| 1 todo (26)`, first run against nothing built and a second confirming run against T-19-3's day-1 stub (same counts, one layer deeper) |
 | invai-web | `node_modules/.bin/biome check e2e/digest.spec.ts` | Checked 1 file, no fixes needed |
 
+### Full repo checks (run after the above, per the gate hook), NOT all green — reported honestly
+| Repo | Command | Result |
+|---|---|---|
+| invai-backend | `pnpm typecheck` | **Fails**, not on my files: `src/modules/tenancy/router.ts(11,42)` — `me.notifications` (added to the contract by T-19-1) has no router branch yet. That file is T-19-4's owned path (`git log` shows it last touched at wave 5, untouched by wave 19 so far); confirmed via `git status --short` that it carries no uncommitted edits, so this is a landed-but-incomplete cross-card state, not something in flight I could misattribute. |
+| invai-backend | `pnpm lint` | **Fails**, not on my files: `src/modules/digest/config.ts` (untracked, T-19-3's in-progress work, confirmed via `git status --short`) has one Biome formatting diff. Not my owned path (`*.acceptance.test.ts` only). |
+| invai-backend | `pnpm test` | **Fails**: `Test Files 5 failed \| 116 passed (121)`, `Tests 29 failed \| 958 passed \| 1 expected fail \| 1 todo (989)`. 24 of the 29 failures are my own 4 digest acceptance files (expected red, same as the isolated run). The other 5 are in `src/api/authz.test.ts` (not mine, not owned by me), and are a **real, separate defect**: `me.notifications.get` throws `TypeError: Cannot read properties of undefined (reading 'get')` instead of a proper `UNAUTHORIZED`/`FORBIDDEN`, because `me.notifications` is in contract 0.7.0 but has no handler on `meRouter` yet (same root cause as the typecheck failure above — T-19-4's stub hasn't landed). This is exactly the exhaustive permission-matrix test (`authz.test.ts`) doing its job: it iterates every contract procedure and caught a real gap. Filed below, not fixed (not my path). |
+| invai-web | `pnpm typecheck` | **Fails**, not on my files: `src/routes/_app/index.tsx(357,61)` — "function lacks ending return statement". `git log` shows this file was last committed at T-12-1 (wave 12), untouched since; `git status --short` shows no pending edits. This predates wave 19 entirely and isn't caused by anything in this pass. |
+| invai-web | `pnpm lint` | Passes (`Checked 155 files, no fixes needed`). |
+| invai-web | `pnpm test` | Passes (`Test Files 16 passed (16)`, `Tests 88 passed (88)`). |
+| invai-web | `VITE_API_URL=http://localhost:3000 pnpm build` | Passes (the plain `pnpm build` fails without `VITE_API_URL` set — a required env var for the production CSP, not a code defect; set it locally only to verify the build itself compiles). |
+
+**Bottom line:** every failure outside my own 4 (expected-red, by design) digest acceptance test files
+is in a path I don't own, confirmed via `git log`/`git status` to be either another card's
+in-progress work (T-19-3's `config.ts`) or a landed contract change whose consumer stub hasn't
+caught up yet (T-19-4's `me.notifications` router branch, which also explains the `authz.test.ts`
+break). I did not edit any of those files. Flagging `authz.test.ts`'s 5 failures to the tech lead as
+a real, filed defect against T-19-4/the wave (not against T-19-1's contract, which is correct) —
+it should be re-verified once T-19-4 reports done.
+
 ## Exercised for real
 - Ran the full digest acceptance suite twice on my own test DB (`invai_t19_qa`, Redis DB 15): once
   before any builder code existed (every failure `Cannot find module`/`procedure not on the router`)
