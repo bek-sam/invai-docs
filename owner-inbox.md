@@ -175,3 +175,20 @@ Entry format:
   - This keeps the wedge first and puts the safety gate in place before any generator.
 - Cost of waiting: none of the in-scope work is blocked. Amazon's handling-time rule has applied since 2026-06-29 and Q4 starts now, so B loses value each week it waits.
 - Answer:
+
+## OI-18: Which gated parts of "analytics v2" do you approve (goals, anomaly alerts, customer analytics, cash view, scheduled report emails)?   status: open
+- From: data-analyst, 2026-09-28. Deadline: 2026-10-09 17:00 America/Phoenix (before wave A3 would be planned). Default if no answer: none of the five is built. The in-scope parts (waves A1–A2: profit ladder, losing orders, leakage, shipping margin, why-profit-changed, operations and inventory health, new assistant tools, new digest detectors, Today actions) go to the PM's normal ranking and need no answer here.
+- Context:
+  - You asked (2026-09-28) for business analytics "to the 100% possible level". The plan is `specs/business-analytics-v2.md`; 20 metric definitions with tested queries are in `metrics/definitions/`. Backlog rows B-168 to B-183.
+  - On the demo shop, labels cost about $5 an order more than buyers paid for shipping (about a third of net profit), 3% of orders lose money, and $2,233 of blanks haven't moved. Seed data, mock postage: it shows the kind of answer, not a real shop's number.
+  - Five parts go beyond the current scope. Draft request: `metrics/scope-change-draft-analytics-v2.md` (the PM files it). The cash view is the same as the PM's B-152, already listed in OI-17's research.
+  - Customer analytics is the only risky one: Amazon buyer data may only be used to ship the order, so Amazon is left out entirely; Etsy's API terms forbid "collecting data for analytics", and counsel should say whether a seller's own repeat-buyer count counts.
+- Options (tick any):
+  - A) Goals and targets with pace: small, no spend.
+  - B) Anomaly alerts on daily numbers (after 8 weeks of history per shop): medium, no spend.
+  - C) Customer analytics (repeat buyers, cohorts, lifetime profit, groups): large, no spend; Shopify first, Amazon never, others only after the compliance-officer's review.
+  - D) Cash view (with the PM's B-152): medium, no spend; always labelled a projection, not a forecast.
+  - E) Monthly report emails to people you name: small; waits for your answers to OI-12, OI-13 and OI-14.
+- Recommendation: A, B and D now. C only after the compliance-officer's review, Shopify first. E after OI-12/13/14.
+- Cost of waiting: nothing in waves A1–A2 is blocked. Each week without D is a week closer to Q4 blank buying without a cash view.
+- Answer:
