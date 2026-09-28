@@ -1,3 +1,7 @@
 - [Fixture margin/fee schedule pitfall](fixture_margin_fee_schedule.md) — market margin signal ignores profitLines.channelFeesCents; fee is recomputed from the default schedule
 - [Fixture ISO-week offset pitfall](fixture_iso_week_offset.md) — a fixed day offset for weeksAgo fixtures only lands right for Thu-Sun `now`; use a weekday-aware offset
 - [Gate traps](gate-traps.md) — full `pnpm e2e` trips the shared `ai` rate bucket; screenshot timing; kill/ps hook rule; es vote aria-label; SSE curl shape
+- [Acceptance tests pre-contract](acceptance-tests-pre-contract.md) — dynamic-import pattern for not-yet-landed modules; re-check field names once a contract lands mid-session; split ACs across layers when the contract can't produce what the spec assumed
+- [profitLines cached columns](profit-lines-cached-columns.md) — netCents/channelFeesCents are display-only; getProfit/digest net always recomputes from cost-bucket columns
+- [Web build needs VITE_API_URL](web-build-needs-vite-api-url.md) — bare `pnpm build` needs it set; also baked at build time only, so a shared `dist/` gets fought over by concurrent agents — build to your own `--outDir`
+- [Digest gate flow](digest-gate-flow.md) — sweep timing on the seed, opt-in before the build, token from the email, undo/idempotency shapes

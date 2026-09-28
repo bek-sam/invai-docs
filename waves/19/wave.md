@@ -55,6 +55,49 @@
 - T-19-3, T-19-4, T-19-5: not started (wait for T-19-1).
 - Nothing of wave 19 is pushed. No processes left running from wave 19 (checked: no listener on 3100–3199 apart from the pre-existing 3142 orphan).
 
+## Contract landed (T-19-1)
+- `invai-contracts` `e99ac21` (0.7.0): `digest` namespace (9 procedures), `me.notifications.get/set`, event `digest.ready {digestId, weekKey}` (the envelope carries the org, so the card's `companyId` is dropped, as in the Agreed interfaces), `digest_narrative` in `CREDIT_KINDS`, `ai_summary_breaker` in `ALERT_KINDS`. Report `reports/T-19-1.md`. ADR [0016](../../decisions/0016-signed-link-routes-and-notification-preferences.md) covers link routes and kind-keyed preferences.
+- Expected breaks until stubs land: backend `src/api/router.ts` (T-19-3) and `src/modules/tenancy/router.ts` (T-19-4).
+- 2026-09-27 grant T-19-5: `invai-web/src/routes/_app/index.tsx` `alertKindLabel` case for `ai_summary_breaker` plus `alerts.kind.ai_summary_breaker` in en/es (TS2366 in web typecheck since 0.7.0). T-19-5's first commit.
+
+- 2026-09-27 grant T-19-4: `invai-backend/src/lib/ratelimit.ts` for the per-IP `links` bucket (A9); backend-foundation's own file, not on the card's list.
+- T-19-1 approvals: reviewer r1 approve; backend-foundation r1 changes-required (GET wording) → fixed `83eee25` / ADR `9a1a31a` → r2 approve. Web consumer co-review runs as T-19-5's first step.
+
+- T-19-4 built: `0af819a`, `776697b`. Routed to security-reviewer (its file): `src/api/authz.test.ts:129` exact vendor-namespace list needs `me` because `me.notifications` is on `org.read` (contract 0.7.0). Decision noted from T-19-4: `DIGEST_EMAIL_ENABLED` defaults true; the no-real-email fence holds through `SMTP_URL` unset (Mailpit).
+
+- T-19-4 r1: reviewer approve; security changes-required (S-35: a 500 on `/l/:token` logs the token via `app.onError`'s path). Round 2 (backend-foundation): S-35 fix in `links.ts` and path redaction for `/l/*` in `app.ts` `onError`; the per-IP `links` bucket uses the same trusted client-IP helper as sign-in (no raw `x-forwarded-for`); `mailer.ts` stops logging the recipient address (grant extended to that line); **tech lead decision:** `DIGEST_EMAIL_ENABLED` defaults to false when `NODE_ENV=production` (true in dev), so no real digest email can go out before OI-12/13/14 even if `SMTP_URL` is set.
+
+- T-19-4 round 2 `8b9b6f0` (S-35, S-36, S-37 via `src/api/context.ts` `clientIp()` (backend-foundation's own file), production email default off). T-19-3: reviewer approve; T-19-5: reviewer approve; T-19-2: reviewer + security approve.
+- Found by the T-19-3 reviewer: a Market watch R1 mock item rendered with an empty `{{channels}}` placeholder (broken sentence). To check at the gate; owner T-19-3 (digest render of market params).
+- Process note: the T-19-3 reviewer committed its own review file to invai-docs (`64319df`); harmless (its own file), but prompts say reviewers don't commit.
+
+- 2026-09-28 usage-limit stop. Done before it: T-19-4 round 2 `8b9b6f0`; security's `authz.test.ts` fix `013f3d6`; T-19-5 reviewer approve. Stopped mid-task (the coordinator resumes them with SendMessage): security T-19-4 r2 check (`a5429cf9b51d7f4ef`, worktree `invai-backend-sec4-r2`), security T-19-3 co-review (`aea98521d7e764aa6`, worktree `invai-backend-sec-t19-3`), QA second pass (`a0f871f8eb3026c54`, uncommitted acceptance and e2e edits, its API on 3162 against `invai_t19qa_web`), designer T-19-5 co-review (`aaf9f7b1244bf6d5d`, nothing written).
+
+- 2026-09-28 T-19-5: designer r1 changes-required (D8 win headline never matches the backend's `"D8 win"` key; D3 shows the raw cost-line enum). Round 2 (web-engineer, agent `ab33ca35eea259f04`) also traces the Market watch empty-channel sentence (web fix if web-side; otherwise routed to the T-19-3 owner) and the browser-locale date in `digest-copy.ts`.
+
+- 2026-09-28 T-19-5 round 2 agent `ab33ca35eea259f04` stalled (Docker hang) with uncommitted edits in `invai-web/src/components/digest/digest-copy.ts` and `insight-card.tsx`; next step was the `sourceDateText` language fix. To be resumed by the coordinator.
+
+- 2026-09-28 T-19-3: security co-review approve (7 tables with RLS and composite FKs; `withSystem` only in the due-shop sweep and purge; no PII in facts or logs). Backend-foundation co-review started (agent `a6701ce3e54ff87af`); architect co-review next.
+
+- 2026-09-28 T-19-5 round 2 done: web `87e800d` (D8 win matched on `"D8 win"` with the headline from facts; D3 cost-line names en/es copied from `render.ts`; market dates in the app language). Re-reviews by the reviewer and product-designer pending. Empty-channel sentence is backend (`render.ts:282`, R1 `channels || channel` with an empty channel) → T-19-3 round 2 (agent `a0e3501aa99a68ca9`).
+
+- 2026-09-28 T-19-4 security r2 approve (S-35, S-36 fixed; S-37 partially fixed under S-30). Architect co-review of T-19-3 started (`a5ce76383f11cd914`). Gate precondition: the 16 red digest acceptance tests (fixture clock at Phoenix midnight, etc.) must be green or explained by QA's second pass (`a0f871f8eb3026c54`) or T-19-3 round 2 before the gate.
+
+- 2026-09-28 T-19-3: architect approve (all round-1 approvals in). T-19-4: integrations-engineer approves the mailer hunk; **T-19-4 has all required approvals** (reviewer r1, security r2, integrations). T-19-3 round 2 `cfe1098` (empty-channel sentence). Pending: reviewer r2 on T-19-5 and T-19-3, designer r2 on T-19-5, QA second pass.
+
+- 2026-09-28 T-19-5: product-designer r2 approve (D8 win and D3 cost-line copy verbatim with `render.ts`; T-19-3's `market.channels.connected` fallback matches the web string). Pending: reviewer r2 (T-19-5, T-19-3), QA second pass.
+
+- 2026-09-28 Reviewer r2 approves T-19-5 (`87e800d`) and T-19-3 (`cfe1098`). **All five wave 19 cards now have every required approval.** Gate waits only on QA's second pass (16 red digest acceptance tests).
+
+- 2026-09-28 QA second pass done (backend `53cc86a`, web `1e4d307`, docs `87b5c39`): backend 1068 passed, 2 skipped, 1 todo; web 97 + build. Integration gate started (qa-engineer, agent `a5a58c7cc8a24480d`).
+
+## Link-route rule, clarified (2026-09-27, T-19-1 backend-foundation review)
+- `GET /l/:token` never changes a person's email preference or unsubscribe state; only `POST` with `k: unsubscribe` does. For `k: click`, the GET performs exactly one write: it records the click idempotently (first click wins, a repeat is a no-op; same semantics as `digest.recordClick`) and then redirects to a same-origin path. T-19-1 round 2 aligns the README and ADR 0016 wording.
+
+## QA first pass (backend `a50817d`, `bdab237`; web `5df9227`)
+- 4 backend acceptance files (digest, digest-market, digest-prod-mode, digest-consent) red for the right reasons; `e2e/digest.spec.ts` marked `test.fail` until built. Report `reports/QA-acceptance.md`.
+- Notes for builders: AC17 votes go through `market.recommendations.vote`, not `digest.feedback`. AC13: the backend returns `formatted.en` and `formatted.es` on every fact; the browser picks which to render.
+
 ## T-19-2 day-1 interface (landed `759f2d4`)
 - `src/modules/ai/analyst-queries.ts`: `comparePeriods`, `adPerformance`, `designInsights`, `fulfillmentHealth`, each `(tx, ctx: Pick<TenantContext, "companyId">, input)`; the caller opens `withTenant`.
 - `src/ai/digest-narrative.ts`: `generateDigestNarrative(companyId, {digestId, lang, insights, facts}) -> {status, text?, failedRules?, cents, mode, showable}`; `digestSummaryMode()` is **async** (breaker state in Valkey/DB). Types `NarrativeFact {id, raw, formatted: {en, es}}`, `NarrativeInsight {id, kind, factIds, template?}`.
@@ -85,16 +128,20 @@ Mailpit UI: http://localhost:8025 (shared; tag test mail subjects with the card 
 - A1 `me.notifications` keyed by kind (`org.read`). A2 plan usage on `billing.read`; settings and preview on `org.manage`. A3 recipients in `settings.get` + `setRecipientEmail`. A4 client statuses `ready | skipped_quiet`; `latest()` returns `paused`. A5 no narrative text field in 0.7.0; `digest_narrative` credit kind now. A6 two day-1 stubs (T-19-3 `digest` router, T-19-4 `me.notifications`). A7 `email_sends` table owns send idempotency; `digest_deliveries` is the per-recipient outcome. A8 preview bypasses only opt-in; per-user Redis limit `digest:preview:${companyId}:${userId}` 60 s. A9 public link routes as pinned (POST unsubscribe + 24 h Undo; GET only redirects to `WEB_ORIGIN`; same-origin click paths; purpose-bound HMAC key from `BETTER_AUTH_SECRET`; per-IP `links` bucket 60/min; no `PUBLIC_WEB_URL`). A10 T-19-5 owns `invai-web/src/lib/realtime.ts`. A11 migration order 0028 then 0029. A12 T-19-1 row synced.
 - P1 a test in T-19-3 asserts every rendered string comes from the template keys + formatted facts (no free text). P2 QA's AC29 scale run is on the gate checklist.
 
-## Integration gate
-- [ ] QA scale runs: market AC28 (wave 18) and digest AC29
-- [ ] All repos checks; fresh reset, migrate, seed; `run-golden-path` (API, browser, floor)
-- [ ] Digest built for the seed shop with frozen/forced week; Today card, digest page en/es, email in Mailpit with List-Unsubscribe headers; one-click POST unsubscribe works
+## Integration gate (2026-09-28, `reviews/gate.md`)
+- [x] QA scale runs: digest AC29, one large shop 330 ms (budget 60 s), sweep of 1,000 shops 15.2 s (budget 30 min), no duplicates; market AC28, 584k orders / 1.17M items: refreshDemand 4.4 s + computeSignals 7.8 s (budget 15 min)
+- [x] All repo checks: contracts, backend 1068 tests, web 97 + build, floor + build
+- [x] Fresh reset, migrate, seed; API golden path 13/13 (film use 0.83), floor 3/3, full browser `pnpm e2e` in one run 27/28, with no rate-limit failures (B-133 fixed). The one red was QA's own digest.spec selector; fixed and re-run 8/8
+- [x] Digest built by the worker's own sweep at 07:05 Phoenix; numbers equal the profit page for the week; one Mailpit email with `List-Unsubscribe` and one-click headers and the placeholder postal address; POST twice = one change, GET = redirect only, Undo works; office has no plan usage, presser refused; AI summary `shadow`, no AI text anywhere
+- [x] Key screens looked at by the tech lead (gate-shots 01, 02, 05). Found and filed: stock "before September" on Sep 28 (B-140), English date in the Spanish heading and relative-percent copy (B-141)
 - [ ] Pushed to `main`
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
+| Primary reviewer r1: 5 of 5. All required reviewers r1: 1 of 5 (T-19-2). T-19-1 (backend-foundation, doc wording), T-19-3 (the reviewer found a live empty-channel sentence, fixed in r2), T-19-4 (security S-35 token in log), T-19-5 (designer: D8 win never matched, D3 raw enum) each took a second round | not planted (OI-15 open) | 0 escaped from approved cards so far; gate found 3 Low/Medium copy issues (B-140, B-141), 1 of them a known wave 18 issue now reaching the digest | 0 | about 15 h wall clock including four usage-limit stops and a Docker hang | builders about 330k–470k per card; reviews 110k–240k; gate about 1 run |
 
 ## Retro
-- What slipped:
-- Lessons added:
+- **What worked:** the plan reviews pinned the interfaces (A1–A12), so the three backend cards built in parallel against stubs with no mid-wave contract change. Co-reviews caught real problems the primary reviewer passed: a token written to logs on error (S-35), recipient email addresses in the mailer log (S-36), a spoofable IP header on a public route (S-37), and a win headline that could never match the backend's key. B-133 (rate limit) was fixed inside the wave and the full browser suite now passes in one run.
+- **What slipped:** four usage-limit stops and a Docker hang that looked like model stalls; the tech lead had no SendMessage, so the coordinator resumed agents. Several copy defects reached the gate (dates in the browser language, relative percents, a past act-by date) because no card or reviewer checked the rendered digest against real calendar dates.
+- **Lessons:** Docker hang check first when agents stall (added); reviewers should compare rendered copy with the wire values across repos (both round-2 fixes were cross-repo key mismatches); a digest or market card's acceptance criteria should include "run with today's date" checks.

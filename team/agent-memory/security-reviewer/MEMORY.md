@@ -1,3 +1,5 @@
 - [S-34 taxonomy equality test](s34-taxonomy-equality-test.md) — "fetched set equals X" needs equality assertion, not containment; T-18-3 example; round 2: verify by mutating-then-restoring in your own worktree
 - [Market AI tenancy and PII review pattern](market_ai_tenancy_and_pii.md) — T-18-4: prove tenancy via "service never called", grep PII field names, trademark-threshold ambiguity on automated paths
 - [Outbound HTTP review pattern](outbound_http_review_pattern.md) — T-18-2: SSRF/redirect check, key-in-Redis-key grep, prod-safety by direct run, mutation-test the fix
+- [Digest narrative injection pattern](digest_narrative_injection_pattern.md) — T-19-2: strip-placeholder-then-scan defeats injection via facts; mutation-test the explicit tenant filter, not just RLS/equality asserts
+- [Link-route token and PII log pattern](link_route_token_and_pii_log_pattern.md) — T-19-4: check global onError logging c.req.path (token-in-path leaks on any exception), shared mailer log lines, clientIp() XFF spoofing on new per-IP buckets

@@ -1,1 +1,2 @@
 - [Containment vs equality tests](feedback_containment_vs_equality_tests.md) — for "fetched set equals taxonomy" requirements, assert Set-equality on the captured input, not containment on the stored output.
+- [Backend gotchas (wave 19)](project_backend_gotchas_w19.md) — drizzle composite-FK order, getProfit net/margin units, frozen clocks vs DB now().

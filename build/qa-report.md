@@ -207,7 +207,18 @@ AC18 (blank out-of-stock weeks excluded from the trend fit) was written in the s
 once T-18-3's history schema existed. AC28 is a separate scale run (below). Held-back cases are kept
 outside the repos and added after each author reports done.
 
-### AC28 scale run (planned, after T-18-3 is green)
+### AC28 scale run — ran 2026-09-28 (wave 19 gate): PASS
+- `MARKET_SCALE=1 pnpm exec vitest run src/modules/market/market-scale.acceptance.test.ts` (QA file,
+  opt-in) on its own DB `invai_t19_qa_scale`; SHAs contracts `83eee25`, backend `53cc86a`.
+- Fixture: 5,000 active designs, 584,000 orders / 1,168,000 items over 156 weeks (≈1,070 units/day,
+  Q4 skew for a fifth of the catalog), 96,264 profit lines (90 d), Etsy + Amazon connected, mock
+  sources; built in 40.4 s.
+- `refreshDemand` 4.4 s; `computeSignalsForShop` 7.8 s (5,000 designs mapped by stems, 15,470
+  signals, 0 recommendations on the uniform series); re-run 7.5 s, 0 new recommendations. Budget
+  15 min. Comparable to T-18-3's own 12.2 s synthetic run (its scratchpad fixture is gone; this file
+  makes it repeatable). k6 tool-latency and EXPLAIN parts of the plan below are still open.
+
+Original plan:
 - Profile: `large` per `scale-test/profiles.md`: 5,000 active designs, 1,000 orders/day, 3 years of
   weekly history, niches skewed like a real catalog (60% evergreen, 25% holidays, 15% unclassified),
   Amazon and Etsy connections, mock outside sources. Seeded into a separate database
@@ -383,7 +394,15 @@ Result, `invai-web/e2e/digest.spec.ts` against the isolated stack:
 8 passed (18.3s)
 ```
 
-### AC29 scale run (planned, after T-19-3 is green)
+### AC29 scale run — ran 2026-09-28 (wave 19 gate): PASS
+- `DIGEST_SCALE=1 pnpm exec vitest run src/modules/digest/scale.test.ts` (T-19-3's opt-in file) on
+  `invai_t19_qa_scale`; SHAs contracts `83eee25`, backend `53cc86a`.
+- One 1,000-orders/day shop (63,000 orders): `buildDigest` **330 ms**, `ready` (budget 60 s).
+- Sweep over 1,000 Phoenix shops all due Mon 07:05: **15.2 s**, 1,000 built, 0 failed; the second
+  sweep built 0 (no duplicate digest) (budget 30 min). The sweep builds shops in turn inside one
+  job, so there was no BullMQ fan-out to watch. Full details: `waves/19/reviews/gate.md` §6.
+
+Original plan:
 - Profile: reuse wave 18's `large` scale profile where possible (same seed location,
   `invai-backend/src/db/seed/scale/`, backlog B-34), extended with a `weekly-digest`-shaped set of
   1,000 small/mid shops all due in the same local hour (skewed time zones so the hourly sweep has
