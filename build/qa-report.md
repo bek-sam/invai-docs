@@ -414,3 +414,68 @@ Original plan:
   connections (the sweep fans out one build job per due shop).
 - Report: this section (profile, SHA, sweep wall time, duplicate count, build p50/p95 for the large
   shop, any queue backlog, filed bottlenecks) once T-19-3 reports done.
+
+## 8. Wave 20: side-effect and live-adapter tests (B-71, T-20-3, 2026-09-28)
+
+Backend HEAD `5a443ed`. New files are QA-owned `*.acceptance.test.ts`; they run with the normal suite
+(`pnpm test`), on `invai_t20_3` during the card. All 27 new tests pass on a fresh DB and on a second run of
+the same DB (unique data per run); the seven files together take about 7 s (budget < 60 s).
+
+### AC1: coverage inventory ("one effect on retry / crash between the outside call and the commit")
+
+| Side effect | Existing proof (file:line) | Gap the new tests close |
+|---|---|---|
+| `buyLabel` | `modules/shipping/label-safety.test.ts:286` (commit failure after the carrier charged never buys twice), `:307` (crash mid-call: retry blocked while in flight, then read back), `:365` (unknown outcome stays `buying`, retry reads back); `jobs.test.ts:468` (sold but unrecorded → read back) | concurrent double buy; a second request while the carrier call is still open; the real EasyPost REST adapter through the crash |
+| `rateOrder` | `label-safety.test.ts:204` (rating again reuses the open shipment). No outside effect to duplicate (rating charges nothing), so "crash before commit" is not a money case | concurrent double rate → one shipment row, one quote set |
+| `voidShipment` | `push-void.test.ts:436` (commit failure after the carrier refunded never refunds twice); `jobs.test.ts:498` (stuck void read back and finished) | concurrent double void; a second void while the carrier call is open |
+| `batchBuy` | `batch.test.ts:204` (crash mid-buy: the restarted run reads the carrier back, never buys twice); `:155` (a duplicate run of the job buys nothing) | two batches over the same orders at once: one label per order, each credited to one batch |
+| `pushTracking` (Shopify) | `push-void.test.ts:235` (commit failure after the channel took it never notifies the buyer twice); `jobs.test.ts:514` (stuck push sent once) | concurrent double push; the real Admin GraphQL adapter through the crash (read-back = fulfillment orders) |
+| `pushTracking` (CSV) | `push-void.test.ts:413` ("CSV-only channels": `not_required`, units ship on the carrier scan) | the CSV channel never reaches a channel adapter, however often it is pushed |
+| `syncAvailability` | `inventory/availability.test.ts:313` (a retry after a **failed** call resends under the same key). **none** for a crash after the channel accepted the push | crash after the channel took the push → retry under the same key, quantity stored once; two concurrent runs carry one key |
+| `publishDraft` | **none** | publishing twice, or twice at once, leaves one file at one key and the draft approved; another tenant gets `NOT_FOUND` and no file |
+| `renderItemArtwork` | `personalization/render-job.test.ts:157` (the job renders once). **none** for a crash between the render and the commit | crash after imaging rendered leaves `pending`, retry saves once; two concurrent renders → one row, one `artwork.rendered`; the interactive re-render keeps one row |
+| `submitPo` | `inventory/po-safety.test.ts:251` (commit failure after the supplier accepted never orders twice), `:272` (crash mid-call), `:321` (unknown outcome) | concurrent double submit; the real S&S REST adapter through the crash |
+| `receivePo` | `po-safety.test.ts:336` (a retried receipt counts once; a changed retry is `CONFLICT`) | concurrent double receipt under one key counts the stock once |
+
+### AC2/AC3: the new files (criterion → file → test)
+
+| File | Tests | What it proves |
+|---|---|---|
+| `modules/shipping/side-effects.acceptance.test.ts` | 8 | rate ×2 → one row; buy ×2 → one charge, loser `CONFLICT` or stored label; buy while open → refused before any carrier call; void ×2 and void while open → one refund; batchBuy ×2 batches → one label per order, credited once; push ×2 → one channel call, units ship once; CSV push → no adapter |
+| `modules/inventory/side-effects.acceptance.test.ts` | 4 | submit ×2 → one order, loser `CONFLICT`; receipt ×2 under one key → +4 once; availability crash after the call → same key on retry, stored once; two runs → one key |
+| `modules/ai/publish.acceptance.test.ts` | 3 | publish ×2 and ×2 at once → one object, one key, draft approved; other tenant `NOT_FOUND`, no file |
+| `modules/personalization/render.acceptance.test.ts` | 3 | crash after render → `pending`, retry saves once; concurrent → one row, one event; re-render keeps one row |
+| `integrations/carriers/easypost-live.acceptance.test.ts` | 2 | real adapter over stubbed `fetch`: `POST /shipments` with our id as `reference` and Basic auth; `POST /shipments/{id}/buy` once through a commit failure, retry is `GET /shipments/{id}` (never `/buy`); a `/buy` timeout is unknown → read back; signed `tracker.updated` → `in_transit` → `delivered`, redelivery acknowledged as duplicate |
+| `integrations/channels/shopify-live.acceptance.test.ts` | 3 | orders poll: 429 → backoff ≥ 1 s, then `pageInfo` paging with `after`; every call `POST …/graphql.json` with the token header present (value never asserted, never in the URL); `FulfillmentOrders` then one `fulfillmentCreate` (`notifyCustomer: true`) through a commit failure; retry reads back, no second create; a `userError` leaves the push `pending` and retryable |
+| `integrations/suppliers/ss-live.acceptance.test.ts` | 4 | tenant credentials pick the live adapter; `POST /v2/orders/` with Basic auth, `poNumber`, `rejectLineErrors: true`, key never in URL/body; retry after a commit failure is `GET /v2/orders/{poNo}`; `POST` timeout → read back; 400 → `SUPPLIER_REJECTED`, PO back to `draft` |
+
+Fixtures are seed-shaped (`Desert Bloom Tees`, `Test Buyer`, `1 Buyer Way, Brooklyn NY 11201`,
+`buyer@example.com`, carrier-shaped fake tracking codes, `pl_t203_*`/`shp_t203_*` ids); no real data was used,
+so nothing was scrubbed.
+
+### Regression proofs (worktree `../invai-backend-t20-3` at `5a443ed`, each guard removed, then restored)
+
+| Guard removed (product code, worktree only) | Test that went red |
+|---|---|
+| EasyPost `reference: req.shipmentId` → `null` | easypost-live "rates, buys once through a crash…" (`toMatchObject` on `reference`) |
+| EasyPost `lookup()` returns nothing (retry can't read back) | both easypost-live tests (retry re-`POST`s `/buy`; timeout case "couldn't confirm") |
+| S&S `rejectLineErrors: true` → `false` | ss-live "orders once through a crash…" |
+| `submitPo` retry never calls `findOrder` | ss-live crash and timeout tests (`POST` instead of `GET`) |
+| `submitPo` in-flight `CONFLICT` off | inventory "concurrent double submit" (2 supplier calls) |
+| `receivePo` ignores `idempotencyKey` | inventory "concurrent double receipt" (+8, not +4) |
+| availability push sends a fresh key per attempt | both inventory availability tests |
+| `publishDraft` key per attempt (random) | both ai publish tests (2 objects) |
+| artwork always inserted (no upsert) | all 3 personalization tests |
+| Shopify token header dropped | shopify-live poll and push tests |
+| Shopify 429 gives up instead of backing off | shopify-live poll test |
+| Shopify "nothing left to fulfill" → failure | shopify-live push test (`retry` instead of `pushed`) |
+| `buyLabel` in-flight `CONFLICT` off | shipping "buy while the carrier call is open" (2 carrier calls) |
+| `pushTracking` in-flight busy check off | shipping "concurrent double push" (2 channel calls) |
+| `voidShipment` in-flight `CONFLICT` off | shipping "void while the carrier call is open" (2 carrier calls) |
+
+Note: removing only Shopify's `remainingQuantity > 0` filter did **not** fail the push test, because the
+fulfillment order's `CLOSED` status is a second layer of the same read-back. The "nothing left" mutation is
+the one that proves the retry path.
+
+### AC4: bugs found
+None. Every guard the card names exists and holds; no test was left failing.
