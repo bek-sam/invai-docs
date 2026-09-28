@@ -220,3 +220,78 @@ outside the repos and added after each author reports done.
   (ANALYZE, BUFFERS) as `invai_app` on the signal and recommendation reads for the large tenant and
   a small one (indexes lead with `company_id`).
 - Report: this section (profile, SHAs, p50/p95/p99, break point, EXPLAIN findings, filed cards).
+
+## 7. Wave 19: weekly digest (acceptance tests first, 2026-09-27)
+
+First pass, written from `invai-docs/specs/weekly-digest.md` before T-19-1 (contract) and T-19-3
+(digest module) land. Contract 0.7.0 hadn't landed at write time either, so tests call the
+*existing* top-level router by path (`digest.*` procedures aren't on it yet) and load
+`src/modules/digest/jobs.ts` (doesn't exist) through a dynamic `import()` on a path constant, the
+same trick wave 18's `market.acceptance.test.ts` used — the file typechecks today, and each test
+fails on the missing job/procedure with one clear reason, not a typo. AC14-17 and AC31 (Market
+watch) run against wave 18's real, pushed `market/service.ts` (`listDigestMarketItems`,
+`recordRecommendationsShown`) instead of a stub, so once T-19-3 lands, only the digest half needs
+reconciling.
+
+Files (all QA-owned, `invai-backend/src/modules/digest/*.acceptance.test.ts`):
+- `digest.acceptance.test.ts` — AC1, AC2, AC4-13, AC18, AC27, AC28, AC30 (17 cases); AC3 (DST) is
+  `it.fails` since a full DST harness needs T-19-3's own week-boundary function, not just a frozen
+  clock; AC21 is `it.todo` until a credit-ledger-draining helper exists (T-19-2).
+- `digest-market.acceptance.test.ts` — AC14-17 (4 cases).
+- `digest-prod-mode.acceptance.test.ts` — AC31, mock visibility rule in production (1 case, `env`
+  mocked to `isProd: true` like wave 18's `market-prod-mode.acceptance.test.ts`).
+- `digest-consent.acceptance.test.ts` — AC23-26 (email/consent/unsubscribe; T-19-3's own AC9 names
+  AC23/AC26, T-19-4's card names AC24/AC25), loading `src/lib/notify.ts` / `src/lib/links.ts`
+  (don't exist yet) the same way, and exercising the public `/l/:token` routes through the real
+  Hono `app` (`../../api/app`, exists today) with `app.request(...)` — they 404 until T-19-4 mounts
+  them, a clean expected-red reason with no dynamic-import indirection needed.
+- `invai-web/e2e/digest.spec.ts` — one browser spec: Today card, digest page in English and in
+  Spanish at 390px, Settings → Notifications (AC33's shadow-mode explanation, office refused),
+  account toggle, the public unsubscribe page. Every case is `test.fail`-marked; `/digests` and
+  `/unsubscribe` don't exist yet, so navigation itself fails today. Not run against a live stack
+  (no page exists yet to serve it); typecheck and Biome are clean.
+
+Result on a first run (own test DB, fresh, `invai_t19_qa`):
+```
+Test Files  4 failed (4)
+     Tests  24 failed | 1 expected fail | 1 todo (26)
+```
+Every failure is `Cannot find module '.../digest/jobs'` (or `'.../lib/notify'`), or `procedure
+digest.X is not on the router (T-19-3/T-19-1 router.ts)` — the right reason, not a fixture bug.
+
+Known assumptions to reconcile once T-19-1/T-19-3/T-19-4 land (flagged in each file's header, not
+hidden):
+- Job names `digest.sweep` / `digest.build` are QA's best guess (wave.md fixes router names, not
+  job names). If the real names differ, the fix is a one-line rename in these test files, done by
+  QA, not the implementer.
+- `channel_connections.disconnectedAt` (used by the AC7/D1 fixture) is a guessed column name; if
+  D1's "disconnected during the week" signal lives elsewhere (a status-change log, an event), the
+  fixture helper needs a small rewrite once T-19-3's schema is visible.
+- AC1's "the seed" is treated as a fixture shop built in-test with explicit `placedAt`s, per the
+  spec's own "Seed vs fixture rule" (not the literal `pnpm db:seed` output).
+
+### Held-back cases (kept outside the repos, added after T-19-3/T-19-4 report done)
+See `.claude/agent-memory/qa-engineer/held-back/T-19-3.md` and `T-19-4.md`:
+- A second sweep run with the shop's `hour` changed *between* the two runs (does the new hour apply
+  to a digest already `ready` for that week, or only future weeks — AC5 doesn't say).
+- A digest built, then the order it counted gets refunded after the fact (spec: "out of scope,
+  re-sending an email"; the acceptance case checks the *stored* digest doesn't silently change).
+- Two people in the same shop, one opted in before the digest existed and one after — both must get
+  exactly one email, not zero and not two (AC2/AC23 boundary).
+- A tampered token where only the `ref` field changes (not company/user) — must still 4xx, not
+  silently unsubscribe from the wrong kind.
+- Office user with `finance.read` revoked mid-week (role change) — must not receive next week's
+  email even though last week's preference was on.
+
+### AC29 scale run (planned, after T-19-3 is green)
+- Profile: reuse wave 18's `large` scale profile where possible (same seed location,
+  `invai-backend/src/db/seed/scale/`, backlog B-34), extended with a `weekly-digest`-shaped set of
+  1,000 small/mid shops all due in the same local hour (skewed time zones so the hourly sweep has
+  real concurrent work), plus one `large` shop at 1,000 orders/day for the single-build timing.
+- Measures: the hourly sweep over 1,000 due shops completes within 30 minutes with no duplicate
+  digest (spec AC29); the single large shop's build completes within 60 seconds (T-19-3's own
+  smaller synthetic check covers the shape of this, not the full 1,000-shop concurrency). Watch
+  BullMQ waiting count and oldest-job age on the digest queue during the run, and Postgres
+  connections (the sweep fans out one build job per due shop).
+- Report: this section (profile, SHA, sweep wall time, duplicate count, build p50/p95 for the large
+  shop, any queue backlog, filed bottlenecks) once T-19-3 reports done.
