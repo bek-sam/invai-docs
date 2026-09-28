@@ -45,6 +45,21 @@
 - 2026-09-27 T-19-4: `src/modules/tenancy/router.ts` `me.notifications` stub in its day-1 commit (A6), so backend typecheck is green after T-19-1 together with T-19-3's `digest` stub.
 - 2026-09-27 T-19-2: backend `src/db/schema/ai.ts` `CREDIT_KINDS` gets `digest_narrative` (mirror of the contract; enum text, no migration).
 
+- 2026-09-27 T-19-1 (asked by T-19-2 for AC22): add `ai_summary_breaker` at the end of `ALERT_KINDS` in `invai-contracts/src/schemas/alerts.ts` in 0.7.0 (additive). Until it lands, T-19-2 logs the breaker trip at error level.
+
+## Status at hand-back (2026-09-27, evening)
+- Usage limits and stream stalls stopped every wave 19 agent twice. The tech lead has no SendMessage tool in this session, so it can't resume agents with their context; the coordinator asked for no fresh agents, so wave 19 is paused here.
+- T-19-1 (architect): uncommitted contract work in `invai-contracts` (`src/schemas/digest.ts` new; `contract.ts`, `events.ts`, `index.ts`, `realtime.ts`, `schemas/ai.ts`, `schemas/tenancy.ts` modified). Not reviewed, not committed. Still to add: `ai_summary_breaker` in `ALERT_KINDS`.
+- T-19-2 (ai-engineer): day-1 commit `759f2d4` (analyst-queries extraction, narrative stub); uncommitted in `invai-backend`: `src/ai/models.ts`, `prompts/index.ts`, `providers/mock.ts`, `db/schema/ai.ts`, new `src/ai/validators/digest.ts`.
+- QA: first-pass acceptance tests not written yet (nothing on disk).
+- T-19-3, T-19-4, T-19-5: not started (wait for T-19-1).
+- Nothing of wave 19 is pushed. No processes left running from wave 19 (checked: no listener on 3100–3199 apart from the pre-existing 3142 orphan).
+
+## T-19-2 day-1 interface (landed `759f2d4`)
+- `src/modules/ai/analyst-queries.ts`: `comparePeriods`, `adPerformance`, `designInsights`, `fulfillmentHealth`, each `(tx, ctx: Pick<TenantContext, "companyId">, input)`; the caller opens `withTenant`.
+- `src/ai/digest-narrative.ts`: `generateDigestNarrative(companyId, {digestId, lang, insights, facts}) -> {status, text?, failedRules?, cents, mode, showable}`; `digestSummaryMode()` is **async** (breaker state in Valkey/DB). Types `NarrativeFact {id, raw, formatted: {en, es}}`, `NarrativeInsight {id, kind, factIds, template?}`.
+- AI tests 134/134 and assistant eval 30/30 unchanged after the extraction.
+
 ## Agreed interfaces (names fixed here; the architect's plan review may refine signatures)
 **Contract (T-19-1):** router key `digest`: `digest.list(Page)` (paginated; `finance.read`), `digest.get({weekKey})` (`finance.read`; plan-usage section only with `billing.read`), `digest.latest() -> {digest: DigestSummary | null, paused: boolean}`, `digest.feedback({digestId, insightId, vote: up|down, reason?: not_relevant|wrong|already_knew})` (idempotent on digest, insight, user; latest wins), `digest.recordClick({digestId, insightId})` (idempotent; first click wins), `digest.settings.get` (with `recipients: [{userId, name, emailOn, deliverable: ok|unverified|placeholder|suppressed}]`) / `digest.settings.set` / `digest.settings.setRecipientEmail({userId, on: false})` and `digest.sendPreview()` (all `org.manage`: owner/admin). Client statuses only `ready | skipped_quiet`; no narrative text field at all in 0.7.0 (only `narrativeStatus`). Per-person email preference keyed by kind: `me.notifications.get() -> {items: [{kind, on, source, updatedAt}]}`, `me.notifications.set({kind, on})` (`org.read`; `NOTIFICATION_KINDS = ["digest"]`). Event `digest.ready` `{digestId, weekKey}` (envelope carries the org). Market watch votes use the existing `market.recommendations.vote`.
 
