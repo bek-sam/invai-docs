@@ -55,9 +55,11 @@ except Exception:
 
 GIT = r"\bgit(?:\s+-C\s+\S+|\s+-c\s+\S+|\s+--?[\w-]+(?:=\S+)?)*\s+"
 
+PUSH_REASON = "no force-push, ref deletion, mirror or tag push (tags deploy production)"
+# Checked per command segment only (B-116): a `-d` from `tr -d` later on the line is not a push flag.
+PUSH_RULE = GIT + r"push\b.*(--force|--force-with-lease|--mirror|--delete|--tags|--follow-tags|\s-[a-zA-Z]*[fd]\b|\s\+\S+|\s:\S+|refs/tags|\sv\d)"
+SEGMENT_SPLIT = r"&&|\|\||\|&|(?<![<>&])&(?![>&])|[;|\n()`]|\$\("
 BASH_RULES = [
-    (GIT + r"push\b.*(--force|--force-with-lease|--mirror|--delete|--tags|--follow-tags|\s-[a-zA-Z]*[fd]\b|\s\+\S+|\s:\S+|refs/tags|\sv\d)",
-     "no force-push, ref deletion, mirror or tag push (tags deploy production)"),
     (GIT + r"remote\s+(add|remove|rm|set-url|rename)\b", "never change remotes"),
     (GIT + r"(filter-branch|filter-repo)\b", "never rewrite history"),
     (r"(^|[\s/])(sst\s+(deploy|remove)|cdk\s+(deploy|destroy)|terraform\s+(apply|destroy)|pulumi\s+(up|destroy))\b",
@@ -308,6 +310,31 @@ def _short_flags(args, value_letters=""):
     return letters
 
 
+PUSH_LONG_DENY = ("--force", "--force-with-lease", "--force-if-includes", "--mirror", "--delete", "--tags",
+                  "--follow-tags", "--prune")
+
+
+def _push_is_dangerous(git_opts, args):
+    """Word-level check on this push's own words only (B-116): flags, refspecs, and config that forces."""
+    for k, opt in enumerate(git_opts):  # git -c remote.origin.push=+... / -c push.followTags=true
+        val = git_opts[k + 1] if opt == "-c" and k + 1 < len(git_opts) else opt[2:] if opt.startswith("-c") else ""
+        if re.match(r"(remote\.|push\.|branch\.)", val.lower()):
+            return True
+    for a in args:
+        if "SUBST" in a or "$" in a:
+            return True  # a flag or refspec the guard can't read: write push arguments literally
+        if a.startswith("--"):
+            name = a.split("=", 1)[0].lower()
+            if len(name) > 2 and any(d.startswith(name) for d in PUSH_LONG_DENY):  # git accepts abbreviations
+                return True
+        elif a.startswith("-") and a != "-":
+            if {"f", "d"} & _short_flags([a], "o"):
+                return True
+        elif a.startswith(("+", ":")) or ":+" in a or "refs/tags" in a.lower() or re.search(r"(^|:)v\d", a):
+            return True
+    return False
+
+
 def git_rules(w):
     i = 1
     while i < len(w) and w[i].startswith("-"):
@@ -327,6 +354,8 @@ def git_rules(w):
         if agent_type is not None and agent_type not in PUSH_ROLES:
             return ("deny", "only the tech lead pushes, after the wave gate (lessons: waves 2 and 8). "
                             "Commit your own paths and report the SHA")
+        if _push_is_dangerous(w[1:i], args):
+            return ("deny", PUSH_REASON)
     elif sub == "stash":
         if not args or args[0].lower() not in ("list", "show"):
             return ("deny", "no git stash in a shared tree: it takes every agent's uncommitted work "
@@ -392,9 +421,93 @@ def kill_rules(w):
     return None
 
 
+LISTERS = {"pgrep", "pidof", "ps"}
+
+
+def _top_segments(cmd):
+    """Split on ; && || & and newlines outside quotes, $(...), backticks and heredoc-free text (pipes stay joined)."""
+    segs, cur, i, n, sq, dq, depth, bt = [], [], 0, len(cmd), False, False, 0, False
+    while i < n:
+        c = cmd[i]
+        if c == "\\" and not sq and i + 1 < n:
+            cur.append(cmd[i:i + 2])
+            i += 2
+            continue
+        if c == "'" and not dq and not bt:
+            sq = not sq
+        elif c == '"' and not sq:
+            dq = not dq
+        elif not sq and c == "`":
+            bt = not bt
+        elif not sq and cmd.startswith("$(", i):
+            depth += 1
+            cur.append("$(")
+            i += 2
+            continue
+        elif not sq and depth and c == "(":
+            depth += 1
+        elif not sq and depth and c == ")":
+            depth -= 1
+        elif not (sq or dq or bt or depth):
+            two = cmd[i:i + 2]
+            if two in ("&&", "||"):
+                segs.append("".join(cur))
+                cur, i = [], i + 2
+                continue
+            prev = cmd[i - 1] if i else ""
+            if c in ";\n" or (c == "&" and prev not in "<>" and cmd[i + 1:i + 2] != ">"):
+                segs.append("".join(cur))
+                cur, i = [], i + 1
+                continue
+        cur.append(c)
+        i += 1
+    segs.append("".join(cur))
+    return [x for x in segs if x.strip()]
+
+
+def _kill_pids(w):
+    args, pids, i, signal_seen = w[1:], [], 0, False
+    while i < len(args):
+        a = args[i]
+        if a in ("-s", "-n") and not signal_seen:
+            signal_seen = True
+            i += 2
+            continue
+        if a == "--":
+            pids.extend(args[i + 1:])
+            break
+        if a.startswith("-") and not signal_seen and not a.startswith("--"):
+            signal_seen = True
+        else:
+            pids.append(a)
+        i += 1
+    return pids
+
+
+def kill_by_pattern(cmd, line_heads):
+    """B-116: a kill of literal PIDs is fine even if the same line lists processes to check them. A kill whose PIDs
+    aren't literal is denied when a process lister feeds it: in its own segment (pipe, $(...), xargs), or anywhere
+    on the line when it kills a $variable (the variable may carry a lister's output across segments)."""
+    for seg in _top_segments(cmd):
+        cmds = simple_commands(seg)
+        seg_heads = {os.path.basename(w[0]).lower() for w in cmds}
+        for w in cmds:
+            if os.path.basename(w[0]).lower() != "kill" or {"-l", "-L"} & set(w[1:]):
+                continue
+            pids = _kill_pids(w)
+            if pids and all(re.fullmatch(r"\d+|%[\w+-]*", p) for p in pids):
+                continue
+            if LISTERS & seg_heads or (any("$" in p for p in pids) and LISTERS & line_heads):
+                return True
+    return False
+
+
 def lesson_rules(cmd):
     cmds = simple_commands(cmd)
     heads = [os.path.basename(w[0]).lower() for w in cmds]
+    if "kill" in heads and kill_by_pattern(cmd, set(heads)):
+        deny("no kill by process pattern (pgrep, pidof, ps | grep): kill only PIDs you started, "
+             "or look them up by your own port with lsof -ti :<port> (lesson: wave 2)")
     asks = []
     for w, head in zip(cmds, heads):
         found = None
@@ -403,9 +516,6 @@ def lesson_rules(cmd):
                              "(lesson: wave 2)")
         elif head == "kill":
             found = kill_rules(w)
-            if not found and {"pgrep", "pidof", "ps"} & set(heads):
-                found = ("deny", "no kill by process pattern (pgrep, pidof, ps | grep): kill only PIDs you started, "
-                                 "or look them up by your own port with lsof -ti :<port> (lesson: wave 2)")
         elif head == "aws":
             found = ("deny", "real AWS accounts are touched only by the owner")
         elif head == "git":
@@ -443,6 +553,9 @@ def main():
             for pattern, reason in BASH_RULES:
                 if re.search(pattern, seg, re.I):
                     deny(reason)
+        for seg in re.split(SEGMENT_SPLIT, joined) + re.split(SEGMENT_SPLIT, flat):
+            if re.search(PUSH_RULE, seg, re.I):
+                deny(PUSH_REASON)
         asks = lesson_rules(cmd)
         if asks:
             ask(asks[0])
