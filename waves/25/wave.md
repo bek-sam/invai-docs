@@ -10,9 +10,9 @@
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
 | T-25-1 CI hardening in all 8 repos: SHA-pinned actions, least `permissions:`, dependency review, secret scan, container scan (Trivy or Grype), Dependabot/Renovate, SBOM (B-08, B-21) | platform-sre | opus | reviewer (sonnet) + security-reviewer | security | planned |
-| T-25-2 E2E in CI and contract consumer CI: services (Postgres, Valkey, MinIO, imaging) in GitHub Actions, golden path + floor + role/Spanish suites, contracts CI typechecks backend/web/floor (B-22, B-83) | qa-engineer | fable | reviewer (opus) + platform-sre | — | planned |
+| T-25-2 E2E in CI and contract consumer CI: services (Postgres, Valkey, MinIO, imaging) in GitHub Actions, golden path + floor + role/Spanish suites, contracts CI typechecks backend/web/floor (B-22, B-83) | qa-engineer | sonnet | reviewer (opus) + platform-sre | — | planned |
 | T-25-3 Deploy pipeline (not run): pinned sibling SHAs gated on green CI, migrate task, staging → production promotion with environment protection, smoke test, rollback (B-76) | platform-sre | opus | reviewer (sonnet) + security-reviewer; tech lead (release-affecting) | security | planned |
-| T-25-4 Observability code (imaging spans by grant: `invai-imaging/app/main.py` middleware only, imaging-engineer co-reviews; architect A1): OTel traces API → queue → imaging, logs with `company_id`, `request_id`, `trace_id`, redaction tests, SSE fan-out through Valkey (B-18, B-37) | backend-foundation | fable | reviewer (opus) + security-reviewer (redaction) | pii | planned |
+| T-25-4 Observability code (imaging spans by grant: `invai-imaging/app/main.py` middleware only, imaging-engineer co-reviews; architect A1): OTel traces API → queue → imaging, logs with `company_id`, `request_id`, `trace_id`, redaction tests, SSE fan-out through Valkey (B-18, B-37) | backend-foundation | opus | reviewer (opus) + security-reviewer (redaction) | pii | planned |
 | T-25-5 Alarms and error tracking as code: CloudWatch alarms, SNS, budget alarm, 12-month log retention, error tracking provider behind a key (mock when absent), SLOs (B-75) | platform-sre | sonnet | reviewer (opus) + security-reviewer | security | planned |
 
 ## Integration gate
