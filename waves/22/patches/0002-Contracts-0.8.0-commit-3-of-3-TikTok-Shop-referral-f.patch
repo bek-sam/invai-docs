@@ -1,0 +1,59 @@
+From 81afad4d0afe582e7b8b5e5835ec0f5eabe3babc Mon Sep 17 00:00:00 2001
+From: bek-sam <bekbol.samaganov@gmail.com>
+Date: Tue, 29 Sep 2026 00:01:00 -0500
+Subject: [PATCH 2/2] Contracts 0.8.0 commit 3 of 3: TikTok Shop referral fee
+ default 8 -> 6 with source (B-164, T-22-1)
+
+Source: TikTok Shop US Seller University "Referral fees", knowledge_id=5988482086864682,
+page updated 2026-05-14, fetched 2026-09-28. Gated: push together with T-22-5's
+invai-backend/src/modules/finance/fees.test.ts update (it asserts the stale 8).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/channels.ts     | 10 ++++++++--
+ src/schemas.test.ts |  4 +++-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/src/channels.ts b/src/channels.ts
+index 2d4916b..6de8aae 100644
+--- a/src/channels.ts
++++ b/src/channels.ts
+@@ -161,12 +161,18 @@ export const CHANNEL_RULES: Record<Channel, ChannelRules> = {
+       requiresAiDisclosure: false,
+     },
+     fees: {
+-      transactionPct: 8,
++      // B-164: 6% referral for every menswear, womenswear and kids' fashion subcategory; the
++      // referral fee covers every TikTok Shop fee except shipping and tax. Source: TikTok Shop US
++      // Seller University, "Referral fees", knowledge_id=5988482086864682
++      // (https://seller-us.tiktok.com/university/essay?knowledge_id=5988482086864682), page
++      // updated 2026-05-14, fetched 2026-09-28 (T-22-1; first verified in T-7-2, 2026-09-25).
++      // The earlier 8 was "referral ~6% + 2% transaction"; the 2% no longer applies.
++      transactionPct: 6,
+       perOrderCents: 0,
+       paymentPct: 0,
+       paymentFixedCents: 0,
+       listingFeeCents: 0,
+-      note: "~8% (referral ~6% + 2% transaction, US 2026); verify against the seller agreement",
++      note: "6% referral on apparel (US, page updated 2026-05-14), covers all TikTok Shop fees but shipping and tax",
+     },
+     shipBy: {
+       source: "handling_days",
+diff --git a/src/schemas.test.ts b/src/schemas.test.ts
+index 35b25bf..e2cf6f4 100644
+--- a/src/schemas.test.ts
++++ b/src/schemas.test.ts
+@@ -233,7 +233,9 @@ describe("channel rules", () => {
+       paymentFixedCents: 25,
+     });
+     expect(CHANNEL_RULES.amazon.fees.transactionPct).toBe(17);
+-    expect(CHANNEL_RULES.tiktok.fees.transactionPct).toBe(8);
++    // B-164: TikTok Shop US Seller University "Referral fees" (knowledge_id=5988482086864682),
++    // page updated 2026-05-14, fetched 2026-09-28: 6% for menswear, womenswear and kids' fashion.
++    expect(CHANNEL_RULES.tiktok.fees.transactionPct).toBe(6);
+     expect(CHANNEL_RULES.walmart.fees.transactionPct).toBe(15);
+     expect(CHANNEL_RULES.shopify.fees).toMatchObject({ paymentPct: 2.9, paymentFixedCents: 30 });
+   });
+-- 
+2.50.1 (Apple Git-155)
+

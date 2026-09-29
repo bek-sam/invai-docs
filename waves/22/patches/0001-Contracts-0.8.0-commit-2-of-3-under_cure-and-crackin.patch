@@ -1,0 +1,65 @@
+From 83013afba8617809fe50abf111350dffc2614aeb Mon Sep 17 00:00:00 2001
+From: bek-sam <bekbol.samaganov@gmail.com>
+Date: Tue, 29 Sep 2026 00:00:59 -0500
+Subject: [PATCH 1/2] Contracts 0.8.0 commit 2 of 3: under_cure and cracking QC
+ fail reasons (B-35, T-22-1)
+
+Gated: push together with T-22-4's backend REPRINT_REASONS mirror
+(invai-backend/src/db/schema/production.ts), which this breaks in typecheck until then.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/p2-sweep.test.ts      |  7 +++++++
+ src/schemas/production.ts | 11 +++++++++++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/src/p2-sweep.test.ts b/src/p2-sweep.test.ts
+index a233482..58c7a17 100644
+--- a/src/p2-sweep.test.ts
++++ b/src/p2-sweep.test.ts
+@@ -18,6 +18,7 @@ import {
+   MaintenanceStartResult,
+   MISMATCH_REASONS,
+   QueueItem,
++  REPRINT_REASONS,
+   ScanResult,
+   StationMaintenance,
+ } from "./schemas/production";
+@@ -215,6 +216,12 @@ describe("production schemas (B-35, B-32)", () => {
+     expect(errors.some((e) => /MAINTENANCE/i.test(e))).toBe(false);
+   });
+ 
++  it("under_cure and cracking are appended to the reprint reasons (peeling maps to peel)", () => {
++    expect(REPRINT_REASONS.slice(-2)).toEqual(["under_cure", "cracking"]);
++    expect(REPRINT_REASONS).toContain("peel");
++    expect(new Set(REPRINT_REASONS).size).toBe(REPRINT_REASONS.length);
++  });
++
+   it("QueueItem accepts the blank location and transfer age, and still parses without them", () => {
+     const item = {
+       orderItemId: id,
+diff --git a/src/schemas/production.ts b/src/schemas/production.ts
+index 399b2fa..1ac360a 100644
+--- a/src/schemas/production.ts
++++ b/src/schemas/production.ts
+@@ -306,6 +306,17 @@ export const REPRINT_REASONS = [
+   "customer_request",
+   "lost",
+   "other",
++  /**
++   * QC fail reasons from research 10 §DTF (B-35, T-22-4), so defects trace back to curing and
++   * pressing: `under_cure` (film lifts at the edge after pressing) and `cracking` (the print
++   * cracks when stretched). `peeling` from the research maps to the existing `peel`. Appended
++   * last; consumers keyed on this enum: `invai-backend/src/db/schema/production.ts`
++   * `REPRINT_REASONS` (type mirror, `floor.ts` typecheck), `invai-floor/src/i18n/{en,es}.ts`
++   * `floor.reason.*` (`ProblemDialog` shows every value), `invai-web/src/i18n/{en,es}.ts`
++   * `reprintReason.*`.
++   */
++  "under_cure",
++  "cracking",
+ ] as const;
+ 
+ export const QcInput = z.object({
+-- 
+2.50.1 (Apple Git-155)
+
