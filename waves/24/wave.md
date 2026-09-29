@@ -25,3 +25,6 @@
 - [ ] Fresh reset, migrate (through the compiled migrate entry), seed; `run-golden-path` on the dev stack
 - [ ] `sst` config type-checks; no secret values anywhere in git (`gitleaks`-style scan)
 - [ ] Pushed to `main`
+
+## Build log
+- 2026-09-29 Cards written (T-24-1..4). Grant T-24-1: `invai-web/vite.config.ts` and `src/lib/build/csp.ts`, prod `connect-src` only (B-190), web-engineer co-reviews. T-24-1 started (runs beside wave 22's T-22-2 and T-22-3; 3 builders).
