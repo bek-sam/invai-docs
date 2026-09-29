@@ -153,9 +153,11 @@ nobody keeps up to date. Here it's live.
 2. Open the generated draft: title, tags, description, live-validated against that channel's
    rules (length, tag count), plus a **Trademark** section showing the risk check against a
    seeded database of registered clothing marks.
-3. To show a risk hit on demand, go to **Listings → Trademark**, type a well-known brand name
-   (e.g. "Nike") into **Text to check**, click **Check risk** — it comes back flagged. Approving
-   a flagged draft requires an explicit **Approve anyway** confirmation.
+3. To show a risk hit on demand, go to **Listings → Trademark check**, type a well-known brand name
+   (e.g. "Nike") into **Text to check**, click **Check risk** — it comes back flagged. A **high**
+   risk draft can't be approved, published or exported at all until the flagged text is changed —
+   there's no override. A **medium** risk draft needs a recorded compliance note first: click
+   **Record review**, explain why it's acceptable to publish, and it unlocks.
 
 *What the audience should notice:* the shop never gets an Etsy IP strike from an AI-written
 listing that accidentally used a trademarked term, because the check runs before a human signs
