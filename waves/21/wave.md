@@ -47,3 +47,5 @@
 |---|---|---|---|---|---|
 
 ## Retro
+- 2026-09-29 Docs cards T-21-1..T-21-4 (approved) went out with the wave 20 docs push (docs only; nothing to run in a gate). T-21-5 `ae906ad` (web) is held; QA's gate test fix `3f383e5` sits on top of it and is pushed with it. T-21-5 was built while the wave 20 gate's browser run used the shared web dev server; the gate's screens smoke passed with its routes present. Designer r1 approve (note: public terms page shows raw `[[OWNER]]` placeholders; acceptable while every legal page carries the draft banner and nothing is live; revisit at go-live, B-195).
+- 2026-09-29 T-21-5: reviewer r1 approve, designer r1 approve. **Approved and pushed** (web `3f383e5`, includes `ae906ad` and QA's gate fix). Follow-ups B-195, B-196. **Wave 21 complete**: all five cards approved; docs pushed with wave 20's docs push, web pushed now. Its "gate" was the wave 20 gate run (screens smoke with the new routes present) plus the reviewer's checks; B-196 adds the routes to the smoke suite.
