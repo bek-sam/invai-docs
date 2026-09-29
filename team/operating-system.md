@@ -72,7 +72,7 @@ Role files are in `invai/.claude/agents/`, with a backup in `invai-docs/team/age
 ## Who reviews whom
 | Author | Reviewer | Mandatory co-reviewer when |
 |---|---|---|
-| Any engineer, including `platform-sre` for infra and CI | `reviewer` | Contract change or cross-module work: `architect`. Migration or new table: `backend-foundation`. Risk flag tenancy, PII, auth, webhooks, files or payments: `security-reviewer`. Any UI: `product-designer`. Prompts or models: `ai-engineer`. Golden-path area: `qa-engineer` |
+| Any engineer, including `platform-sre` for infra and CI | `reviewer` (also checks UI, consumer impact and golden-path risk; decision 0019) | Only for real risk: contract change: `architect`. Migration or new table: `backend-foundation`. Risk flag tenancy, PII, auth, webhooks, files or payments: `security-reviewer`. Prompts or models: `ai-engineer`. A new screen or a new shared component: `product-designer` (small UI changes: the reviewer alone). The QA check happens once, at the integration gate |
 | `architect` | `reviewer` on a different model | `backend-foundation` plus one consumer engineer |
 | `product-designer` (`invai-ui`) | `web-engineer` or `floor-engineer` | `reviewer` for code quality |
 | `qa-engineer` (test code) | the feature owner | `reviewer` |
@@ -83,12 +83,13 @@ Role files are in `invai/.claude/agents/`, with a backup in `invai-docs/team/age
 **Review rules:**
 - The reviewer gets the card, the diff and the report, never the author's reasoning.
 - Every verdict lists the commands the reviewer re-ran and their results. A verdict without evidence is not a review.
+- Reviewers re-run only the checks for what changed: typecheck, lint and the affected test files in the touched repos. The full suite and E2E run once per wave, at the integration gate (decision 0019).
 - Block only on correctness, acceptance criteria, security, tenancy, idempotency, ownership or scope. Style notes are optional.
 - Scan for weakened tests: deleted or loosened assertions, `.skip`, mocks of the unit under test, special cases, rewritten snapshots.
 - For high-risk flags, use a different model from the author's where possible.
 - Every few waves, the tech lead plants a known bug to measure the catch rate, and records it in `lessons.md`.
 - Every reviewing role, primary or co-reviewer, writes its own file: `waves/<n>/reviews/T-<n>-<k>-<role>-r<round>.md`. A card may be pushed only when every required reviewer's latest file says `approve`.
-- Security co-reviews every `platform-sre` change, and the tech lead also reviews any change that affects a release.
+- Security co-reviews `platform-sre` changes that touch secrets, IAM, network or CI permissions, and the tech lead also reviews any change that affects a release.
 
 ## Where things live
 | What | Where | Owner |

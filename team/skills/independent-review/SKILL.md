@@ -10,9 +10,9 @@ verdict file proves it.
 
 ## When to use
 - Every card, as soon as its author hands over the report (wave step 5).
-- As a co-reviewer (architect, backend-foundation, security-reviewer, product-designer, ai-engineer,
-  qa-engineer, and web-engineer or floor-engineer for `invai-ui` changes) when the card's risk flags require
-  it (`operating-system.md`, "Who reviews whom").
+- As a co-reviewer only for real risk (`operating-system.md`, "Who reviews whom", decision 0019): contract
+  changes, migrations, security flags, prompts, new screens or components. The primary reviewer also covers UI,
+  consumer impact and golden-path risk for everything else.
 - Round 2, after the author fixed round-1 findings.
 
 ## Inputs (and only these)
@@ -42,11 +42,14 @@ different model from the author's (card "Model"; Fable ↔ Opus).
 4. **Ownership and scope.** Every path in `--stat` must match the card's owned globs. Every change must serve
    an acceptance criterion; anything else is scope creep. Both block.
 5. **Re-run the checks yourself.** Don't trust the report's output.
-   - Each touched repo: `pnpm typecheck && pnpm lint && pnpm test` (web/floor also `pnpm build`; imaging
-     `uv run ruff check . && uv run pytest`; infra `pnpm typecheck && pnpm lint`).
+   - Each touched repo: `pnpm typecheck && pnpm lint`, plus the test files the diff adds or changes and the
+     tests of every module it touches (`pnpm vitest run --reporter=dot <paths>`); backend always adds
+     `src/db/rls-coverage.test.ts src/api/authz.test.ts`. Web/floor also `pnpm build`; imaging
+     `uv run ruff check . && uv run pytest <touched tests>`; infra `pnpm typecheck && pnpm lint`.
    - The card's own verification commands.
-   - Golden-path area: the E2E suites per `run-golden-path`. They need a fresh seed, so ask the tech lead or
-     QA for a slot. Never `pnpm db:reset` the shared dev DB yourself while agents run.
+   - The full suites and E2E run once per wave at the integration gate (`run-golden-path`, decision 0019),
+     not in each review. Run the full suite yourself only when the diff touches shared code (`src/lib`,
+     `src/db`, `src/api`, the worker) or the card's report shows a full-suite failure.
    Record every command and its last lines in "Evidence I re-ran".
 6. **Exercise the behavior.** Start your own API (`PORT=31xx pnpm dev:api`, a free port in 3101–3199), sign in
    as the card's role (seed logins in `CLAUDE.md`), and hit each acceptance criterion with curl or the
