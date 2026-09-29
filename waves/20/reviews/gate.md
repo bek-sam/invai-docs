@@ -1,0 +1,92 @@
+# Wave 20 integration gate
+
+Reviewer: qa-engineer, on Fable 5.1. Ran 2026-09-29 11:12–12:05 (machine clock, America/Chicago; the seed shop is America/Phoenix, two hours behind).
+
+Commits under test (local, not pushed):
+- invai-contracts `78d2469` (0.8.0, T-22-1)
+- invai-backend `8ffff2b` (T-20-1, T-20-3, T-20-5, QA acceptance, T-22-1 day-1 stubs `2cda6e2`)
+- invai-web `d092a4b` (T-20-2, QA specs) plus QA's gate fix to `e2e/digest-dates.spec.ts` (see issue 6)
+- invai-floor `68b9cbb` (unchanged; contract consumer)
+
+Cards T-20-1..5, all approved (reviews in `invai-docs/waves/20/reviews/T-20-*`).
+
+## Verdict
+
+**PASS with three filed issues (one High for deploy readiness, none blocking the wave 20 push).** Every repo check is green (backend: one test file flaky under load, green alone, see issue 4). On one fresh seed built **with two workers running** (T-20-5): API golden path 13/13, floor 3/3, full browser run 35/35 in one go (digest-dates 7, digest 8, golden path 13, market 5, screens smoke 2, "No screen issues", no 429s). The wave 20 behaviours all hold on today's real date (Tuesday): digest built for `2026-W39`, points and "unchanged"/"sin cambio", Spanish heading in Spanish, no past act-by item in Market watch, readable Today alert date, translated no-access page.
+
+Two caveats the tech lead should read before pushing:
+1. The browser suites ran against the long-running `dev:all` stack (`web :5173` → `api :3000`), not my own ports, because the web app's CSP makes an isolated web+API pair impossible without editing `vite.config.ts` (issue 1). The `:3000` API is `tsx watch` on the working tree and `find invai-backend/src invai-contracts/src -newermt "<its start>"` is empty, so it serves HEAD. **But another agent started editing `invai-web` at 11:21 while the gate ran** (uncommitted `package.json`, `src/components/app-frame.tsx`, `src/i18n/{en,es}.ts`, `src/routeTree.gen.ts`, `src/routes/signup.tsx`, new `src/routes/{help,legal}/`, `src/content/`, `scripts/sync-content.mjs`; 122 insertions), so the vite dev server on `:5173` served that dirty tree for the browser run (run 3, 12:00). Run 1 (11:31, `vite preview` of a build made at 11:14 from the clean tree, my API `:3190`) passed the 15 digest/digest-dates tests before the CSP stopped the CSV upload. The web repo checks and build ran at 11:13–11:14, before the first edit. If the tech lead wants a browser run on a byte-clean HEAD, the edit must stop first (I never touch another agent's files).
+2. The full browser run passed only after I ran the outside-source demand refresh by hand (issue 2): on the fresh seed, `market.spec.ts:91` fails because the market sweep never loads the mock outside sources when the seed runs with a worker (the new T-20-5 flow).
+
+## 1. Pre-checks — PASS
+
+- `df -h /System/Volumes/Data`: 228Gi, **15Gi available** (> 5 GB).
+- Infra: `local-postgres-1`, `local-valkey-1`, `local-minio-1`, `local-mailpit-1` all `Up 16 hours (healthy)`.
+- `@invai/contracts` links: backend, web, floor all `-> ../../../invai-contracts`.
+- Listeners before start (none mine, left alone): `:3000` pid 15612 and `:3142` pid 15613 (`tsx watch src/api/server.ts`, both started Sep 29 00:01:46), worker pid 15611 (`tsx watch src/worker/index.ts`, same start, Redis DB 0), web `:5173` pid 50677, floor `:5174` pid 50679, imaging `:8000` pid 50696 — all children of one `invai-infra` `dev.sh` run from Sep 28 10:08 (so `MOCK_CARRIER_TRANSIT_HOURS=0.001` is set there). Only `invai` and `invai_test` databases existed; Redis DB 9 was empty.
+- Working trees at start: contracts, backend, web, floor clean at the SHAs above.
+
+## 2. Repo checks — PASS (one file flaky under load, issue 4)
+
+| Repo | Command | Result |
+|---|---|---|
+| invai-contracts | `pnpm typecheck && pnpm lint && pnpm test` | tsc clean; biome clean; **8 files / 87 tests passed** |
+| invai-backend | `REDIS_URL=redis://localhost:6379/9 pnpm typecheck && pnpm lint && pnpm test` | tsc clean; biome 395 files clean; **140 files passed, 1 failed, 2 skipped / 1110 tests passed, 3 failed, 3 skipped, 1 todo** (292.7 s, `invai_test`, concurrent with the seed and the web/floor checks). The 3 failures are all `src/db/seed/outbox-hold.test.ts` (`expected 0 got 2` pending events, then 2 and 3 leaked into the next two tests). **Re-run alone: 3/3 passed.** See issue 4. |
+| invai-web | `pnpm typecheck && pnpm lint && pnpm test && VITE_API_URL=http://localhost:3190 vite build --outDir dist-qa3190` | tsc clean; biome 167 files clean; **17 files / 104 tests passed**; `✓ built in 1.46s` (ran 11:13–11:14 on the clean tree) |
+| invai-floor | same, `--outDir dist-qa3191` | tsc clean; biome 76 files clean; **9 files / 96 tests passed**; `✓ built in 367ms` |
+
+## 3. Fresh seed with the worker running (T-20-5) — PASS
+
+My own worker (pid 26774, `MOCK_CARRIER_TRANSIT_HOURS=0.001`, Redis DB 0, non-watch `tsx src/worker/index.ts`) was started 10 s before the reset; the `dev:all` worker 15611 was running too. `pnpm db:reset && pnpm db:migrate && pnpm db:seed` at 11:15:42–11:16:12:
+- `[reset] schema public recreated in invai`, **`[reset] queues obliterated in /0: {"sync":217,"render":5,"ship":22,"ai":4,"reports":135}`** (AC2: only the app's queues in the configured DB).
+- `[seed] designs {"count":40,"sampleArt":true}`, `personalized artwork {"rendered":54,"total":54}`, `sheet files {"composed":4,"of":4}`, `sheets {"count":25,"transfers":591}`, `outbox released {"events":5130}`, **`[seed] done {"orders":360,"items":678,"transitions":3893,"dueSoon":88,"seconds":27}`**, `SEED_EXIT 0`. Item/transition counts vary run to run by design (T-20-5 report: 694/683/678).
+- Worker log during the seed: **0** unique-violation / duplicate-key lines; the only error is one `[outbox] relay tick failed` at the instant the schema was dropped (expected). `stock_levels`: **0 rows with `available < 0`** of 108 (AC4). `alerts`: 15 rows, no conflict.
+- Then restarted my worker (pid 27010) and started my API `PORT=3190 WEB_ORIGIN=http://localhost:5190 FLOOR_ORIGIN=http://localhost:5191 BETTER_AUTH_URL=http://localhost:3190` (pid 27011): `/health {"ok":true,"db":true,"redis":true,"imaging":true,"s3":true}`; imaging `{"ok":true,"vips_version":"8.18.6"}`; web preview `:5190` 200 (pid 27126, after a first start without `VITE_API_URL` died), floor preview `:5191` 200 (pid 27013).
+
+## 4. Golden path — API PASS, browser PASS (run 3), floor PASS
+
+**API golden path** (`E2E_API=1 E2E_API_URL=http://localhost:3190 E2E_WEB_URL=http://localhost:5190 pnpm e2e e2e/api-golden-path.spec.ts`, my API, run after the digest build): **13/13 passed (11.6 s)**. Sheet utilization `[0.8907, 0.6598]`, lengths `[239.43, 26.04]` (the short second sheet is the known end-of-batch case).
+
+**Floor tablet suite** (`pnpm e2e` in `invai-floor`, `:5174` → `:3000`): **3/3 passed (8.8 s)**. (Against my `:5191`/`:3190` pair it fails at `owner sign-in failed (403)`: `e2e/helpers/api.ts:51,61` hard-code `origin: http://localhost:5173`, so the suite only runs against an API whose `WEB_ORIGIN` is `:5173`. Test-code limitation, mine; noted, not fixed this gate.)
+
+**Browser run 3** (`E2E_DIGEST_UNSUB_TOKEN=<token> pnpm e2e`, `:5173` → `:3000`, 12:00): **35 passed (1.7 m)**, one attempt, `retries: 0`, "No screen issues." Runs 1 and 2 before it:
+- Run 1 (`:5190` preview → `:3190`): 15 passed (digest-dates 7/7, digest 8/8 incl. the unsubscribe page with the token), then golden-path step 2 failed (`Import orders from CSV` dialog never shows "New orders": the presigned PUT to MinIO is blocked by the production CSP, issue 1) and `market.spec.ts:91` failed (no "Sample data" badge, issue 2).
+- Run 2 (`:5173` → `:3000`, started right after run 1 and the floor suite): 16 passed, 3 failed: `digest-dates.spec.ts:33` AC1 (a race in my own test, issue 6, fixed), golden-path step 1 (`Too many tries. Wait a few minutes, then try again.` on the login page: Better Auth's `/sign-in/email` 20/min per IP, decision 0008, is Redis-backed and shared by every API process, so run 1 + floor + run 2 from one IP tripped it; environmental, issue 5), `market.spec.ts:91` again (issue 2).
+- Between run 2 and run 3 I ran `refreshDemand()` and enqueued one shop-wide `market.computeSignals` by hand (issue 2 bisection) and fixed the AC1 race.
+
+## 5. Wave 20 checks on today's date (Tuesday 2026-09-29) — PASS
+
+- **Digest built by the sweep, not forced.** Opted `owner@` in (`me.notifications.set {kind:"digest", on:true}`), then enqueued `digest.sweep` (`sweepJob.enqueue({})`, job id 1000): `digests` row `2026-W39 | ready | 2026-09-29 16:17:43Z`. Delivery rows: owner `skipped quiet_hours` (built 09:17 Phoenix on a Tuesday, outside the Monday window: the documented in-app-only rule), admin/office `opted_out`. Email for the token: `digest.sendPreview` → `{"weekKey":"2026-W39","status":"sent"}`; Mailpit `7TKLJpmeQLR0aQV2oMjIaY`, `List-Unsubscribe: <http://localhost:3190/l/<token>>`, `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, subject `Your week at Desert Bloom Tees: net profit $817.78 (-26.6%)`.
+- **Points and unchanged (T-20-1 AC3, T-20-2 AC2).** `digest.get` facts: `marginPct.change {"en":"+2.8 pts","es":"+2.8 pts"}`, `onTimeRate.change {"en":"unchanged","es":"sin cambio"}`; email text `Margin: 31.4% (+2.8 pts vs last week)`, `Shipped on time: 100% (unchanged vs last week)`; web glance cards show `↑ +2.8 pts` and `unchanged` / `sin cambio` with no arrow (shots 01, 02).
+- **Spanish heading (T-20-2 AC1).** List row and page h1 `Semana del lun 21 de sep` (shot 01); English `Week of Mon, Sep 21`.
+- **Numbers (T-20-2 AC4).** Plan usage `348 de 10,000 pedidos … Te quedan 1,919 créditos de IA` (es-US grouping in Spanish).
+- **No past act-by in Market watch (T-20-1 AC1/AC2).** Digest Market watch: one R3 item (`Blessed & Sun-Kissed`, own sales). `market.recommendations.list` after the recompute: 12 R1 + 1 R3; every R1 with `peakMonth 9` (under way) has `actByDate null` and a niche set (`halloween`, `teacher`, `faith`, `vintage-distressed`); `peakMonth 12` → `actByDate 2026-11-03`, `peakMonth 11` → `2026-10-04`. No act-by before today. Mock sources `asOf 2026-09-27` (Sunday ending the last complete ISO week, AC4); the assistant shows "Google Trends, as of 2026-09-27 (Sample data)".
+- **Today alert (T-20-1 AC5).** `alerts.message`: `Ship-by was Sep 25 and no label has been bought.` / `Ship-by was Sep 26 …` (16 `order_overdue` rows; no ISO timestamp).
+- **Refused page (T-20-2 AC3).** office@ on `/settings/notifications` in Spanish: `Sin acceso — No tienes acceso a esta página. Pídeselo al dueño.` with a "Reintentar" button (shot 05); English variant covered by `digest-dates.spec.ts` AC3 (passed).
+
+## 6. Screenshots (`invai-docs/waves/20/reviews/gate-shots/`, looked at)
+
+1. `01-digest-es-390.png` — Spanish digest at phone width: heading in Spanish, `+2.8 pts`, `sin cambio`, `10,000` / `1,919`. **But** the action impact chips read `~704,47 US$ de impacto` / `~64,32 US$ de impacto` (bare-`es` currency) next to `$2,601.22` (es-US) on the same page: issue 3.
+2. `02-digest-en-1440.png` — English digest: `Week of Mon, Sep 21`, `+2.8 pts`, `unchanged` with no arrow, `~$704.47 impact`.
+3. `03-today-en-1440.png` — Today, `Tuesday, September 29`: "Your week in review is ready $817.78 (-26.6%)", KPIs Due today 35 / Overdue 16 / At risk 28 / Blocked 8 (7 mapping · 1 artwork) / On vendor 3 / Low stock 9.
+4. `04-assistant-market-en-1440.png` — assistant, "When should I get ready for the holidays?" with the `Sample data` badge. **Pumpkin Spice Desert: "… Act by 2026-08-04: 0 weeks to the peak, your lead time is 4 weeks. Act now."** — a past act-by date in the assistant on Sep 29: issue 7.
+5. `05-notifications-refused-es-390.png` — office@, Spanish no-access state.
+
+## Issues, ranked (owner in brackets)
+
+1. **High (deploy readiness, not a wave 20 regression) — the production CSP blocks every browser upload to S3.** `invai-web/vite.config.ts` `prodCsp` sets `connect-src ${prodConnectSrc}` = `'self' <VITE_API_URL origin>` (`src/lib/build/csp.ts:31-33`), while `src/lib/upload.ts:50-61` PUTs files straight to the presigned S3/MinIO URL. Proven on `vite preview` (which serves `prodCsp`): the golden-path CSV import never completes (run 1, step 2), and a page-context `fetch("http://localhost:9000/invai-local/")` logs `Connecting to 'http://localhost:9000/invai-local/' violates the following Content Security Policy directive: "connect-src 'self' http://localhost:3190"`. Any deployment whose bucket is not on the web origin loses CSV import, art and blank uploads; `pnpm dev` hides it because `devCsp` lists `S3_ORIGIN` (and hard-codes `DEV_API_ORIGIN = http://localhost:3000`, which is also why an isolated web+API pair on other ports can't run the browser suite). Scenario: a pilot on staging clicks Import CSV and the dialog spins forever. Fix: add the S3/CDN origin to `connect-src` (an env like `VITE_S3_ORIGIN`, pinned the same way as the API). [web-engineer; security-reviewer co-review, since r1 tightened this CSP]
+2. **Medium — on a fresh seed with the worker running, the market's outside sources never load until 03:00 UTC.** Mechanism: the seed's `outbox released` fires `design.updated` → `market.computeSignals` per design (job ids `market-signals-<company>-2026-09-29-<designId>`, 16:16:13–16:16:54Z) with an **empty `market_series_cache`** (only own-sales signals: `own|189`). The hourly `market.sweep` (`marketSweep`, `jobs.ts:540`) then sees `lead_time` signals with today's `computed_on` and returns `queued: 0`, so `market.refreshDemand` is never enqueued (no `bull:reports:market-demand-*` job all morning) and nothing recomputes. Visible result: no `Sample data` badge, no Google Trends/Pinterest/Jungle Scout items, no R1 recommendations (`market.spec.ts:91` red on the fresh seed, runs 1 and 2). Bisection: `refreshDemand()` by hand → 4 sources (`census 120`, `google_trends/pinterest_trends/jungle_scout 46,644` rows each); one shop-wide `computeSignals` → `google_trends|t|138` etc., 12 R1 recommendations, `market.spec.ts` 5/5 (run 3). Wave 19 didn't hit this because the seed ran with the worker stopped, so the first sweep found no signals and refreshed demand first. Fix belongs in the sweep's due check (treat a day as done only when the demand cache is fresh, or enqueue `refreshDemand` before per-shop jobs whenever the cache is empty). Lowest-layer test to add: `marketSweep(now)` after a design-scoped `computeSignalsForShop` on an empty cache must still enqueue `refreshDemand`. [backend-engineer (market); trigger is T-20-5's flow, backend-foundation informed]
+3. **Low — Spanish digest action chips use bare-`es` currency.** `~704,47 US$ de impacto` beside `$2,601.22` and `+2.8 pts` (PM decision on T-20-1: es-US throughout the digest, no mixed separators). Shot 01. [web-engineer, `components/digest/**`; PM to confirm the chip is inside the "digest" rule]
+4. **Low — `src/db/seed/outbox-hold.test.ts` is flaky under load.** In the full backend run (concurrent with the seed and web/floor checks) `relayUntil` gave up before the 2 released events dispatched (`expected 0 got 2`), and because the three tests share one `companyId` with no cleanup the leftovers cascaded (`expected 0 got 2`, `expected 1 got 3`). Green alone. Suggest `afterEach` cleanup of the company's outbox rows and a relay wait that isn't bounded by 50 iterations of `relayOnce() === 0`. [backend-foundation, T-20-5 file]
+5. **Informational — the browser suite is near the sign-in limit.** `digest-dates` (7 logins) + `digest` (8) + golden-path step 1 = 16 sign-ins in ~40 s against a 20/min per-IP bucket shared by every API process (Redis); a second suite or a stray curl in the same minute trips it (run 2). QA follow-up: reuse `storageState` across the digest specs. [qa-engineer]
+6. **Fixed — QA's own AC1 test raced the route change.** `e2e/digest-dates.spec.ts:47`: after clicking the digest row, `settled()` passed at once (the list has no skeletons) and `h1` was still the list's `Resúmenes`. Added `waitForURL(/\/digests\/\d{4}-W\d{2}/)`; green in run 3. Committed by QA.
+7. **Medium — the assistant's seasonality answer still says "Act by <past date>".** `src/modules/ai/assistant-tools.ts:1026` renders `Act by ${r.actBy.date}: ${weeks} to the peak … Act now` for a peak that is under way (Pumpkin Spice Desert: `Act by 2026-08-04: 0 weeks to the peak`, shot 04), while the R1 recommendation for the same design correctly has `actByDate null`. T-20-1 AC1 named "assistant" but the card's diff never touched `assistant-tools.ts` (last change T-19-2); `signals.ts actBy()` still returns the past date with `actNow`. Scenario: an owner asks the assistant on Sep 29 and reads "act by August 4". [ai-engineer (assistant tools) with backend-engineer (market `actBy`); PM to say whether it is a T-20-1 follow-up]
+8. **Informational:** the digest's own-sales Market watch line reads "Your sales, week ending Sep 29" (a Tuesday) because the `own` source's `asOf` is the build day; the mock outside sources say "as of 2026-09-27". Copy question for the PM. The assistant prose prints ISO dates ("as of 2026-09-27") — pre-existing style.
+9. **Process:** an agent edited `invai-web` during the gate (see Verdict). [tech-lead]
+
+## Processes and data
+
+- Started and stopped by recorded PID: worker 26774 (seed run; replaced by 27010), worker 27010, API `:3190` 27011, web preview 27012 (died at start), 27126 and 30421 (`:5190`), floor preview `:5191` 27013; check runners 26245/26247/26249, E2E runs 27759/28345/30029, seed chains 26792/30596 (all exited). `lsof -ti :3190 :5190 :5191` empty afterwards. Nothing of anyone else's was touched: `:3000`/`:3142` APIs, worker 15611, web `:5173`, floor `:5174`, imaging `:8000` still running.
+- Redis DB 9 (backend tests) flushed. No temp databases were created. `invai-web/dist-qa3190`, `invai-floor/dist-qa3191` and the temporary specs `e2e/_gate-shots.spec.ts`, `e2e/_gate-csp.spec.ts` removed.
+- Shared dev DB: reset, migrated and seeded at 11:15 for the gate; **reset, migrated and seeded again at 12:05** after the runs (see the reseed line at the end of this file).
+- Repos after the gate: contracts, backend, floor clean; web `M e2e/digest-dates.spec.ts` (QA, committed) plus the other agent's uncommitted files listed above; docs: this file, `gate-shots/`, `build/qa-report.md`.
