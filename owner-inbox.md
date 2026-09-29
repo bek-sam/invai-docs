@@ -192,3 +192,15 @@ Entry format:
 - Recommendation: A, B and D now. C only after the compliance-officer's review, Shopify first. E after OI-12/13/14.
 - Cost of waiting: nothing in waves A1–A2 is blocked. Each week without D is a week closer to Q4 blank buying without a cash view.
 - Answer:
+
+## OI-19: Engage counsel to review the terms, privacy policy, DPA and sub-processor list drafts?   status: open
+- From: compliance-officer, 2026-09-28. Deadline: before InvAI signs its first paying shop or connects a live Shopify/Etsy/Amazon app that touches real buyer data (backlog B-10). Default if no answer: drafts stay unreviewed and unpublished; every in-app legal page keeps its "Draft, pending legal review" banner (wave 21 fence).
+- Context:
+  - First drafts of the four documents are ready for counsel at `invai-docs/legal/{terms,privacy,dpa,subprocessors}.md`, each with a complete Spanish translation in `invai-docs/legal/es/`. Every document opens "DRAFT for counsel review. Not in force." and marks every value only counsel or the owner can supply (company legal name, address, governing law, prices, liability cap, notice periods) as `[[OWNER: ...]]` or `[COUNSEL: ...]` — nothing is invented.
+  - Every data-handling claim in the privacy policy and DPA is backed by a file:line citation checked against the running code today (30-day buyer PII purge, 18-month non-PII redaction sweep, field-level AES-256-GCM encryption, RLS, PII stripped before any AI call, Shopify's three GDPR compliance webhooks already built, tenant export/deletion within 30 days). See `invai-docs/waves/21/reports/T-21-1.md` for the full evidence table.
+  - Real gaps are stated as gaps, not glossed over: no MFA on PII-access accounts, no centralized 12-month security log, the AWS KMS key is provisioned but unused, no chosen email provider (blocks OI-13), no RDS backup-retention figure confirmed, no error-tracking/analytics vendor in the code.
+  - This does not ask you to publish or sign anything — only whether to spend money having a lawyer review these drafts, and when.
+- Options: A) Engage counsel now, in parallel with closing the remaining DPP/security gaps, so the documents are ready the moment a real sub-processor (Stripe, a chosen email provider) or a live marketplace approval lands. B) Wait until the DPP evidence pack and the open OI-13 (email provider) are closed, so counsel reviews a more finished picture in one pass. C) Hold until a paying shop is imminent.
+- Recommendation: B — the drafts are complete and internally consistent today, but §7 (fees), the email sub-processor and several security controls are still open; one counsel pass after those close avoids a second billed review for the same document.
+- Cost of waiting: no shop-facing legal page can leave its "Draft, pending legal review" banner (wave 21 fence) and no DPA can be offered to a real customer until this is answered and acted on; this does not block any other wave-21 or wave-22 work.
+- Answer:
