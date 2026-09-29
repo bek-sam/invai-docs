@@ -32,7 +32,8 @@
 - 2026-09-28 T-21-1 `3cffec0` + r2 `30b1506`: security r1 approve, PM r2 approve. **Approved.** OI-19 (counsel timing) filed.
 - 2026-09-28 T-21-2 `b2d3565`/`fa7e6cd` + r2 `9d5ac3e`: reviewer r2 approve, security r2 approve. **Approved.** Found B-189 (guard does not block `sst secret set` or branch-protection API calls).
 - 2026-09-28 T-21-3 `ed0ef87` + r2 `6fc90a2`: reviewer r2 approve, compliance r1 approve. **Approved.** DPP gaps filed as B-185..B-188.
-- 2026-09-28 T-21-4 building (docs-writer). T-21-5 waits on T-21-4 and the architect's plan review.
+- 2026-09-29 T-21-4 built (13 articles en/es, runbook: 49/49 env keys, reset/seed behavior, E2E section; demo-guide trademark claim fixed). Compliance r1 approve. Product-designer r1 stalled before writing its file; its finding (relayed by the coordinator): all checked content accurate; one defect, untranslated "transfers" in `help/es/receiving.md` and `help/es/index.md`. Fix sent to docs-writer; designer re-review follows.
+- 2026-09-29 T-21-4 r2 `4e6eb24` (Spanish "transferencias" in 4 articles): product-designer r1 approve (written after the fix), compliance r1 approve. **Approved.** T-21-5 (web) started. T-21-5 waits on T-21-4 and the architect's plan review.
 - Night rule (coordinator, 2026-09-28): owner asleep; apply each OI's safe default; don't stall on two failed rounds (record and move on).
 
 ## Integration gate
