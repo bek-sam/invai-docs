@@ -479,3 +479,11 @@ the one that proves the retry path.
 
 ### AC4: bugs found
 None. Every guard the card names exists and holds; no test was left failing.
+
+## 9. Wave 20 gate (2026-09-29, `invai-docs/waves/20/reviews/gate.md`)
+
+Fresh seed built **with two workers running** (T-20-5: `queues obliterated in /0`, no unique violations, no negative stock). API golden path 13/13 (11.6 s, my API `:3190`), floor 3/3 (8.8 s), full browser run 35/35 (1.7 m, `:5173` → `:3000`, "No screen issues"). Digest `2026-W39` built by the sweep on a Tuesday (in-app only: `quiet_hours`), `+2.8 pts` / `unchanged` / `sin cambio`, `Semana del lun 21 de sep`, no past act-by in Market watch, Today alert `Ship-by was Sep 25 and no label has been bought.`, office@ refused page translated.
+
+Filed (details and owners in the gate file): **High** the production CSP `connect-src 'self' <api>` blocks the browser's presigned PUT to S3/MinIO (CSV import spins forever under `vite preview`; `pnpm dev` hides it) [web-engineer, security co-review]; **Medium** on a fresh seed with a worker running, `market.sweep` treats the day as done after the outbox-triggered `computeSignals` and never enqueues `refreshDemand`, so no outside mock sources, no `Sample data` badge and `market.spec.ts:91` red until 03:00 UTC [backend-engineer market]; **Medium** the assistant seasonality answer still prints `Act by 2026-08-04 … Act now` for an under-way peak (`assistant-tools.ts:1026`) [ai-engineer]; **Low** Spanish digest action chips `~704,47 US$` next to es-US numbers [web-engineer]; **Low** `src/db/seed/outbox-hold.test.ts` flaky under load, shared `companyId` with no cleanup cascades [backend-foundation]. QA fixed its own `e2e/digest-dates.spec.ts` AC1 race (wait for the route change after the row click).
+
+Suite notes: the full browser run makes 16 sign-ins in ~40 s against the 20/min per-IP Redis-shared bucket (decision 0008): don't run another suite or curl sign-ins in the same minute. The floor helper hard-codes `origin: http://localhost:5173`, so the floor suite only runs against an API whose `WEB_ORIGIN` is `:5173`.
