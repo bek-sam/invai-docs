@@ -194,7 +194,7 @@ Entry format:
 - Answer:
 
 ## OI-19: Engage counsel to review the terms, privacy policy, DPA and sub-processor list drafts?   status: open
-- From: compliance-officer, 2026-09-28. Deadline: before InvAI signs its first paying shop or connects a live Shopify/Etsy/Amazon app that touches real buyer data (backlog B-10). Default if no answer: drafts stay unreviewed and unpublished; every in-app legal page keeps its "Draft, pending legal review" banner (wave 21 fence).
+- From: compliance-officer, 2026-09-28. Deadline: 2026-10-12 17:00 America/Phoenix. Default if no answer: drafts stay unreviewed and unpublished; every in-app legal page keeps its "Draft, pending legal review" banner (wave 21 fence).
 - Context:
   - First drafts of the four documents are ready for counsel at `invai-docs/legal/{terms,privacy,dpa,subprocessors}.md`, each with a complete Spanish translation in `invai-docs/legal/es/`. Every document opens "DRAFT for counsel review. Not in force." and marks every value only counsel or the owner can supply (company legal name, address, governing law, prices, liability cap, notice periods) as `[[OWNER: ...]]` or `[COUNSEL: ...]` — nothing is invented.
   - Every data-handling claim in the privacy policy and DPA is backed by a file:line citation checked against the running code today (30-day buyer PII purge, 18-month non-PII redaction sweep, field-level AES-256-GCM encryption, RLS, PII stripped before any AI call, Shopify's three GDPR compliance webhooks already built, tenant export/deletion within 30 days). See `invai-docs/waves/21/reports/T-21-1.md` for the full evidence table.

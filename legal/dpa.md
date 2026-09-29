@@ -93,8 +93,8 @@ commitment]]`
 ## 8. Deletion or return; backup window
 
 On termination of the Controller's account, the Processor will make the Controller's data available for
-export, then delete it within 30 days of a deletion request (sooner if the Controller cancels during the
-export-only window is not offered; the export and the deletion clock run together).
+export, then delete it within 30 days of a deletion request (no separate export-only window is offered; the
+export and the deletion clock run together).
 *Evidence:* `invai-backend/src/modules/privacy/service.ts:283` (`HARD_PURGE_DELAY_MS = 30 * 86400_000`),
 `:372` (export trigger), `:581` (deletion request), `:653` (hard purge, deletes tenant rows and S3 objects).
 Buyer personal data specifically is deleted sooner and automatically: 30 days after delivery regardless of
