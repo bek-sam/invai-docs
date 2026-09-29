@@ -5,7 +5,7 @@
 - Sources: backlog B-10, B-29, B-98, B-106 (docs part), plus runbook lines from T-20-5 and the wave 19 gate (stale jobs after reset). Scope: `always-in-scope: compliance` (B-10, B-29), `product/scope.md#mvp-in` item 14 (onboarding; B-98), `always-in-scope: bug` (B-106 runbook).
 - Rules: `team/agent-brief.md`. Every prompt: "Don't push; only the tech lead pushes after the gate", absolute memory path, record PIDs.
 - Fences: nothing is published or sent. Legal text is a **draft for counsel** (owner track); every legal page in the app carries "Draft, pending legal review" until the owner records counsel's sign-off. No claim of "secure", "compliant" or "guaranteed" in shop-facing text without compliance-officer review.
-- Plan reviewed by: product-manager (pending), architect (pending).
+- Plan reviewed by: product-manager (2026-09-28, approve), architect (2026-09-28, T-21-5 approve with change A1: content drift check).
 
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
@@ -27,6 +27,13 @@
 | T-21-3 | `invai-docs/security/**` |
 | T-21-4 | `invai-docs/help/{en,es}/**`, `invai-docs/build/runbook.md`, `invai-docs/build/demo-guide.md` (only if a step is wrong) |
 | T-21-5 | `invai-web/src/routes/signup.tsx` (links only), new `invai-web/src/routes/help/**`, new `invai-web/src/routes/legal/**`, new `invai-web/src/content/**` (bundled copies), new `invai-web/scripts/sync-content.*`, the app-shell Help entry (file named in the report), `src/i18n/en.ts` + `es.ts` (its keys) |
+
+## Build log
+- 2026-09-28 T-21-1 `3cffec0` + r2 `30b1506`: security r1 approve, PM r2 approve. **Approved.** OI-19 (counsel timing) filed.
+- 2026-09-28 T-21-2 `b2d3565`/`fa7e6cd` + r2 `9d5ac3e`: reviewer r2 approve, security r2 approve. **Approved.** Found B-189 (guard does not block `sst secret set` or branch-protection API calls).
+- 2026-09-28 T-21-3 `ed0ef87` + r2 `6fc90a2`: reviewer r2 approve, compliance r1 approve. **Approved.** DPP gaps filed as B-185..B-188.
+- 2026-09-28 T-21-4 building (docs-writer). T-21-5 waits on T-21-4 and the architect's plan review.
+- Night rule (coordinator, 2026-09-28): owner asleep; apply each OI's safe default; don't stall on two failed rounds (record and move on).
 
 ## Integration gate
 - [ ] Fresh reset, migrate, seed; `run-golden-path` (sign-up and the app shell are touched)

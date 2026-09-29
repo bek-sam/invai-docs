@@ -204,3 +204,11 @@ Entry format:
 - Recommendation: B — the drafts are complete and internally consistent today, but §7 (fees), the email sub-processor and several security controls are still open; one counsel pass after those close avoids a second billed review for the same document.
 - Cost of waiting: no shop-facing legal page can leave its "Draft, pending legal review" banner (wave 21 fence) and no DPA can be offered to a real customer until this is answered and acted on; this does not block any other wave-21 or wave-22 work.
 - Answer:
+
+## OI-20: The Mac's disk is nearly full (3.8 GB free); may the team clear Docker's build cache, or will you free space?   status: open
+- From: tech-lead, 2026-09-28. Deadline: 2026-09-29 12:00 America/Phoenix. Default if no answer: the team deletes nothing outside InvAI; it drops its own test databases, runs one agent at a time for heavy checks, and pauses a gate if free space drops below 2 GB.
+- Context: during wave 20 the data volume hit 100% and Docker (Postgres, Valkey, MinIO) stopped mid-run; it came back after a restart. `docker system df`: images 17.6 GB (13.7 GB unused, mostly other projects: Supabase and "wardrobe" images), build cache 3.2 GB (unused). InvAI's own data volumes are about 7.4 GB and must stay.
+- Options: A) the team runs `docker builder prune` (build cache only, 3.2 GB, rebuilt on demand); B) you remove the unused Supabase/wardrobe images yourself (about 13 GB), or other files; C) both.
+- Recommendation: C. The build cache is safe to clear; other projects' images are yours to judge.
+- Cost of waiting: gates need about 2 GB of scratch space; another full disk stops every agent and Docker again.
+- Answer:

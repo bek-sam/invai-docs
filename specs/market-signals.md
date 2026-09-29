@@ -125,6 +125,8 @@ Computed in code over signals. Each produces `{rule, target, action, params, con
 
 Stockout interaction: if R1 fires and the blank the design needs is below its reorder point, the action names the blank and links to the reorder screen. Weeks where the design's blank was out of stock are excluded from the trend fit (lost sales are not a demand drop).
 
+**R1 timing (wave 20, fixes wave 19 gate issue 1).** R1 never emits a recommendation whose act-by date is already before today (shop time zone): once the act-by date has passed with the peak unreached, the design drops out of R1 for that peak. While today falls inside the peak month itself, R1 still fires but uses the "peak under way" wording (copy table) instead of the "before {{peak}}" wording, and carries no act-by date. `designRules` must set `params.niche` from the design's own niche (`DesignFacts.niche`, not the recommendation's cross-design `niche` pointer used by R4) so the peak-under-way copy has a value to render.
+
 ### Step 6: guardrails (prompt rules + a post-validator; fail closed)
 1. Every number in the answer appears in a tool output from this turn (wave 17 pattern). On a mismatch: regenerate once, then fall back to the tool summaries only.
 2. Every outside fact carries its source and date, e.g. "Google Trends, week ending 2026-09-20".
@@ -209,6 +211,8 @@ In production, for a real shop, a mock outside source counts as **no source**: s
 | niche.label / niche.change | Niche / Change | Nicho / Cambiar |
 | niche.none | No niche yet. Pick one to get market signals. | Aún sin nicho. Elige uno para ver señales del mercado. |
 | R1 action | List {{design}} on {{channels}} and stock {{blank}} before {{peak}}. | Publica {{design}} en {{channels}} y surte {{blank}} antes de {{peak}}. |
+| R1 action (peak under way; wave 20) | The {{niche}} season is on now. Make sure {{design}} is listed and in stock. | La temporada de {{niche}} ya empezó. Asegúrate de que {{design}} esté publicado y con inventario. |
+| source.weekEnding (wave 20) | week ending {{date}} | semana al {{date}} |
 | R2 action | Test a price of {{price}} on {{channel}} for 2 weeks. | Prueba un precio de {{price}} en {{channel}} por 2 semanas. |
 | R3 action | Raise {{design}} to at least {{floor}}, or stop its ads. | Sube {{design}} a por lo menos {{floor}}, o detén sus anuncios. |
 | R4 action | Make 1–2 new designs for the {{niche}} niche. | Crea 1 o 2 diseños nuevos para el nicho {{niche}}. |
@@ -309,3 +313,4 @@ The PM writes the taxonomy file (`invai-docs/product/market-niches.md`, then the
 | 2026-09-27 | product-designer | approve-with-changes | Blocking fixed: recommendation id on the stream and stored message (T-18-1) for votes (flow 4, AC33); niche chip 0/1/2 states and one picker for both, max 2 (flow 5, AC32); `tm.dropped` copy (flow 6, AC31). Taken: `stale.note`, accessible vote names, searchable picker. Left to build: shared `ConfidenceBadge`, glossary words (designer). |
 | 2026-09-27 | qa-engineer | changes-required → resolved | Seed vs fixture rule stated above the ACs; AC3 on a fixture Amazon connection with active status; AC18 written after T-18-3's schema; AC28 a separate QA scale run; sample workspace = existing `isSampleWorkspace` (no schema change). Fixture helpers stay with their owners via the tech lead. |
 | 2026-09-27 | customer-success | approve-with-changes | Blocking 1: mock rule (Providers and mocks) with AC29, AC30 and `rec.sample` in the text. Blocking 2: `disagree.note` (flow 8, AC8). Taken: `season.census` label, `tm.dropped` covers "dropped without saying why". |
+| 2026-09-28 | product-manager | wording rule approved (wave 20 plan review) | Wave 19 gate issues 1 and 4. Added: R1 timing rule (no recommendation once the act-by date has passed; "peak under way" wording while today is in the peak month, no act-by date shown) under Step 5; two Copy rows, "R1 action (peak under way; wave 20)" and "source.weekEnding (wave 20)". Flagged for T-20-1: `designRules` must populate `params.niche` from `DesignFacts.niche` for R1 (currently the recommendation's `niche` field is hardcoded `null` for R1), or the peak-under-way string renders with an empty niche. |

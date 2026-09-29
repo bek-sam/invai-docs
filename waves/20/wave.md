@@ -32,6 +32,9 @@
 | QA acceptance | `invai-backend/src/modules/{digest,market,today}/*.acceptance.test.ts` (new or extended), `invai-web/e2e/digest*.spec.ts` |
 
 ## Grants (written when given)
+- 2026-09-28 T-20-2 (after the fact, accepted): the unit tests next to granted files, `src/lib/errors.test.ts` and `src/components/market/recommendation-copy.test.ts`.
+- 2026-09-28 T-20-2 AC4 amended by the tech lead: es-US in Spanish for digest numbers (PM decision on T-20-1); billing page is B-184.
+- 2026-09-28 T-20-2: `invai-web/src/components/market/recommendation-copy.ts` (R1 peak-under-way line), found by T-20-1.
 - 2026-09-28 T-20-1: `invai-backend/src/integrations/market/mock*.ts`, only the `asOf` computation (end of the last complete week, never a future date). integrations-engineer co-reviews that hunk.
 
 ## Wording rule proposed for PM approval (T-20-1, T-20-2)
@@ -61,6 +64,22 @@
   - Port 3142 (pid 68589) is the pre-wave-19 orphan, not wave 20's; left alone. Port 3000 (pid 68649) is the shared dev API.
   - invai-docs has 3 unpushed docs-only commits (`539ea0c` PM research 16, `9a1a445` T-20-4, `9df549f` analytics v2 spec); they go out with the wave 20 gate push.
 - 2026-09-28 Resume: fresh agents for QA acceptance, T-20-5 and T-20-4 round 2 (3 builders), each told what is on disk; T-20-3 resumes when a slot frees, then T-20-1, then T-20-2.
+- 2026-09-28 T-20-4: security r2 **approve** (f0d4b1e); reviewer r1 approve. **All required approvals in.** Synced to `.claude/` by platform-sre (diff limited to T-20-4's changes; settings.json parses).
+- 2026-09-28 QA acceptance done: backend `b307de0` (7 tests, fail for the right reasons), web `f5af662` (`e2e/digest-dates.spec.ts`; added the missing T-20-2 AC2 check), report docs `339131f`. Env note for builders: dev copies from `createdb -T invai` lack `invai_app` grants; reapply `drizzle/0001_grants_extensions.sql` GRANTs.
+- 2026-09-28 T-20-1 started (after QA's commit).
+- 2026-09-28 T-20-3 built `44c76d9` (27 tests, 15 regression proofs; no product bug found), docs `eaf2975`. Reviewer r1 approve; feature owner (backend-engineer shipping) r1 approve. **All required approvals in.** Process note: the feature-owner reviewer briefly toggled a guard in `shipping/service.ts` in the shared tree and reverted it (verified byte-identical with `git diff`); lesson added.
+- 2026-09-28 T-20-1 built `bfae180` (QA's 7 acceptance tests green). It changed the approved R1 rule's effect on wave 18's `market.acceptance.test.ts:627`; QA agreed and updated its own test in `8814acb`. QA co-review approve. Found a web gap: `components/market/recommendation-copy.ts` still says "before {{peak}}" for an under-way peak; granted to T-20-2 (AC5). Open for PM: Spanish decimal convention mix ("31.4%" next to "+3,3 pts").
+- 2026-09-28 T-20-5 built `8fdc733` (root cause: `sheet.built` → `billing.recordSheetBuilt` upserts `usage` mid-seed; the seed now holds the outbox per phase; reset obliterates the 5 app queues only). Reviewer r1 **changes-required**: a running worker's 5-min alert sweep collides with the seed's plain `alerts` inserts (`builder.ts:1521`, `~1609`). Round 2 started.
+- 2026-09-28 T-20-1: integrations r1 approve (mock `asOf` hunk), QA r1 approve, PM r1 **changes-required**: Spanish digest numbers use es-US everywhere, points included ("+6.9 pts" in Spanish too); drop `PTS_LOCALE` in `facts.ts`. QA must update `date-copy.acceptance.test.ts:290-293` to the same form. Reviewer r1 pending.
+- 2026-09-28 T-20-2 built `f59438f` (local `GlanceTile` because `@invai/ui` `StatCard` has no neutral state; `settings/billing.tsx` Spanish numbers still "10,000", outside the grant). In review (reviewer, product-designer).
+- 2026-09-28 **Disk incident:** the data volume hit 100%; Docker stopped mid-run and was restarted (`docker compose up -d`, volumes intact). 3.8 GB free after; stale test DBs dropped. OI-20 asks the owner about clearing Docker's build cache / other projects' images.
+- 2026-09-28 Round 2s: T-20-1 `076dd69` (es-US points) + QA `d6a19f1`; PM r2 **approve**. T-20-2 `d092a4b` (R1 no-niche fallback to the peak month; es-US digest numbers) + QA `6e7db2f` (AC4 re-pointed to the digest page); designer r1 approve.
+- 2026-09-28 **Second usage-limit stop.** Lost mid-task: reviewer r2 for T-20-1 and T-20-2 (no file written), T-20-5 round 2 (uncommitted WIP in `src/db/reset.ts`, `reset.test.ts`, `src/db/seed/builder.ts`, `src/modules/README.md`, new `src/db/seed/sweep-race.test.ts`; it was proving queue scoping with a decoy prefix). The earlier `facts.ts`/`pure.test.ts` WIP seen by QA was T-20-1 r2, since committed in `076dd69`. No wave 20 listener left (3142 is the old orphan). Disk now 14 GB free.
+- 2026-09-28 Resume: T-20-5 r2 (fresh agent told the WIP), reviewer r2 for T-20-1/T-20-2.
+- 2026-09-28 Reviewer r2 **approve** on T-20-1 (`076dd69`) and T-20-2 (`d092a4b`). **T-20-1, T-20-2, T-20-3, T-20-4 have every required approval.** T-20-5 round 2 in progress.
+- 2026-09-29 Push coupling: wave 22's T-22-1 landed backend day-1 stubs `2cda6e2` (needs contracts 0.8.0) between wave 20's commits. Since `main` can't be pushed around a middle commit, T-22-1 (contracts 0.8.0 + stubs) is reviewed before the wave 20 gate and goes out in the same push; the gate runs on HEAD with it.
+- Wave 21: T-21-1 `3cffec0` (legal drafts, OI-19 counsel question), T-21-2 `b2d3565`/`fa7e6cd` (IR plan, access control), T-21-3 `ed0ef87` (security docs; S-15/S-28/S-31 marked fixed; 4 DPP items without backlog ids) built; reviews next.
+- 2026-09-28 Watch at the gate: the full backend run under load showed `market/service.test.ts` beforeAll timing out at 120 s (the suite took 746 s with several agents' suites running). Re-run alone at the gate before calling it a bug.
 
 ## Integration gate
 - [ ] Fresh reset, migrate, seed (with the worker running, to prove T-20-5)

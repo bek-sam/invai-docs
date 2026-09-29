@@ -14,14 +14,14 @@ Status is `open`, `planned (wave n)`, `done (wave n)` or `accepted`.
 ## P0: breaks in production, violates a policy, or blocks a pilot or approval
 | ID | Item | Owner role | Source | Status |
 |---|---|---|---|---|
-| B-01 | RLS is bypassed in AWS because `DATABASE_URL` uses the RDS master user. Create `invai_app` in RDS (bootstrap) and connect as it | platform-sre + backend-foundation | P-G1, v1-#1 | open (wave 25 prep: deferred AWS; bootstrap task code planned) |
-| B-02 | Valkey for BullMQ: cluster mode off, `noeviction` | platform-sre | P-G2 | open (wave 25) |
-| B-03 | Deploy runs migrations as a separate step; HTTPS listener | platform-sre | P-G3, P-G4 | open (wave 25) |
+| B-01 | RLS is bypassed in AWS because `DATABASE_URL` uses the RDS master user. Create `invai_app` in RDS (bootstrap) and connect as it | platform-sre + backend-foundation | P-G1, v1-#1 | open (wave 24) |
+| B-02 | Valkey for BullMQ: cluster mode off, `noeviction` | platform-sre | P-G2 | open (wave 24) |
+| B-03 | Deploy runs migrations as a separate step; HTTPS listener | platform-sre | P-G3, P-G4 | open (wave 24) |
 | B-04 | Shopify `setAvailability` uses the removed `ignoreCompareQuantity`. Move to `changeFromQuantity` plus `@idempotent` | integrations-engineer | M-1 | done (wave 3, T-3-1, T-3-3) |
 | B-05 | Token refresh and rotation for every channel, plus a credential-expiry calendar (Shopify expiring tokens, Amazon 180-day secret and 365-day re-auth, Walmart 1-year, TikTok) | integrations-engineer | M-2, M-28 | partial (wave 3, T-3-1): Shopify done; other channels refresh with their adapters after approval; expiry calendar open |
 | B-06 | Shopify compliance webhooks (`customers/data_request`, `customers/redact`, `shop/redact`), `shopify.app.toml`, and a subscription re-check | integrations-engineer + compliance-officer | M-3, S-G2 | done (wave 3, T-3-1) |
 | B-07 | Etsy webhook dedupe uses a header that doesn't exist. Use `webhook-id`, a persisted delivery table (≥ 30 h), multi-signature verification, and fetch by ID | integrations-engineer | M-7, M-8 | done (wave 1, T-1-2) |
-| B-08 | Dependency, secret and container scanning in CI (Amazon requires 30-day scans); Renovate or Dependabot | platform-sre + security-reviewer | S-G18 | open (wave 26) |
+| B-08 | Dependency, secret and container scanning in CI (Amazon requires 30-day scans); Renovate or Dependabot | platform-sre + security-reviewer | S-G18 | open (wave 25) |
 | B-09 | Email verification and MFA | backend-foundation | S-G1, S-15 | done (wave 2, T-2-3, T-2-4) |
 | B-10 | Written incident-response plan, access-control policy, vendor inventory, DPA and sub-processor list | compliance-officer + platform-sre | S-G29 | planned (wave 21) |
 | B-43 | Generic webhook route enqueues before verifying the signature. Verify first (P0 security) | integrations-engineer | engineering-skills audit | done (wave 1, T-1-2) |
@@ -34,14 +34,14 @@ Status is `open`, `planned (wave n)`, `done (wave n)` or `accepted`.
 | B-13 | Tiered referral fees (Amazon, Walmart), refund fee recovery, Shopify sales tax, TikTok 8% (verify) | backend-engineer (finance) | M-18–22 | done (wave 7, T-7-2); TikTok 8% vs 6% residual is B-164 |
 | B-14 | Etsy AI disclosure aimed at designs, `production_partner_ids`, title rules, trademark notice; never email Etsy buyers | ai-engineer + compliance-officer | M-23–26 | done (wave 8, T-8-1) |
 | B-15 | Untrusted text goes to Claude in delimited data blocks; global AI spend breaker | ai-engineer | S-G3, P-G18 | done (wave 8, T-8-2) |
-| B-16 | DB timeouts, `/livez` vs `/health`, graceful SIGTERM | backend-foundation + platform-sre | P-G6–8 | done (wave 12, T-12-2); ECS stopTimeout/health path in wave 25 |
+| B-16 | DB timeouts, `/livez` vs `/health`, graceful SIGTERM | backend-foundation + platform-sre | P-G6–8 | done (wave 12, T-12-2); ECS stopTimeout/health path in wave 24 |
 | B-17 | Retries with jitter, `UnrecoverableError`, DLQ alert and redrive; outbox purge and a parked-event alert | backend-foundation | P-G9–11 | done (wave 12, T-12-1) |
-| B-18 | Observability baseline: OTel traces API → queue → imaging; logs with `company_id`, `request_id`, `trace_id`; redaction | platform-sre + backend-foundation | P-G14, S-G7 | open (wave 26) |
+| B-18 | Observability baseline: OTel traces API → queue → imaging; logs with `company_id`, `request_id`, `trace_id`; redaction | platform-sre + backend-foundation | P-G14, S-G7 | open (wave 25) |
 | B-19 | Imaging: concurrency limit, pixel cap, format allowlist, service auth | imaging-engineer | P-G15, S-G4 | done (wave 9, T-9-5) |
 | B-20 | Per-tenant API rate limits and queue fairness; spread out the channel poll | backend-foundation | P-G12, P-G13 | done (wave 12, T-12-3) |
-| B-21 | CI hardening: actions pinned by SHA, `permissions:`, images pinned by digest, non-root containers, deploy gated on tests | platform-sre | S-G15–17, S-G19 | open (wave 26) |
-| B-22 | E2E in CI, property-based tests (money, sizes, nesting), axe accessibility checks | qa-engineer | S-G21–23 | partial (wave 13, T-13-4): E2E in CI, property tests and axe not landed (wave 26) |
-| B-23 | KMS field encryption instead of the static key; tenant export and deletion; 18-month retention | backend-foundation + security-reviewer | S-G11, S-G13 | partial (wave 12, T-12-4): export, deletion, retention done; KMS field encryption open (wave 25) |
+| B-21 | CI hardening: actions pinned by SHA, `permissions:`, images pinned by digest, non-root containers, deploy gated on tests | platform-sre | S-G15–17, S-G19 | open (wave 25) |
+| B-22 | E2E in CI, property-based tests (money, sizes, nesting), axe accessibility checks | qa-engineer | S-G21–23 | partial (wave 13, T-13-4): E2E in CI, property tests and axe open (waves 23, 25) |
+| B-23 | KMS field encryption instead of the static key; tenant export and deletion; 18-month retention | backend-foundation + security-reviewer | S-G11, S-G13 | partial (wave 12, T-12-4): export, deletion, retention done; KMS field encryption open (wave 24) |
 | B-24 | CSP and security headers in web and floor; SVG not served inline | web-engineer + floor-engineer | S-G5, S-G6 | done (wave 12, T-12-5) |
 | B-25 | USPS SCAN form (end of day), address verification, rate TTL across price changes | integrations-engineer | M-15–17 | open (P2 sweep) |
 | B-26 | Ship-by with postal holidays; Etsy CSV processing time | backend-engineer (orders) | M-11 | done (wave 7, T-7-4) |
@@ -62,7 +62,7 @@ Status is `open`, `planned (wave n)`, `done (wave n)` or `accepted`.
 | B-34 | Seed: no negative stock; scale seed profiles (small, mid, large) | qa-engineer + backend-foundation | v1-#10 | partial: negative stock in T-20-5; scale profiles open (P2 sweep) |
 | B-35 | DTF defaults: 0.25 in gaps, 150 DPI floor, QC fail reasons, transfer-age warning, maintenance block | imaging-engineer + backend-engineer (production) | research 10 §DTF | partial (wave 9): gap and DPI floor done; QC fail reasons, transfer age, maintenance block open (P2 sweep) |
 | B-36 | Bella+Canvas via SanMar | integrations-engineer | M-29 | out of scope (scope.md "MVP: out": SanMar); see B-155 proposal |
-| B-37 | SSE connection fan-out; tenant-leading trigram indexes; autoscaling | platform-sre + backend-foundation | P-G16, P-G17, P-G20 | open (P2 sweep / wave 26) |
+| B-37 | SSE connection fan-out; tenant-leading trigram indexes; autoscaling | platform-sre + backend-foundation | P-G16, P-G17, P-G20 | open (wave 22 indexes, wave 25 fan-out) |
 | B-38 | Visual regression, runtime contract test, i18n drift check | qa-engineer | S-G24, S-G25, S-G27 | open (P2 sweep) |
 | B-40 | Align `PLAN_CATALOG` label fees, `calc/cost_model.py` and the concept (after the owner answers OI-1) | product-manager + data-analyst + backend-engineer (billing) | unit-economics-model finding | done (wave 7, T-7-3) |
 | B-41 | Film-use metric: report length-weighted use across all vendor sheets (69.8% on seed) as well as full sheets (86–91%) | data-analyst + imaging-engineer | define-metric finding | open (P2 sweep) |
@@ -85,9 +85,9 @@ Sources: `A-BE` backend audit, `A-FE` frontend audit, `A-INF` imaging/infra/cont
 | B-54 | Production reference data: trademark marks (and plans) loaded by a reference-seed step with no demo tenants | backend-foundation + ai-engineer | A-BE, A-INF | done (wave 1, T-1-5) |
 | B-55 | Tenant POs fall back to InvAI's own S&S keys (`suppliers/index.ts`); never use platform keys for a tenant | integrations-engineer | A-BE | done (wave 1, T-1-3) |
 | B-56 | `invai-backend` `pnpm build` fails (`tsup --noExternal`), so Docker/AWS images can't build; add build to the definition of done | backend-foundation | A-QA | done (wave 1, T-1-1) |
-| B-57 | `sst.config.ts` deploy blockers: `imaging.url` on an internal service, worker env (`BETTER_AUTH_URL`, `WEB_ORIGIN`, `FLOOR_ORIGIN`), stage URLs, imaging S3 config (endpoint/keys/region), one registrable domain with ACM for app/floor/api | platform-sre + imaging-engineer | A-INF | open (wave 25) |
-| B-58 | Email in AWS: `SMTP_URL`/`MAIL_FROM` in env schema, SES SMTP secret + IAM, DKIM/SPF/DMARC | platform-sre + backend-foundation | A-INF, A-BE | open (wave 25) |
-| B-59 | Migrations in the prod image: compiled migrate entry + `drizzle/`, one-off ECS task: bootstrap `invai_app` (+ proxy secret) → migrate → reference seed (extends B-01, B-03) | platform-sre + backend-foundation | A-INF | open (wave 25) |
+| B-57 | `sst.config.ts` deploy blockers: `imaging.url` on an internal service, worker env (`BETTER_AUTH_URL`, `WEB_ORIGIN`, `FLOOR_ORIGIN`), stage URLs, imaging S3 config (endpoint/keys/region), one registrable domain with ACM for app/floor/api | platform-sre + imaging-engineer | A-INF | open (wave 24) |
+| B-58 | Email in AWS: `SMTP_URL`/`MAIL_FROM` in env schema, SES SMTP secret + IAM, DKIM/SPF/DMARC | platform-sre + backend-foundation | A-INF, A-BE | open (wave 24) |
+| B-59 | Migrations in the prod image: compiled migrate entry + `drizzle/`, one-off ECS task: bootstrap `invai_app` (+ proxy secret) → migrate → reference seed (extends B-01, B-03) | platform-sre + backend-foundation | A-INF | open (wave 24) |
 
 ### P1
 | ID | Item | Owner role | Source | Status |
@@ -105,17 +105,17 @@ Sources: `A-BE` backend audit, `A-FE` frontend audit, `A-INF` imaging/infra/cont
 | B-70 | Refunds after shipment ingested (Shopify + CSV) into profit (extends B-13) | backend-engineer (finance) + integrations-engineer | A-BE | done (wave 7, T-7-2) |
 | B-71 | Tests for money/side-effect paths (`buyLabel`, `rateOrder`, `voidShipment`, `batchBuy`, `pushTracking`, `syncAvailability`, `publishDraft`, `renderItemArtwork`) and fetch-mocked live adapters (Shopify, EasyPost, S&S) | qa-engineer + owners | A-BE | planned (wave 20, T-20-3) |
 | B-72 | Web demo mode: start with sample data, reset, leave | backend-foundation + web-engineer | A-BE, A-FE | done (wave 5, T-5-3) |
-| B-73 | S3 lifecycle rules match real keys; bucket CORS limited; versioning | platform-sre + architect | A-INF | open (wave 25) |
-| B-74 | RDS production settings (size, backups, deletion protection, final snapshot, `force_ssl`, Pool `ssl`) (P-G5) | platform-sre + backend-foundation | A-INF | open (wave 25) |
-| B-75 | Alarms, SNS, budget, 12-month log retention, error tracking (S-G30) | platform-sre | A-INF | open (wave 26) |
-| B-76 | Deploy pipeline: pinned sibling SHAs gated on green CI, staging → prod promotion, smoke test, rollback, region; infra CI; Docker build in app CI; root `.dockerignore`; compose `full` profile | platform-sre | A-INF | open (wave 26) |
-| B-77 | Missing SST secrets: FloorTokenSecret, SMTP_URL, MAIL_FROM, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, S&S; KMS grant. Since T-1-1, production boot refuses without them (or `ALLOW_MOCKS=true` for a demo stage) | platform-sre | A-INF | open (wave 25) |
+| B-73 | S3 lifecycle rules match real keys; bucket CORS limited; versioning | platform-sre + architect | A-INF | open (wave 24) |
+| B-74 | RDS production settings (size, backups, deletion protection, final snapshot, `force_ssl`, Pool `ssl`) (P-G5) | platform-sre + backend-foundation | A-INF | open (wave 24) |
+| B-75 | Alarms, SNS, budget, 12-month log retention, error tracking (S-G30) | platform-sre | A-INF | open (wave 25) |
+| B-76 | Deploy pipeline: pinned sibling SHAs gated on green CI, staging → prod promotion, smoke test, rollback, region; infra CI; Docker build in app CI; root `.dockerignore`; compose `full` profile | platform-sre | A-INF | open (wave 25) |
+| B-77 | Missing SST secrets: FloorTokenSecret, SMTP_URL, MAIL_FROM, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, S&S; KMS grant. Since T-1-1, production boot refuses without them (or `ALLOW_MOCKS=true` for a demo stage) | platform-sre | A-INF | open (wave 24) |
 | B-78 | Imaging input formats: PDF input (rasterize at target DPI) or reject at upload; SVG at target DPI | imaging-engineer | A-INF | done (wave 9, T-9-1) |
 | B-79 | Sheet identity and scannability: transfer QRs rendered ≥ 300 DPI; sheet header barcode; sheet id in file name; configurable label gap with cut guide | imaging-engineer | A-INF | done (wave 9, T-9-2) |
 | B-80 | PDFs over 200 in rely on `/UserUnit`: cap or verify on vendor RIPs | imaging-engineer + architect | A-INF | done (wave 9, T-9-3) |
 | B-81 | Personalization: multi-line, stroke/outline, photo slot, font enum in contract, missing-glyph flag | imaging-engineer + architect | A-INF | partial (wave 9, T-9-4): buyer-photo upload in the template editor open (P2 sweep) |
 | B-82 | Floor API version handshake (reload signal, compat window for offline replay) | architect + floor-engineer | A-INF | done (wave 13, T-13-1) |
-| B-83 | Contracts CI triggers consumer typechecks; versioning/changelog | architect + platform-sre | A-INF | open (T-13-2 never ran; wave 26) |
+| B-83 | Contracts CI triggers consumer typechecks; versioning/changelog | architect + platform-sre | A-INF | open (T-13-2 never ran; wave 25) |
 | B-84 | Orders UI: rush/flag/artwork/tags, shipment section, address edit for `address_check` holds (new procedure), correct tab counts, more views/filters, bulk cancel, export | web-engineer + architect | A-FE | done (wave 5, T-5-1) |
 | B-85 | Channels settings: Shopify OAuth return message, import history, reconnect for pending/error | web-engineer | A-FE | done (wave 5, T-5-2) |
 | B-86 | Inventory UI: manual PO create/edit, "mark placed manually" for suppliers with no API (production refuses `submitPo` for them since T-1-3), stock count, inventory & supplier settings (S&S account, lead/safety days, `reserveOnImport`) | web-engineer | A-FE | done (wave 6, T-6-1) |
@@ -143,7 +143,7 @@ Sources: `A-BE` backend audit, `A-FE` frontend audit, `A-INF` imaging/infra/cont
 | B-104 | Contract drift: `stock.changed` never published, `listing.synced` never emitted; imaging API contract test; remove or build unused procedures | architect | A-INF, A-FE | done (T-13-3: `stock.changed` was already fine, checked; `listing.synced` removed, unused; imaging contract test added; `production.scanBatch` removed via ADR 0013, the other 12 stay open as B-112) |
 | B-105 | Floor polish: all 12 reprint reasons, truthful QC outcome, English leaks in Spanish, pack progress persisted, camera scanner, PWA icons and `lang` | floor-engineer | A-FE | partial (wave 4, T-4-4): camera scanner open (P2 sweep) |
 | B-106 | Seed collides with a running worker (`stock_levels` unique); runbook fixes (seed time, imaging first, worker stopped, E2E steps, `pnpm stop`, `ALLOW_MOCKS`, `SMTP_URL`, `MAIL_FROM`, `STRIPE_WEBHOOK_SECRET` from T-1-1) | backend-foundation + docs-writer | A-QA | planned (wave 20 T-20-5 seed, wave 21 T-21-4 runbook) |
-| B-107 | Security/cost details: WAF, S3 gateway endpoint, ARM Fargate, imaging scaling; bundle size over 500 kB | platform-sre + web-engineer + floor-engineer | A-INF, A-QA | open (P2 sweep / wave 25) |
+| B-107 | Security/cost details: WAF, S3 gateway endpoint, ARM Fargate, imaging scaling; bundle size over 500 kB | platform-sre + web-engineer + floor-engineer | A-INF, A-QA | open (waves 23, 24) |
 | B-108 | Direct Etsy Open API v3 adapter (OAuth PKCE, receipts sync, tracking push, ledger fees) in mock mode until approval — **needs owner scope approval (OI-3)** | integrations-engineer | owner request | open |
 | B-109 | **P0 before real keys:** demo exclusions key on `demoOwnerUserId IS NOT NULL` (per-user sample workspaces), not `companies.demo`, since the seeded Desert Bloom currently skips plan limits and invite emails. Block label buys, Stripe checkout and vendor mail for sample workspaces. Add a regression test for Desert Bloom's real billing and email. | backend-foundation + integrations-engineer | T-5-3 review | done (wave 6, T-6-5) |
 | B-110 | `Org.demoOwned` contract field, so the web stops detecting the user's sample shop by its slug | architect + web-engineer | T-5-3 review | done (T-13-3) |
@@ -209,7 +209,7 @@ Filed by the `product-manager` from `research/16-growth-opportunities.md` (sourc
 | ID | Item | Owner role | Source | Status |
 |---|---|---|---|---|
 | B-162 | `printsInHouse` and `shipsSaturday` have no settings toggle (API-only); add both to the web settings (contract field for `shipsSaturday` if missing) | web-engineer (+ architect) | `waves/6/reports/T-6-2-report.md`, `waves/7/wave.md` build log | open (P2 sweep) |
-| B-163 | `migrate.ts` advisory-lock wait inherits the 5-min role `statement_timeout`; add `SET LOCAL statement_timeout = 0` and a `lock_timeout` | backend-foundation | `waves/12/wave.md` T-12-2 review | open (wave 25, migrate task) |
+| B-163 | `migrate.ts` advisory-lock wait inherits the 5-min role `statement_timeout`; add `SET LOCAL statement_timeout = 0` and a `lock_timeout` | backend-foundation | `waves/12/wave.md` T-12-2 review | open (wave 22, T-22-2) |
 | B-164 | `CHANNEL_RULES.tiktok.fees.transactionPct` is 8; verified rate 6% (with source and date) | architect + backend-engineer (finance) | `waves/7/reports/T-7-2-report.md` | open (P2 sweep) |
 | B-165 | Eval harness never deletes its throwaway tenant | ai-engineer | `waves/8/wave.md` T-8-5 review | open (P2 sweep) |
 | B-166 | BullMQ `stalledInterval`/`lockDuration` never tuned after a 7.5-min pickup delay (unreproduced); set explicit values and a test | backend-foundation | `waves/3/wave.md` | open (P2 sweep) |
@@ -236,3 +236,9 @@ Filed by the `data-analyst` from `specs/business-analytics-v2.md` (owner directi
 | B-181 | Scheduled report emails (monthly P&L CSV to named people) | backend-foundation + web-engineer | spec T-A15 | proposed (blocked on OI-12, OI-13, OI-14) |
 | B-182 | Move `invai-docs/metrics/sql/*.sql` to `invai-backend/scripts/analytics/` once T-20-5's `scripts/**` grant ends (part of B-49); approved aggregated read-only views for use outside local | data-analyst + backend-foundation (views) | B-49; `metrics/definitions/README.md` | proposed |
 | B-183 | Amazon CSV: `orders.shipping_cents` is 0 for every Amazon order; check whether the export carries shipping credits and map them (shipping margin and revenue are understated otherwise) | integrations-engineer | `metrics/definitions/shipping_margin.md` caveat | open (verify) |
+| B-184 | `settings/billing.tsx` formats numbers with a bare `toLocaleString()` (about a dozen call sites), so Spanish plan limits and credits follow the browser, not the app language; use the app language with the es-US convention | web-engineer | wave 20 T-20-2 report | open (P2 sweep, wave 23 T-23-1) |
+| B-185 | Amazon DPP: account lockout after repeated failed sign-ins per account (distinct from the per-IP rate limit) | backend-foundation + security-reviewer | wave 21 T-21-3 (DPP 2025-11-25 table) | open (before the SP-API application) |
+| B-186 | Amazon DPP: password history (no reuse of the last N passwords) | backend-foundation | wave 21 T-21-3 | open (before the SP-API application) |
+| B-187 | Amazon DPP: retention sweep for non-PII order data at 18 months (today only buyer PII is redacted at 18 months) | backend-foundation + compliance-officer | wave 21 T-21-3 | open (before the SP-API application) |
+| B-188 | Amazon DPP: MFA required (not optional) for owner and admin roles | backend-foundation + web-engineer | wave 21 T-21-3 | open (before the SP-API application) |
+| B-189 | Guard gap: `guard-bash.py` does not block `sst secret set` or GitHub branch-protection/settings API calls (probed rc=0 in the T-21-2 review) though the operating system says secret and repo-setting changes are blocked | platform-sre + security-reviewer | wave 21 T-21-2 reviewer r1 | open (wave 24 or earlier) |
