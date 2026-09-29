@@ -82,17 +82,20 @@
 - Wave 21: T-21-1 `3cffec0` (legal drafts, OI-19 counsel question), T-21-2 `b2d3565`/`fa7e6cd` (IR plan, access control), T-21-3 `ed0ef87` (security docs; S-15/S-28/S-31 marked fixed; 4 DPP items without backlog ids) built; reviews next.
 - 2026-09-28 Watch at the gate: the full backend run under load showed `market/service.test.ts` beforeAll timing out at 120 s (the suite took 746 s with several agents' suites running). Re-run alone at the gate before calling it a bug.
 
-## Integration gate
-- [ ] Fresh reset, migrate, seed (with the worker running, to prove T-20-5)
-- [ ] `run-golden-path` passes (API, browser, floor)
-- [ ] Digest built on today's date: no past act-by item, Spanish heading in Spanish, points for margin, "unchanged" for flat metrics
-- [ ] Key screens looked at by the tech lead
-- [ ] Pushed to `main` (commits: …)
+## Integration gate (2026-09-29, `reviews/gate.md`, qa-engineer)
+- [x] Fresh reset, migrate, seed **with two workers running** (T-20-5 proven)
+- [x] Repo checks green in contracts, backend, web, floor (backend `outbox-hold.test.ts` flaky under load, green alone: issue 4)
+- [x] API golden path 13/13, floor 3/3, full browser run 35/35 in one go (digest-dates 7, digest 8, golden path 13, market 5, screens smoke 2), no 429s
+- [x] Digest on today's real date: no past act-by item, Spanish heading in Spanish, points "+2.8 pts", "sin cambio", readable Today alert, translated no-access page
+- [x] Key screens looked at by the tech lead (gate-shots 01 digest es 390, 05 notifications refused es 390): correct; noted "~704,47 US$" chip (issue 3) and a "Reintentar" button on a no-access page (cosmetic, B-190)
+- [x] Pushed to `main` 2026-09-29: invai-contracts `78d2469` (0.8.0 incl. T-22-1, approved), invai-backend `8ffff2b` (wave 20 + T-22-1 stubs), invai-web `d092a4b` (T-21-5 `ae906ad` held for its own review), invai-docs (this commit chain)
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
+| Primary reviewer r1: 3 of 5 (T-20-3, T-20-4 approve; T-20-1, T-20-2, T-20-5 changes-required). All required reviewers r1: 1 of 5 (T-20-3). Every card approved by round 2 | not planted (OI-15 open) | 0 from approved cards so far; gate found 1 High deploy-readiness issue (CSP blocks browser uploads to S3 in production, pre-existing) and 2 Medium (market mock sources after a worker-seeded reset; assistant still prints "Act by <past date>") | 0 | about 24 h wall clock including three usage-limit stops, two stream stalls and a disk-full Docker stop | builders about 190k–320k per card; reviews 100k–220k |
 
 ## Retro
-- What slipped:
-- Lessons added:
+- **What worked:** acceptance tests first caught a real kit bug (StatCard had no neutral state) and a missing AC; co-reviews caught cross-repo drift twice (Spanish decimal convention; empty niche slot on the web while the email fell back to the month). Security caught a real regression in the guard (a lister relaying PIDs through a file). T-20-5's reviewer reproduced a seed/worker race the author missed.
+- **What slipped:** the card's own copy example ("+6,9 pts") contradicted the older digest rule (es-US), costing a round on two cards; three usage-limit stops and two stalls meant fresh agents had to resume from disk several times; the disk filled once and stopped Docker; an agent edited invai-web while the gate's browser run used the shared dev server.
+- **Lessons added:** reviewers reproduce regression proofs only in a worktree; dev DB copies need GRANTs. Proposed: any copy example in a card is checked against the spec's existing locale rules before the card is issued (tech lead practice); no builder edits a repo whose dev server the gate is using (gate slot covers web/floor too).
