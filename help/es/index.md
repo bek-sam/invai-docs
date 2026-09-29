@@ -14,7 +14,7 @@ updated: 2026-09-28
 
 ## El taller
 4. [Vincula una tableta del taller, entra con tu PIN, y escanea](floor-tablet-setup.md)
-5. [Recibe prendas, transfers del proveedor, o haz un conteo](receiving.md)
+5. [Recibe prendas, transferencias del proveedor, o haz un conteo](receiving.md)
 
 ## Envíos
 6. [Compra una etiqueta de envío y llévale el rastreo al comprador](shipping-labels-and-tracking.md)

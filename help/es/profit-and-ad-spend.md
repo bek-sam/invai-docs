@@ -15,7 +15,7 @@ checked_against: invai-web d092a4b el 2026-09-28
 cuenta bancaria, o un diseño que "vende mucho" pero no sabes si vale la pena.
 
 **Por qué:** **Análisis → Ganancias** toma los ingresos y les resta comisiones del canal, prendas,
-transfers, etiquetas de envío, empaque, mano de obra y gasto publicitario, así que el número que ves
+transferencias, etiquetas de envío, empaque, mano de obra y gasto publicitario, así que el número que ves
 es lo que en verdad queda — se muestra "estimado" junto a cualquier pedido cuyos datos de comisiones
 aún no sean finales.
 

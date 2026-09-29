@@ -30,18 +30,18 @@ envías al proveedor DTF que la imprime.
    como proveedor predeterminado**.
 5. Si imprimes en el taller en lugar de enviarlo, haz clic en **Imprimir en el taller**, y luego en
    **Marcar impresa** cuando salga de la impresora.
-6. Cuando el proveedor devuelva la hoja, haz clic en **Marcar recibida** — sus transfers quedan
-   listos para planchar.
+6. Cuando el proveedor devuelva la hoja, haz clic en **Marcar recibida** — sus transferencias quedan
+   listas para planchar.
 
 ![Vista previa del gang sheet con el botón Enviar al proveedor](../img/gang-sheets-and-vendors/01-build-sheet.png)
 
 ## Cómo comprobar que funcionó
-El estado de la hoja pasa de **Impresa** a **Recibida**, y sus transfers aparecen en la estación
+El estado de la hoja pasa de **Impresa** a **Recibida**, y sus transferencias aparecen en la estación
 **Plancha** de la tableta del taller, listos para escanear.
 
 ## ¿Sigue con el problema?
 - Detente y contacta a soporte si una hoja dice **Recibida** pero el taller no encuentra sus
-  transfers para planchar, o si el costo de film o el tamaño de la hoja se ve mal físicamente.
+  transferencias para planchar, o si el costo de film o el tamaño de la hoja se ve mal físicamente.
 - Envía: el nombre de la hoja, los números de pedido que trae, y una captura de la vista previa. No
   envíes la dirección del comprador.
 

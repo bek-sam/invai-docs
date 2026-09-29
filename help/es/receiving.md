@@ -1,5 +1,5 @@
 ---
-title: Recibe prendas, transfers del proveedor, o haz un conteo
+title: Recibe prendas, transferencias del proveedor, o haz un conteo
 slug: receiving
 lang: es
 roles: [receiver, office]
@@ -9,14 +9,14 @@ updated: 2026-09-28
 checked_against: invai-floor 68b9cbb el 2026-09-28
 ---
 
-# Recibe prendas, transfers del proveedor, o haz un conteo
+# Recibe prendas, transferencias del proveedor, o haz un conteo
 
 **Lo que ves:** Llegaron cajas de prendas o la hoja de un proveedor, o estás haciendo un conteo de
 estante, y la estación **Recibir** de la tableta del taller tiene tres pestañas: **Órdenes de
 compra**, **Transferencias del proveedor** y **Conteo de inventario**.
 
 **Por qué:** Recibir actualiza tu inventario real en el momento en que llegan las prendas, y marca
-que la hoja impresa de un proveedor llegó para que sus transfers pasen a **Plancha**. Hacerlo desde
+que la hoja impresa de un proveedor llegó para que sus transferencias pasen a **Plancha**. Hacerlo desde
 la tableta, junto al estante, mantiene el conteo correcto.
 
 ## Recibe prendas contra una orden de compra
@@ -31,8 +31,8 @@ la tableta, junto al estante, mantiene el conteo correcto.
 ## Recibe una hoja impresa del proveedor
 1. Pestaña **Transferencias del proveedor**. Escanea cualquier código QR de transferencia de la
    hoja, o toca la hoja en la lista de hojas en camino.
-2. Confirma **¿Llegó la hoja {{name}}?**, luego toca **Marcar recibida**. Sus transfers ya están
-   listos para planchar.
+2. Confirma **¿Llegó la hoja {{name}}?**, luego toca **Marcar recibida**. Sus transferencias ya están
+   listas para planchar.
 
 ## Haz un conteo de inventario
 1. Pestaña **Conteo de inventario**. Escanea cada prenda del estante.
