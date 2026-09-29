@@ -22,3 +22,19 @@
 - [ ] Fresh reset, migrate, seed; `run-golden-path`; new role/Spanish/offline suites green
 - [ ] Screens looked at in en/es; floor at 1280×800
 - [ ] Pushed to `main`
+
+## Handoff from wave 22 (2026-09-29, tech lead)
+- **Wave 22 state:** every card is approved (reviews in `waves/22/reviews/`); the only one still open is T-22-4's qa-engineer floor co-review, written by the wave 22 gate. The gate (qa-engineer) was **still running** at handoff: check `waves/22/reviews/gate.md`. **Nothing from wave 22 is pushed yet.** Once `gate.md` shows the pass, push invai-contracts (`0f2f413`, `9e8ea0c`), invai-backend (`faff2b9`..`04e72a0`, migrations 0030–0035) and invai-docs (includes `4a8da1a` decision 0018, `c0e9e5a`, `5f2ed51`), then tick the wave 22 gate boxes.
+- **Don't push:** infra `3dbb899` and web `c1d53a8` (wave 24 T-24-1). They still need the security-reviewer and web-engineer co-reviews. With `c1d53a8`, plain `pnpm build` in invai-web needs `VITE_API_URL`.
+- **First card to start:** B-205 (backend-foundation, sonnet). Backend tests use Redis DB 0 (`src/env.ts` redirects Postgres but not Redis), so BullMQ tests race any dev worker; this is the root of the "flakes" seen since wave 20. It's small; run it before or alongside T-23-3/T-23-4/T-23-5. Until then every run sets its own `REDIS_URL` (see `team/agent-brief.md`). T-23-1/T-23-2 start after wave 22 is pushed.
+- **Add to T-23-1 (web):** B-206 (alert kind `vendor_email_failed`: architect adds the contract kind first, then the vendors switch and web mapping; also read `titleEs`/`messageEs` at `index.tsx:405`), and the Resend button for `unknown`/`failed` deliveries.
+- **Add to T-23-2 (floor):** show `station_maintenance` blocks, including on offline replay (backend blocks by `scannedAt`, `03d780e`).
+- **Open follow-ups:**
+  - B-199: search under RLS (architect decision; T-22-2 AC5 descoped).
+  - B-200: privacy purge misses `address_verifications`.
+  - B-201: market test clock leak.
+  - B-202: mailer `toHash` unkeyed.
+  - B-203 (S-39 Low): tenant columns without an FK, e.g. `createDesign`.
+  - B-204: the seed has no bins or transfer ages.
+  - T-22-5 non-blocking notes (in its report): `updateExisting` doesn't lock the order row, SMTP socket-error retries could rarely double-send, `mergeTotals` ignores a real change to 0.
+- **Environment:** leftover dir `invai-backend-T-22-1-rev` (the tech lead wasn't permitted to delete it); API :3142 (tsx watch since 2026-09-26) and vite :5183, owners unknown. Earlier "stalled" agents can still be alive: check `ps` and `git log` before relaunching (lesson 2026-09-29).
