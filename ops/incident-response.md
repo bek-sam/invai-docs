@@ -43,18 +43,25 @@ and `.claude/skills/add-observability/SKILL.md` own building it). Until then, de
 - **An agent or reviewer** finding a cross-tenant result, a secret in a log, or a test failure that
   implies one of these (`tenant-isolation-audit`, `dependency-and-container-audit`).
 - **In-app alert kinds** already modeled in `invai-contracts/src/schemas/alerts.ts` (`ALERT_KINDS`).
-  The ones that indicate an incident, not routine ops noise:
-  | Alert kind | Severity in schema | What it means |
+  `Alert.severity` (`info`/`warning`/`critical`) is set by the caller when it raises the alert, not
+  fixed per kind in the schema — the same `kind` can be raised at different severities by different
+  callers, so this table gives the severity actually used in code today, not a schema constant. The
+  kinds that indicate an incident, not routine ops noise:
+  | Alert kind | Raised as (code) | What it means |
   |---|---|---|
-  | `queue_failed_spike` | critical | a background queue's failed jobs grew past threshold in 15 min |
-  | `outbox_parked` | critical | an outbox event gave up after its retry budget — needs a redrive |
-  | `ai_breaker_fail_open` | critical | the AI spend check couldn't reach Valkey and let a call through (a fail-open, research 12 §1.10 "A10: fail closed") |
-  | `ai_spend_cap_tenant` / `ai_spend_cap_platform` | critical | a daily AI spend cap was hit — check for a runaway loop or a leaked key before assuming normal usage |
-  | `sync_broken` | warning | a marketplace connection failed 30+ minutes — check for a token compromise (§6.5) before assuming an outage |
-  | `qc_fail_spike` | warning | a spike in QC failures — can indicate wrong art routed to a shop (a possible tenant leak, §6.2) |
-  These alerts are stored per-tenant (`alerts` table, `invai-backend/src/db/schema/tenancy.ts`) and
-  read through `alerts.read`; there is no paging or on-call system reading them yet — a human must
-  be looking at Today or the alerts list.
+  | `queue_failed_spike` | critical (`invai-backend/src/worker/sweeps.ts`) | a background queue's failed jobs grew past threshold in 15 min |
+  | `outbox_parked` | critical (`invai-backend/src/worker/outbox-relay.ts`) | an outbox event gave up after its retry budget — needs a redrive |
+  | `ai_breaker_fail_open` | critical (`invai-backend/src/ai/breaker.ts`) | the AI spend check couldn't reach Valkey and let a call through (a fail-open, research 12 §1.10 "A10: fail closed") |
+  | `ai_spend_cap_tenant` / `ai_spend_cap_platform` | critical (`invai-backend/src/ai/breaker.ts`) | a daily AI spend cap was hit — check for a runaway loop or a leaked key before assuming normal usage |
+  | `sync_broken` | critical (`invai-backend/src/modules/today/service.ts:348`, a connection failed 30+ min) **or** warning (`invai-backend/src/modules/channels/jobs.ts:161`, a stuck webhook; `invai-backend/src/modules/inventory/jobs.ts:33`, a stuck PO submit) | a marketplace connection or sync path failed — check for a token compromise (§6.5) before assuming a routine outage |
+  | `qc_fail_spike` | **defined in the schema, never raised** — `grep -rn qc_fail_spike invai-backend/src` outside `alerts.ts` returns nothing | not a working detection source today; don't rely on it to catch wrong-art-to-wrong-tenant until a card wires it up (would indicate a possible tenant leak, §6.2, once it exists) |
+  These alerts are written per-tenant (`alerts` table, `invai-backend/src/db/schema/tenancy.ts`,
+  `raiseAlert(tx, companyId, ...)`) and read through `alerts.read`, which requires a tenant session
+  — **they reach that shop's own users (Today, the alerts list), not InvAI staff or an agent.**
+  There is no InvAI-side paging or on-call system reading across tenants yet — that is the same
+  gap as the "Planned, not yet built" alarms below (backlog B-75, `invai-docs/waves/backlog.md`) —
+  until then, detection of these kinds depends on a shop noticing and reporting it (the "shop
+  report" bullet above), not on InvAI seeing the alert first.
 - **Planned, not yet built** (research 11 §5.2–5.3, the `define-slo` playbook's starting five SLOs):
   multiwindow burn-rate CloudWatch alarms on API availability, interactive latency, floor scan
   latency, label-purchase job duration and gang-sheet compose time, plus the data-safety alarms
@@ -95,11 +102,11 @@ PII exposure, the entry states these clocks (source: research 12 §5, §2.1):
 
 | Clock | Deadline | Who acts | Template |
 |---|---|---|---|
-| **Amazon security notice** | Within **24 hours of T0** — sent by the owner as the named Incident Management Point of Contact `[[OWNER]]`, to `security@amazon.com` | `[[OWNER]]` sends; an agent drafts | `.claude/skills/incident-response/drafts.md` §2 |
+| **Amazon security notice** | Within **24 hours of T0** — sent by the owner as the named Incident Management Point of Contact `[[OWNER]]`. Address: research 12 §5 and the card both give `security@amazon.com`; research 10 R14 (`invai-docs/research/10-marketplace-engineering-rules.md:75`) gives `security-incident@amazon.com` instead. This document follows the card's address but the two sources disagree — `[[OWNER: confirm]]` the live address against Amazon's current DPP text before sending (`compliance-officer`, `policy-change-watch`) | `[[OWNER]]` sends; an agent drafts | `.claude/skills/incident-response/drafts.md` §2 |
 | **Shop notice (we are the shops' processor/controller-adjacent party)** | Within 24 hours, so each shop can meet its own GDPR 72-hour deadline | `[[OWNER]]` sends; `customer-success` + `compliance-officer` draft | `.claude/skills/incident-response/drafts.md` (shop notice, en/es) |
 | **GDPR breach notice (buyer-facing, via the shop)** | 72 hours from the shop's own awareness — our 24-hour notice to the shop exists to leave them room inside that window | `[[OWNER]]` via the shop | research 12 §2.4 |
 | **Shopify** | Per the Shopify Partner terms; `compliance-officer` checks the current wording (`policy-change-watch`) before drafting | `[[OWNER]]` sends | — |
-| **Etsy** | No Etsy-specific breach-notice clause is recorded yet in our compliance docs; treat it the same as the Shopify path (notify within 24 h) until `compliance-officer` finds Etsy's actual policy text, and record it as a decision when found | `[[OWNER]]` sends | — |
+| **Etsy** | Within **24 hours**, to `dpo@etsy.com` **and to the seller** (each affected shop) — recorded already in `invai-docs/research/10-marketplace-engineering-rules.md:75` (R14) and `:135` ("Breach reporting: within 24 h to `dpo@etsy.com` and to the seller"). `compliance-officer` re-verifies the live Etsy policy text before sending (`policy-change-watch`) since this document only restates the research finding | `[[OWNER]]` sends | `.claude/skills/incident-response/drafts.md` §5 |
 | **US state breach laws** | Per state — a lawyer's call | `[[OWNER]]` via counsel | `legal-doc-draft` playbook |
 
 **MUST NOT** wait for certainty before telling the owner about *possible* PII exposure — the
@@ -121,16 +128,51 @@ or "needs AWS".
    secret). **Needs AWS** in production (`sst secret set FieldEncryptionKey <new> --stage <stage>`,
    then a redeploy) — `[[OWNER]]`.
 3. `BETTER_AUTH_SECRET`: rotating it signs every web session out at once
-   (`invai-backend/src/env.ts` `BETTER_AUTH_SECRET`). **Needs AWS**: `sst secret set
-   BetterAuthSecret <new> --stage <stage>` — `[[OWNER]]`.
+   (`invai-backend/src/env.ts` `BETTER_AUTH_SECRET`). **This also breaks every floor PIN and
+   station session**, because `FLOOR_TOKEN_SECRET` falls back to `BETTER_AUTH_SECRET` when it
+   isn't set separately (`invai-backend/src/env.ts:227`, `FLOOR_TOKEN_SECRET: raw.FLOOR_TOKEN_SECRET
+   ?? raw.BETTER_AUTH_SECRET`) and both PIN hashing and floor session signing key off it
+   (`invai-backend/src/modules/tenancy/floor-auth.ts` `hashPin`, line 162, and floor session
+   signing, line 211). Rotating `BETTER_AUTH_SECRET` alone, with no `FLOOR_TOKEN_SECRET` set,
+   invalidates every stored PIN hash for every tenant at once — no presser, packer or receiver can
+   sign in until PINs are reset. Before rotating `BETTER_AUTH_SECRET` in a key-leak response: set
+   `FLOOR_TOKEN_SECRET` to its own value first if it isn't already set (`sst secret set
+   FloorTokenSecret <new> --stage <stage>` — this secret does not exist in `sst.config.ts` today,
+   see `access-control.md` §5), so floor auth is unaffected by the web-secret rotation. If
+   `FLOOR_TOKEN_SECRET` was never set independently and `BETTER_AUTH_SECRET` must be rotated
+   before that can happen, plan for a floor-wide PIN reset as part of the same incident. **Needs
+   AWS**: `sst secret set BetterAuthSecret <new> --stage <stage>` — `[[OWNER]]`.
+3a. `FLOOR_TOKEN_SECRET` leaked or compromised on its own (not via `BETTER_AUTH_SECRET`): rotate it
+   the same way (`sst secret set FloorTokenSecret <new> --stage <stage>` once it exists as its own
+   SST secret — `[[OWNER]]`); every stored PIN hash stops matching immediately, so this is itself a
+   floor-wide PIN-reset event, not just a "rotate and move on" step.
 4. Provider keys (`ANTHROPIC_API_KEY`, `EASYPOST_API_KEY`, `SHOPIFY_API_KEY`/`SHOPIFY_API_SECRET`,
-   `STRIPE_SECRET_KEY`): rotate at the provider's dashboard, then `sst secret set <Name> <new>
-   --stage <stage>` — `[[OWNER]]` for both the provider console and the AWS secret. Until rotated,
-   the platform runs on the mock provider for that integration by design
-   (`invai-backend/src/env.ts` `mocks.*`), which is the safe fallback, not a bug.
+   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`): rotate at the provider's dashboard, then `sst
+   secret set <Name> <new> --stage <stage>` — `[[OWNER]]` for both the provider console and the AWS
+   secret. **Production does not fall back to a mock provider for these.** Production refuses to
+   boot at all if any `PRODUCTION_KEYS` entry is missing, unless `ALLOW_MOCKS=true` is explicitly
+   set for a demo or staging stage (`invai-backend/src/env.ts:174-199`, the `PRODUCTION_KEYS` list
+   includes `EASYPOST_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`,
+   `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SMTP_URL`, `MAIL_FROM`, `IMAGING_SHARED_SECRET`). So
+   until a leaked provider key is rotated, production keeps running **on the leaked key**, not on a
+   safe mock fallback — rotate it as fast as `sst secret set` and the provider dashboard allow, and
+   don't treat "it'll just fall back to mock" as a reason to slow down. Blanking the key instead of
+   rotating it would make the API fail to start (or, with `ALLOW_MOCKS=true` on a non-production
+   stage only, fall back to mocks with a startup warning) — never set `ALLOW_MOCKS=true` on
+   production. Stripe specifically is live once `STRIPE_SECRET_KEY` is set: Checkout plus a
+   `/webhooks/stripe` handler apply plan and subscription changes with Stripe-event-id idempotency
+   (`invai-backend/src/modules/billing/service.ts`, `stripe-events.ts:30,51-68`; backlog B-53,
+   done wave 2) — a leaked Stripe key is a payment-provider compromise, not a code-only mock, and
+   is also covered by §6.4 step 3 below.
 5. `INTERNAL_ADMIN_TOKEN` (the DLQ/redrive operator token, `invai-backend/src/env.ts`): rotate the
    same way; while unset, the internal admin routes 404 by design.
-6. **GitHub deploy keys / OIDC role** (see `access-control.md` §2 for the list): revoke and reissue
+6. `IMAGING_SHARED_SECRET` (`invai-backend/src/env.ts:54,182`, a `PRODUCTION_KEYS` entry — the
+   header the API and worker send imaging on every render call): rotate it the same way
+   (`sst secret set ImagingSharedSecret <new> --stage <stage>` once it exists as its own SST
+   secret, see `access-control.md` §5 — `[[OWNER]]`) and update imaging's own copy of the value at
+   the same time, since a mismatch makes every render call 401. Until rotated, a leaked value lets
+   the holder call the internal render service directly.
+7. **GitHub deploy keys / OIDC role** (see `access-control.md` §2 for the list): revoke and reissue
    the affected repo's deploy key in GitHub Settings, or (for the OIDC role) tighten or rotate the
    trust policy in IAM — `[[OWNER]]` (repo and AWS account settings).
 
@@ -173,9 +215,19 @@ or "needs AWS".
    (`AI_DAILY_TENANT_CAP_CENTS`, `AI_DAILY_PLATFORM_CAP_CENTS`, `invai-backend/src/env.ts`) and
    pause the feature at zero; `ai_breaker_fail_open` means the check itself failed open — treat
    that as the incident, not just the spend.
-3. Billing (Stripe) is stubbed, not live (`invai-backend/src/modules/billing/service.ts`, research
-   12 gap G12) — a "runaway" here today can only be a code bug, not a real charge; once Stripe is
-   live this section needs updating with webhook idempotency on `event.id` (research 12 §1.8).
+3. Billing (Stripe) is **live** once `STRIPE_SECRET_KEY` is set, not stubbed — research 12 gap G12
+   is out of date. `checkout` opens a real Stripe Checkout session and the plan/subscription status
+   change only in the verified `/webhooks/stripe` handler, which already has webhook idempotency on
+   the Stripe event id (`invai-backend/src/modules/billing/service.ts`,
+   `stripe-events.ts:30,51-68`: the event row is unique on `stripeEventId`, inserted in the same
+   transaction that applies the event; backlog B-53, done wave 2). A billing "runaway" (repeated
+   charges, a plan applied without payment) is a real-money incident: contain by checking Stripe's
+   dashboard for the affected customer and event log `[[OWNER]]`, and rotating
+   `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` per §6.1 step 4 if the webhook secret itself may be
+   compromised (a forged webhook could apply a plan change without a real charge). Only when
+   `STRIPE_SECRET_KEY` is unset does `changePlan` apply plan changes locally with no real charge
+   (mock Stripe, for demos) — check `sst.config.ts`/the stage's secrets to know which mode a given
+   deploy is in before ruling out a real charge.
 4. Contain by disabling the specific integration for the affected tenant (`channels.disconnect` for
    a channel; the AI credit ledger already blocks at zero) rather than a platform-wide kill switch,
    unless the spike is platform-wide.
@@ -190,7 +242,7 @@ or "needs AWS".
 3. Webhook secrets: `EASYPOST_WEBHOOK_SECRET`, and per-channel webhook HMAC secrets, are verified
    on the raw body before any work happens (research 12 §1.8); a compromised secret means an
    attacker could forge deliveries — rotate at the provider, then the SST secret, `[[OWNER]]`.
-4. Every floor station token is separate from marketplace tokens: see `access-control.md` §3 for
+4. Every floor station token is separate from marketplace tokens: see `access-control.md` §6 for
    station token revocation, which is a different containment path (a floor/production incident,
    not a marketplace one).
 
