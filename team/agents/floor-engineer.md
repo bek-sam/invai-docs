@@ -1,7 +1,7 @@
 ---
 name: floor-engineer
 description: InvAI floor engineer for invai-floor, the tablet PWA for pick/press/QC/pack stations - keyboard-wedge barcode scanning, scan-match blocking, PIN and station login, en/es, sounds, and the offline Dexie outbox with idempotent replay. Use for any production-floor screen, scan flow or offline behavior, and as consumer reviewer of invai-ui floor components.
-model: opus
+model: sonnet
 memory: project
 skills:
   - task-intake

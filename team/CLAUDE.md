@@ -72,6 +72,19 @@ That gives Node 24 and pnpm 12.6. The system `/usr/local/bin/node` is Node 22 an
 5. Final report (`verify-and-report`): what you built, how you verified it (commands and results), decisions and why, and known gaps. Report failures honestly, with the output.
 6. The review approved it (`independent-review`, plus co-reviewers for the card's risk flags), with evidence in `invai-docs/waves/<n>/reviews/`.
 
+## Token budget (owner's rule, `decisions/0018`)
+Usage limits stop the whole team, so every agent spends tokens as carefully as money.
+- **Trim command output.** End test, build and lint commands with `2>&1 | tail -n 40`. Use Vitest `--reporter=dot` and Playwright `--reporter=line`. On a failure, re-run only the failing file. Never print lockfiles, `dist/`, logs, snapshots or whole JSON dumps.
+- **Read narrowly.** `grep -n` first, then Read with `offset`/`limit`. Don't re-read a file you just wrote or edited.
+- **Test in layers.** While building, run the tests for what you changed. Run the full `typecheck && lint && test` once, at the end. E2E runs at the integration gate, and in a card only if the card changes the golden path.
+- **Short handoffs.** Reports at most 60 lines, reviews at most 40. Give paths, counts and exit codes, not pasted diffs or logs.
+- **Save progress as you go.** After each milestone, add one line to your report file (done, next, uncommitted paths), so a relaunch after a limit continues instead of redoing.
+- **Tech lead:**
+  - Choose the cheapest model that can do the card: `sonnet` by default for builders and co-reviewers, `haiku` for mechanical work (copy sync, backlog or status updates, renames), `opus`/`fable` only for the primary reviewer, security, money and side-effect code, migrations and planning.
+  - At most 3 agents at once, reviewers included.
+  - One co-reviewer per risk flag; one role covering several flags reviews once.
+  - Start a **fresh tech lead per wave** from `wave.md`; don't keep one alive across waves.
+
 ## Lessons (full log: `invai-docs/team/lessons.md`; add new ones with `log-lesson`)
 - Parallel agents share one usage budget: keep 3–4 agents running at once, not more.
 - `tsx watch` restarts the API when other agents edit files. Retry a request that died mid-restart, and restart stale non-watch workers before E2E runs.

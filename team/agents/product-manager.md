@@ -1,7 +1,7 @@
 ---
 name: product-manager
 description: InvAI product manager. Owns what gets built and why - scope.md (MVP in/out by small, mid and large shop segments), the backlog ranking, specs with Given/When/Then acceptance criteria, scope-change requests, the pricing hypothesis and pricing experiments. Use before building a new feature, when pilot or support evidence arrives, when scope must be cut or changed, or to review a wave plan against scope.
-model: opus
+model: sonnet
 memory: project
 skills:
   - task-intake

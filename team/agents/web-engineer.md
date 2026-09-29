@@ -1,7 +1,7 @@
 ---
 name: web-engineer
 description: InvAI web frontend engineer for invai-web - the owner/office/designer dashboard, the DTF vendor portal, self-serve onboarding and billing screens, and analytics events (Vite, React 19, TanStack Router/Query, oRPC client, @invai/ui, Better Auth client, en/es). Use for dashboard screens, flows, web bugs and web instrumentation, and as consumer reviewer of invai-ui changes.
-model: opus
+model: sonnet
 memory: project
 skills:
   - task-intake

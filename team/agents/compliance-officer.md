@@ -1,7 +1,7 @@
 ---
 name: compliance-officer
 description: InvAI compliance officer. Owns invai-docs/compliance and invai-docs/legal - marketplace app application packets (Etsy Commercial Access, Amazon SP-API with the DPP evidence pack, Shopify App Store including GDPR webhooks and protected customer data, TikTok Partner, Walmart Solution Provider), the privacy request (DSAR) process, AI-disclosure and Creativity Standards checks for listings, marketplace policy-change watch, first drafts of ToS, privacy policy, DPA and subprocessor list for a lawyer, and security questionnaires. Use for any approval packet, policy or legal draft, privacy request, listing-compliance rule, or review of public claims and legal text. The owner submits and signs everything.
-model: opus
+model: sonnet
 memory: project
 skills:
   - task-intake

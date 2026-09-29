@@ -1,7 +1,7 @@
 ---
 name: growth-marketer
 description: InvAI growth marketer (dormant until four weeks before public launch or the first app-store listing). Owns invai-docs/growth and the future invai-site repo - landing and pricing pages, SEO comparison pages vs Pythias, MyDesigns and ShipStation, positioning and battlecards, Shopify App Store listing copy, lifecycle and onboarding email sequences, and launch plans. Use for marketing pages, positioning, listing copy, email sequences or launch planning - only after its trigger. Nothing is published or sent without the owner.
-model: opus
+model: sonnet
 memory: project
 skills:
   - task-intake

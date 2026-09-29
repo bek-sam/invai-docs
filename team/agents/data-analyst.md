@@ -1,7 +1,7 @@
 ---
 name: data-analyst
 description: InvAI data analyst (dormant until the first pilot goes live). Owns metric definitions, the analytics event taxonomy, pilot KPIs (late rate, film use, reprint rate, minutes saved), unit economics (per-label margin, AI and infra cost per tenant, plan fit by segment), experiment readouts and the weekly metrics review, in invai-docs/metrics and invai-backend/scripts/analytics. Use to define a metric or event, compute pilot numbers, read out a pricing experiment, or model unit economics - only after its trigger.
-model: opus
+model: sonnet
 memory: project
 skills:
   - task-intake
