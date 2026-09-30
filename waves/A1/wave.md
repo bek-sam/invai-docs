@@ -14,7 +14,7 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | building: scratch seed on `invai_ta1` finished in 543 s (1326 orders); run 4 (07:48) does the AC-Seed1 counts, API golden path, `market-demand.test.ts` timeout, commit |
+| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | built 472bd80 (found and fixed: 0 late orders in history; market-demand test 60 s timeout); reviewer r1 **changes-required** (history volume cliff ~8x vs live month; Q4 year pick); r2 fix done uncommitted, finisher running checks + commit |
 | T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | **approved r1** (contracts f466088, backend 9228343). AC5 deviation accepted: `channel?` only on the 7 sales-based reads. `supplierTrends.avgUnitCost` fractional cents accepted as a documented derived average. |
 | T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | **reviewer approved** r1 (95e9d69, 1afdfc3, 31db7f3) and r2 (8c616ef, zone grouping on `dest_zone`); **security approved** r1; **backend-foundation (migration) approved**. `analytics/finance-testkit.ts` acknowledged inside the `finance*` split |
 | T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | reviewer r1 changes-required (flaky sort, no tiebreak) → r2 **approved** (2e564af); **security approved** r1; **backend-foundation (migration) approved** |
@@ -58,7 +58,7 @@ Sequence, not full parallelism, on the shared files: **T-A2 (contract) first**, 
 - Non-blocking review notes carried to A2: T-A3 channel/service groupings sort by margin only (ties can swap); `shipmentsWithoutZone` counts orders, the contract text says shipments; `break_even.sql` v2 needed (Net includes dated refunds) for data-analyst.
 
 ## Integration gate
-- [ ] `pnpm gate` passes on a fresh seed, with the SHAs stamped
+- [ ] `pnpm gate` passes on a fresh seed, with the SHAs stamped. Run 1 (09:14, `.gate/run-20260930T141402Z.log`): every repo check green (backend 1298 tests), API golden path 13/13, floor e2e 3/3, screens smoke green; browser golden path step 6 timed out (QA root cause, `reports/gate-step6-qa.md`: Playwright writes traces inside the Vite-watched tree, reload storm, worse with the bigger seed; harness bug, not product). Grant 11:35 to qa-engineer: `invai-web/playwright.config.ts` (+ `.gitignore`) to move the output. Re-gate after T-A1 r2 and the QA fix.
 - [ ] Key screens looked at, including the owed floor screens at 1280×800 in en and es
 - [ ] Pushed to `main`
 
