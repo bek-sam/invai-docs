@@ -1,7 +1,7 @@
 # Spec: business analytics v2 (the shop's numbers, complete)
 
 - Author: data-analyst, 2026-09-28, on the owner's direction ("improve the business analytics of the platform to the 100% possible level, so it uses all the possible ways to improve the business", relayed by the tech lead 2026-09-28).
-- Status: **draft for product-manager review.** Tracks A–C sit inside current scope (items 5–8, 13, 14, 17) and need only the PM's confirmation. Track D items need a scope change (draft: `metrics/scope-change-draft-analytics-v2.md`) and the owner's yes (owner-inbox OI-18).
+- Status: **ready for waves A1/A2 (Tracks A–C only).** Track D stays gated (see below).
 - Scope refs: `product/scope.md#mvp-in` items 5, 6, 7, 8, 13, 14, 17; fences `#market-and-digest-fences`; `decisions/0006-v1-cuts.md` (statistical forecasting stays cut).
 - Metric definitions: `metrics/definitions/` (20 files, index `README.md`); tested SQL: `metrics/sql/`.
 - Builds on: `specs/assistant-business-analyst.md` (wave 17), `specs/market-signals.md` (wave 18), `specs/weekly-digest.md` (wave 19).
@@ -134,13 +134,13 @@ Also proposed but lower or gated: stockout exposure (small, folded into item 6's
 - `shipments.dest_zone` (smallint, nullable): the shipping module stores the carrier zone at label time (from origin and destination ZIP3 in memory); no address or ZIP is stored for analytics.
 
 ### Track B: operations (scope items 5, 7, 14)
-- `analytics.operations({period})` → reprint cost by reason/station/vendor; film waste $ and film use by vendor; waits per step (median, p90, still waiting) and the bottleneck step; measured press minutes per unit per station vs the labor setting; late rate by driver with counts.
+- `analytics.operations({period})` → reprint cost by reason/station/vendor; film waste $ and film use by vendor; waits per step (median, p90, still waiting) and the bottleneck step; measured press minutes per unit per station vs the labor setting; late rate by driver with counts; `hasEnoughHistory: boolean` (whole-response flag, distinct from each metric's own per-widget threshold) for the AC-B/C-screen1 first-run state.
 - Station and person: shop-facing views show stations, never a named person's speed (owner decision needed before per-person views).
 
 ### Track C: inventory, suppliers, designs (scope items 6, 8, 16)
-- `analytics.inventoryHealth({days})` → on-hand value, turns, dead stock variants and value, size-mix gaps (|gap| ≥ 10 points, ≥ 30 units), stockout exposure.
-- `analytics.supplierTrends({period})` → unit cost by supplier × style × month, median lead days, and the lead-time setting when measured differs by > 3 days.
-- `analytics.designLifecycle({asOf, channel?})` → stage per design with u4, p4, last sale; when the market module has a trend for the design, that trend is shown and wins.
+- `analytics.inventoryHealth({days})` → on-hand value, turns, dead stock variants and value, size-mix gaps (|gap| ≥ 10 points, ≥ 30 units), stockout exposure; `hasEnoughHistory: boolean` (AC-B/C-screen1).
+- `analytics.supplierTrends({period})` → unit cost by supplier × style × month, median lead days, and the lead-time setting when measured differs by > 3 days (AC-C5).
+- `analytics.designLifecycle({asOf, channel?})` → stage per design with u4, p4, last sale; when the market module has a trend for the design, that trend is shown and wins; `hasEnoughHistory: boolean` (AC-B/C-screen1).
 - Reorder suggestions gain an optional size split proportional to the trailing size curve (suggestion; the shop edits the PO).
 
 ### Track E: actions, assistant, digest, exports (scope items 13, 14, 17)
@@ -157,10 +157,12 @@ Also proposed but lower or gated: stockout exposure (small, folded into item 6's
 - D-5 Scheduled report emails (monthly P&L CSV to named people): after OI-12/13/14.
 
 ## Acceptance criteria (Given / When / Then)
+- **AC-Seed1** (T-A1, backing every AC below that names a minimum sample) Given a fresh seed, when it finishes, then: order history spans ≥ 18 months with a Q4 peak of ≥ 1.5x the trailing average; ≥ 2 late-shipment drivers have ≥ 30 orders each; ≥ 1 station has ≥ 100 timed press scans with a realistic (non-constant) interval spread; ≥ 2 supplier×style PO pairs show a unit-cost change ≥ 5% or a lead-time change > 3 days; ≥ 2 Shopify buyers each have ≥ 2 orders; ≥ 3 distinct reprint reasons exist across ≥ 2 stations and ≥ 2 vendors; ≥ 1 style/color/size shows a size-mix gap ≥ 15 points with ≥ 30 units sold; ≥ 1 variant qualifies as dead stock (stock > 0, no movement in 90+ days) at a nonzero dollar value; golden-path order/item counts and Today's queue counts are unchanged, or the diff is stated and re-verified green.
+
 Tracks A–C (waves A1–A2):
 - **AC-A1** Given the demo seed and a period, when an owner opens Analytics → Profit with the "Contribution" view, then CM1, CM2 and CM3 per channel appear, and CM3 totals equal the Profit page's Net for the same period to the cent (parity test in backend and one E2E).
 - **AC-A2** Given an order whose label cost is larger than its revenue less its other costs, when the owner opens "Orders that lost money", then that order is listed with its CM2 and "Label" as the largest cost line, and an order with positive CM2 is not listed.
-- **AC-A3** Given labeled orders with shipping charged and label costs, when the owner opens Shipping profit, then each channel shows labeled orders, charged, label cost and margin that match `metrics/sql/shipping_margin.sql` on the same database, and free-shipping orders are counted.
+- **AC-A3** Given labeled orders with shipping charged and label costs, when the owner opens Shipping profit, then each channel shows labeled orders, charged, label cost and margin that match `metrics/sql/shipping_margin.sql` on the same database, and free-shipping orders are counted. Given **zero labeled shipments** in the period, then the tab shows "No labeled shipments yet in this period" instead of a blank table or a $0 margin that reads as good news.
 - **AC-A4** Given a shipment labeled after T-A4 lands, when it is bought, then `shipments.dest_zone` holds a zone 1–9 and no new column holds an address, ZIP or name (test asserts the column list).
 - **AC-A5** Given two weeks with different sales, when the owner asks the assistant "why did profit change this week?", then it calls `explain_profit_change`, the stated volume and per-unit parts add up to the stated change, and the top design named is the one `profit_bridge.sql` ranks first.
 - **AC-A6** Given no fixed costs set, when the owner opens the break-even card, then it says "Add your monthly fixed costs to see break-even" with a link to Settings → Costs, and no break-even number is shown. Given $2,500 set, then break-even orders and pace match `break_even.sql`.
@@ -168,17 +170,24 @@ Tracks A–C (waves A1–A2):
 - **AC-B1** Given reprints and sheets in the period, when the owner opens Analytics → Operations, then reprint cost by reason and film waste $ match `reprint_cost.sql` and `film_waste_cost.sql`.
 - **AC-B2** Given press scans at realistic intervals (seed T-A1), when Operations loads, then measured press minutes per unit per station appear with the timed count, and when the measured median differs from the labor setting by > 25% with ≥ 100 timed units, a suggestion links to Settings → Costs; with fewer timed units it says "not enough scans yet".
 - **AC-B3** Given late shipped orders in the seed, when Operations shows late-shipment drivers, then each cut shows counts, cuts under 30 orders show counts only, and the copy says "were more often", not "caused".
-- **AC-C1** Given the seed's G64000 Sand stock, when the owner opens Inventory health, then the L size shows as under-stocked with its sales and stock share, and a style × color with < 30 units sold is not shown.
+- **AC-B/C-screen1** Given a shop live under 2 weeks (or otherwise below every metric's minimum sample across the board), when the owner opens Operations, Inventory health or Design lifecycle, then the screen shows one whole-screen "not enough history yet" state (the AC-A7 banner pattern), distinct from and in addition to each widget's own per-metric threshold note (AC-B2's "not enough scans yet", the size/style minimum in AC-C1).
+- **AC-C1** Given the seed's G64000 Sand stock, when the owner opens Inventory health, then the L size shows as under-stocked with its sales and stock share, and a style × color with < 30 units sold is shown as "not enough data" rather than omitted (rule 2).
 - **AC-C2** Given variants with stock and no use in 90 days, when Inventory health loads, then dead stock count and value match `blank_stock_health.sql`.
 - **AC-C3** Given a reorder suggestion for a style with a size gap, when the owner creates a PO from it, then the proposed quantities follow the size curve and the owner can edit every line before submitting; nothing is submitted automatically.
 - **AC-C4** Given a design with an active listing and no sale in 60 days, when Design lifecycle loads, then it is "dead"; given the market module has a trend for a design, then that trend is shown.
+- **AC-C5** Given purchase-order lines for a supplier × style over several months, when the owner opens Supplier trends, then unit cost by month and median lead days match `supplier_trends.md`'s SQL, and when the measured lead time differs from the style's lead-time setting by > 3 days, a suggestion links to the setting.
 - **AC-E1** Given D9 conditions (shipping loss per order worse by ≥ $0.50 vs the 4-week median, ≥ 30 labeled orders), when the digest builds, then a D9 action "Review shipping prices on {{channel}}" appears with its $ impact; below the minimum it doesn't fire.
-- **AC-E2** Given the Today page, when the owner opens it on a Wednesday, then up to 5 ranked actions appear with $ impact and a button each, from the same detectors as the digest, and clicking one records a click.
+- **AC-E1b** Given D10 conditions (> 5% of orders in the period are losing orders, ≥ 30 orders total), when the digest builds, then a D10 action "Review your losing orders" appears with its $ impact; below the minimum it doesn't fire.
+- **AC-E1c** Given D11 conditions (dead stock > 15% of stock value, or a size gap ≤ −15 points with < 14 days of cover), when the digest builds, then a D11 action naming the style/color appears; below either threshold it doesn't fire.
+- **AC-E1d** Given D12 conditions (a supplier's unit cost is ≥ 5% higher than 3 months ago), when the digest builds, then a D12 action naming the supplier and style appears with the margin impact; below the threshold it doesn't fire.
+- **AC-E1e** Given D13 conditions (pace is below break-even, fixed costs set), when the digest builds, then a D13 action appears; with no fixed-costs setting, D13 never fires (no break-even to be below).
+- **AC-E1f** Given a period where profit changed and `explain_profit_change` names a top mover, when the digest's D2 detector runs for the same period, then D2's copy names that same top mover.
+- **AC-E2** Given the Today page, when the owner opens it on a Wednesday, then up to 5 ranked actions appear with $ impact and a button each, from the same detectors as the digest, and clicking one records a click. Given zero detectors fire (a healthy week), then the panel shows a plain "Nothing needs attention right now" state, not an empty gap or a hidden panel.
 - **AC-E3** Given a question in Spanish, when a v6 tool answers, then the reply and every label are in Spanish.
 - **AC-E4** Given two companies A and B, when any `analytics.*` procedure or v6 tool runs for A, then no row of B appears (test per procedure and tool).
 - **AC-E5** Given a user without `finance.read` (designer, presser, packer, receiver, vendor), when they call any `analytics.*` procedure, then they get `FORBIDDEN`.
 - **AC-E6** Given any analytics view, when the owner clicks Export CSV, then the file has the same rows and totals as the screen for the same filters and holds no buyer name, email, address or personalization text.
-- **AC-G1** Given the same period, when the Profit page, `analytics.unitEconomics`, the assistant's `get_unit_economics` and the digest snapshot compute net, then all four are equal (one shared function).
+- **AC-G1** Given the digest's last-completed calendar week as the period, with no channel filter and `dimension: order` (whole-shop totals, the only shape the digest snapshot exposes), when the Profit page, `analytics.unitEconomics`, the assistant's `get_unit_economics` and the digest snapshot each compute net for that exact week, then all four are equal to the cent (one shared function, `analytics/shared.ts`'s `computeNet`). A second, separate case covers `channel`-filtered parity: given the same week with `channel: "shopify"`, `unitEconomics` and `get_unit_economics` (which both accept a channel filter) are equal to each other; the digest snapshot has no per-channel net to compare against.
 - **AC-G2** Given a large-shop profile (1,000 orders/day, 90 days), when any `analytics.*` read runs, then it answers in under 1 s p95 locally (`scale-test`), else the card adds a nightly rollup.
 
 Track D criteria are written after the owner's answer.
@@ -227,8 +236,15 @@ Change order: contracts → backend → web; at most 5 cards per wave; reviewer 
 - Pilot-level money outcomes (read out with `experiment-readout`, before/after per shop, counts only): shipping margin per order, reprint cost, film waste, dead stock value.
 
 ## Open questions
-1. PM: are tracks A–C inside items 5–8, 13, 14, 17 as argued here, or does any need its own scope line?
+1. ~~PM: are tracks A–C inside items 5–8, 13, 14, 17 as argued here, or does any need its own scope line?~~ **Answered 2026-09-30 (product-manager):** yes. B-168..B-177 (Tracks A–C, waves A1/A2) fit inside scope items 5, 6, 7, 8, 13, 14 and 17 with no fence violation; full row-by-row check in `waves/analytics-scope-check.md`. B-178..B-181 (Track D) stay out of A1/A2, gated on owner-inbox OI-18 (and B-181 additionally on OI-12/13/14); this spec's Track D section already reflects that fence correctly and needs no change.
 2. Compliance-officer: does Etsy's API Terms "no analytics" clause cover a seller's own repeat-buyer counts computed inside the seller's tool? (Before T-A13.)
-3. Integrations-engineer: does the Amazon CSV carry shipping credits? `orders.shipping_cents` is 0 for every seed Amazon order.
+3. ~~Integrations-engineer: does the Amazon CSV carry shipping credits?~~ **Resolved (wave 22, T-22-3, B-183):** no parser bug; the Amazon export genuinely carries no separate shipping line for these orders. `shipping_margin.md`'s caveat stands; follow-ups tracked as B-197, B-198.
 4. Owner: may shop-facing analytics ever show one named presser's speed? (Default: stations only.)
 5. Architect: a nightly rollup table (`analytics_daily` per shop) now, or only if AC-G2 fails?
+
+## Review log (product-manager, 2026-09-30)
+- Scope: confirmed by product-manager, see open question 1 and `waves/analytics-scope-check.md`. Track D fenced on OI-18 (not approved); nothing in waves A1/A2 needs a scope change.
+- **product-designer (flow):** verdict **changes-required** (`waves/A1/reviews/business-analytics-v2-product-designer.md`), 4 blocking findings: no zero-labeled-shipments state (AC-A3), no screen-level "too little history" state for Operations/Inventory/Design (distinct from per-metric thresholds), D10-D13 had no acceptance criteria, AC-E2 didn't cover the zero-actions/healthy-week state. **All four fixed in this edit**: AC-A3 extended; new AC-B/C-screen1 added (`hasEnoughHistory` flag on `operations`, `inventoryHealth`, `designLifecycle`); AC-E1b..E1f added for D10-D13 and the D2 bridge-mover; AC-E2 extended with the zero-actions state.
+- **qa-engineer (testability):** verdict **changes-required** (`waves/A1/reviews/business-analytics-v2-qa-engineer.md`), 4 blocking findings: T-A1 (seed) had no numeric acceptance criterion of its own, `analytics.supplierTrends` had no AC, D10-D13 had no ACs (same gap product-designer found), AC-G1's parity wasn't one unambiguous assertion (period boundary and channel/dimension filter unstated). **All four fixed in this edit**: new AC-Seed1 with numeric thresholds; new AC-C5 for supplierTrends; AC-E1b..E1f (as above); AC-G1 rewritten to pin the digest's last-completed week, no channel filter, `dimension: order` as the comparable case, with a second named per-channel case.
+- Both reviewers' non-blocking notes (en/es per-surface ACs, AC-C1's exclusion-vs-"not enough data" wording, thin coverage on 3 of 5 v6 tools) are left for the wave A2 UX-spec and card-writing stage; none blocks A1/A2 carding.
+- customer-success (evidence): not run as a separate review this round (PM budget, per task-intake direction); evidence is the owner's direction (2026-09-28, 0 pilots live yet, quoted in "Problem and evidence" above) plus research pain #6/#7/#8/#1/#5 citations already in the spec. No pilot-specific claim is made beyond what's cited; flag to customer-success for a light evidence pass once pilots are live and Track D evidence is needed.

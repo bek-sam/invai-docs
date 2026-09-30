@@ -3,18 +3,32 @@
 - Dates: not started. Runs next, before waves 24/25 (paused until the owner starts AWS, decision 0019) and before the rest of 23b (T-23-3, T-23-4), as the PM ranks them.
 - Goal (user outcome): a shop owner can get, from InvAI's API, true unit economics, losing orders, leakage, shipping margin, operations waits and inventory health on 18 months of realistic seed history. Screens come in A2.
 - Spec: `specs/business-analytics-v2.md` (Tracks A–C). Scope check: `waves/analytics-scope-check.md` (PM, 2026-09-28: fits scope items 5–8, 13, 14, 17).
-- Plan reviewed by: not yet (PM for scope, architect for design).
+- Plan reviewed by: product-manager (2026-09-30, scope confirmed, see below); architect review of card design still owed at wave-plan time.
 
-## Cards (proposed; to be carded by the A1 tech lead)
+## Spec status (product-manager, 2026-09-30): **ready**
+- Scope confirmed (open question 1 in the spec, `waves/analytics-scope-check.md`): B-168..B-177 fit items 5, 6, 7, 8, 13, 14, 17; Track D (B-178..B-181) stays gated on OI-18.
+- product-designer and qa-engineer reviews run (`waves/A1/reviews/business-analytics-v2-{product-designer,qa-engineer}.md`), both **changes-required**; all 8 blocking findings (combined: 4 unique + overlap on D10-D13) fixed directly in the spec — new AC-Seed1, AC-C5, AC-B/C-screen1, AC-E1b..E1f, AC-G1 rewritten for an unambiguous period/filter, AC-A3 and AC-E2 extended for their zero-data states. Spec's own review log has the detail.
+- customer-success evidence review not run separately this round (2 short reviewers max, per instruction); evidence already cited in the spec is the owner's direction plus research pain #1/#5/#6/#7/#8 — flag to customer-success once pilots are live.
+- Full task cards are now written: `waves/A1/T-A1-analytics-seed.md` .. `T-A5-inventory-design-analytics.md`.
+
+## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation (+ qa-engineer tests) | sonnet | reviewer (opus) | golden path | planned |
-| T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | planned |
+| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation (+ qa-engineer tests) | sonnet | reviewer (opus) + qa-engineer, data-analyst | golden path | planned |
+| T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) + backend-foundation, web-engineer, ai-engineer | contract | planned |
 | T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | planned |
 | T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | planned |
-| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) | tenancy | planned |
+| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + architect (cross-module) | tenancy | planned |
 
 Co-reviewers follow decision 0019; data-analyst checks definitions at the gate, not as a co-reviewer.
+
+## File and migration split under `src/modules/analytics/**` (fixes the ownership conflict flagged in the wave 23b handoff)
+Sequence, not full parallelism, on the shared files: **T-A2 (contract) first**, then T-A3, then T-A4, then T-A5 — each of the last three adds only its own lines to files a prior card created.
+- **`analytics/router.ts`**: created by T-A3 (with its own 6 registrations: unitEconomics, losingOrders, leakage, shippingMargin, profitBridge, breakEven). T-A4 adds one registration (`operations`) after T-A3 lands. T-A5 adds three (`inventoryHealth`, `supplierTrends`, `designLifecycle`) plus `export`, after T-A4 lands. No card may edit another card's existing registrations.
+- **`analytics/shared.ts`**: T-A3 only (the `computeNet` function backing AC-G1 parity).
+- **`analytics/finance-service.ts`**: T-A3 only. **`analytics/operations-service.ts`**: T-A4 only. **`analytics/inventory-service.ts`**, **`analytics/design-service.ts`**: T-A5 only.
+- **Migrations**: T-A3 generates `finance_fixed_monthly_cents` first; T-A4 generates `shipping_dest_zone` second (regenerates the journal if it collides, per `CLAUDE.md`). T-A5 adds no migration (size-split logic only, no schema change).
+- **`db/schema/finance.ts`**: T-A3 only. **`db/schema/shipping.ts`**: T-A4 only. **`inventory/reorder.ts`**: T-A5 only (size-split addition, not a rewrite).
 
 ## Handoff from wave 23b (2026-09-30, tech lead)
 - **State:** everything from wave 23 and 23b step 1 is pushed after a full `pnpm gate` pass (`invai-infra/.gate/run-20260930T045101Z.log`): contracts `7ee15b6`, ui `952c174`, backend `61c6396`, web `eb1e86b`, floor `7900d0a`, imaging `58b67ee`. The dev DB is freshly seeded by that gate (now with a digest and market demand data).
@@ -28,7 +42,7 @@ Co-reviewers follow decision 0019; data-analyst checks definitions at the gate, 
 - **T-A1 must keep:** golden-path counts and Today queues unchanged, and the T-23-8 digest and T-23-10 market-demand seed steps. The seed already takes 15–20 minutes, so budget its runtime and say what 18 months adds.
 - **Fences:** B-178..B-181 (Track D) stay out; OI-18 is not approved. No buyer PII in analytics: T-A4 stores the zone number only (AC-A4). OI-17 is not approved either.
 - **Owed from 23b:** look at the floor screens at 1280×800 in en and es (T-23-2) at the A1 gate. No one has looked at them yet.
-- **Environment traps (in `team/agent-brief.md`):** pin `REDIS_URL` to your own DB on every backend command, `db:reset` included (B-219). The web dev CSP allows only API :3000 (B-220). The market tests leak cache rows between files (B-221, Medium): if the gate's backend suite fails in `src/modules/market`, that's the cause. Card B-221 early.
+- **Environment traps (in `team/agent-brief.md`):** pin `REDIS_URL` to your own DB on every backend command, `db:reset` included (B-219). The web dev CSP allows only API :3000 (B-220). The market tests leak cache rows between files (B-221, Medium): if the gate's backend suite fails in `src/modules/market`, that's the cause. **B-221 stays a backlog row, not an A1 card** — the wave is already at its 5-card cap (T-A1..T-A5), B-221 has no dependency on the analytics work, and `backend-engineer (market)` already owns it outside this wave. If it flakes the A1 gate, re-run the backend suite alone (`pnpm test src/modules/market` isolated from the rest) rather than adding a 6th card; only promote it into A1 if a card slips and a slot opens.
 - **Unknown processes, leave alone:** :3142 (PID 98947), vite :5183 (PID 73962), PIDs 11838 and 72215.
 - **Owner:** OI-20 (disk; 13 GB free on 2026-09-30), OI-21 (CI read token), OI-22 (T-23-6 round 3). OI-17 and OI-18 are not approved.
 
