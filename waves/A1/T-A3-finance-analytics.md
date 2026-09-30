@@ -13,10 +13,11 @@
 | Backlog ref | B-170 |
 
 ## Owned paths (edit)
-- `invai-backend/src/modules/analytics/router.ts` (**create**; this card owns and commits it first — see "Shared router" below)
+- `invai-backend/src/modules/analytics/router.ts` (**take over** the stub T-A2 committed: implement its 6 procedures and keep the `stubRouter` spread for the other 5 until T-A4/T-A5)
 - `invai-backend/src/modules/analytics/finance-service.ts` (unitEconomics, losingOrders, leakage, shippingMargin, profitBridge, breakEven)
 - `invai-backend/src/modules/analytics/shared.ts` (**create**; the one function both the Profit page and `analytics.unitEconomics` call, for AC-G1 parity — extract, don't duplicate, the net-profit calculation)
-- `invai-backend/src/modules/finance/service.ts` (refactor only as needed to call the shared function from `analytics/shared.ts`; don't change its existing output shape)
+- `invai-backend/src/modules/finance/service.ts` (refactor only as needed to call the shared function from `analytics/shared.ts`, and persist `fixedMonthlyCents` in `updateCostSettings` since `CostSettingsInput` now accepts it; don't change existing output shapes) and its tests `finance/*.test.ts`
+- `invai-backend/src/modules/analytics/*.test.ts` for the files above (name them `finance-*.test.ts`)
 - `invai-backend/src/db/schema/finance.ts` (add `cost_settings.fixed_monthly_cents`, nullable int) + its migration (`pnpm db:generate --name finance_fixed_monthly_cents`)
 - `invai-docs/metrics/definitions/{contribution_margin,losing_order_rate,revenue_leakage,shipping_margin,profit_bridge,break_even}.md` (only if a definition needs a version line to match what you build — coordinate with data-analyst before editing; prefer no edit)
 
@@ -29,7 +30,7 @@
 - T-A1 (seed) should be far enough along to test against realistic data, but this card can start against the current seed and re-verify once T-A1 lands.
 
 ## Interfaces promised
-- `computeNet(companyId, period, dimension)` in `analytics/shared.ts`: the single function the Profit page (`finance/service.ts` `getProfit`), `analytics.unitEconomics`, the future assistant `get_unit_economics` tool (T-A8) and the digest snapshot (T-A9) all call, so AC-G1 parity is structural, not coincidental.
+- `computeNet(tx, ctx, period, opts)` in `analytics/shared.ts` (takes the tenant transaction and context like other services, so it runs inside `withTenant`; architect plan review finding 5): the single function the Profit page (`finance/service.ts` `getProfit`), `analytics.unitEconomics`, the future assistant `get_unit_economics` tool (T-A8) and the digest snapshot (T-A9) all call, so AC-G1 parity is structural, not coincidental.
 - `analytics/router.ts` registers `unitEconomics`, `losingOrders`, `leakage`, `shippingMargin`, `profitBridge`, `breakEven` now. **T-A4 and T-A5 add their own procedure registrations to this same file later, sequenced after this card lands** (each adds only its own lines; neither may edit this card's registrations without a report to the tech lead).
 
 ## Acceptance criteria

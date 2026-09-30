@@ -7,7 +7,7 @@
 | Spec | `specs/business-analytics-v2.md` Track C; AC-C1, AC-C2, AC-C3, AC-C4, AC-C5, AC-B/C-screen1, AC-E4, AC-E5 |
 | Owner | backend-engineer (inventory) |
 | Reviewer | reviewer (opus) |
-| Co-reviewers | architect (cross-module: reads production/market data for design lifecycle) |
+| Co-reviewers | security-reviewer (tenancy) — decision 0019; the primary reviewer checks that market data is read through the market module's service export, never its tables |
 | Risk flags | tenancy |
 | Model | sonnet |
 | Backlog ref | B-172 |
@@ -16,6 +16,7 @@
 - `invai-backend/src/modules/analytics/router.ts` (add **only** the `inventoryHealth`, `supplierTrends`, `designLifecycle` and `export` procedure registrations; land after T-A4, don't touch T-A3/T-A4's existing registrations)
 - `invai-backend/src/modules/analytics/inventory-service.ts` (**create**: turns, dead stock value, size-mix gaps, stockout exposure, supplier price/lead-time trends)
 - `invai-backend/src/modules/analytics/design-service.ts` (**create**: design lifecycle stage; defers to the market module's trend when one exists for that design)
+- `invai-backend/src/modules/analytics/*.test.ts` for this card's files (name them `inventory-*.test.ts`, `design-*.test.ts`)
 - `invai-backend/src/modules/inventory/reorder.ts` (size-split suggestion only — proportional to the trailing size curve; the shop edits every line before submitting, nothing is submitted automatically)
 
 ## Read-only paths
@@ -28,7 +29,7 @@
 - T-A1 (seed) needed for AC-C1/AC-C2 (dead stock, size-mix gap with real dollar values).
 
 ## Interfaces promised
-- `analytics/router.ts` gains three new registrations: `inventoryHealth`, `supplierTrends`, `designLifecycle` (plus the shared `export` procedure, since no other card claims it — confirm with the tech lead if `export` should instead live in T-A3; default here is this card owns it as the last one to land). No edits to earlier cards' registrations.
+- `analytics/router.ts` gains three new registrations: `inventoryHealth`, `supplierTrends`, `designLifecycle` plus the shared `export` procedure (confirmed on T-A5, architect plan review ruling 3: output identical to `finance.exportCsv`; it calls T-A3/T-A4 services read-only). No edits to earlier cards' registrations.
 - `reorder.ts`'s size-split suggestion never calls a supplier or creates a PO by itself — it only proposes quantities on a draft the shop edits and submits.
 
 ## Acceptance criteria

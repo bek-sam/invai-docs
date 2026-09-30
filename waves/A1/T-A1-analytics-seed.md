@@ -5,9 +5,9 @@
 | Wave | A1 |
 | Scope ref | `product/scope.md#mvp-in` items 5, 6, 7, 8 (the seed feeds profit, inventory, shipping and production analytics) |
 | Spec | `specs/business-analytics-v2.md` (audit §1, gap analysis §3; feeds T-A3/T-A4/T-A5 acceptance criteria) |
-| Owner | backend-foundation (+ qa-engineer co-builds the test assertions) |
+| Owner | backend-foundation |
 | Reviewer | reviewer (opus) |
-| Co-reviewers | qa-engineer (numbers are checkable), data-analyst (numbers look real, per the seed-realism lesson) |
+| Co-reviewers | none (decision 0019: QA and data-analyst checks run at the gate) |
 | Risk flags | golden path |
 | Model | sonnet |
 | Backlog ref | B-168 (absorbs B-130) |

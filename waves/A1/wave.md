@@ -1,9 +1,9 @@
 # Wave A1: analytics v2, the data and read services (B-168..B-172)
 
-- Dates: not started. Runs next, before waves 24/25 (paused until the owner starts AWS, decision 0019) and before the rest of 23b (T-23-3, T-23-4), as the PM ranks them.
+- Dates: started 2026-09-30 00:05 CDT. Runs next, before waves 24/25 (paused until the owner starts AWS, decision 0019) and before the rest of 23b (T-23-3, T-23-4), as the PM ranks them.
 - Goal (user outcome): a shop owner can get, from InvAI's API, true unit economics, losing orders, leakage, shipping margin, operations waits and inventory health on 18 months of realistic seed history. Screens come in A2.
 - Spec: `specs/business-analytics-v2.md` (Tracks A–C). Scope check: `waves/analytics-scope-check.md` (PM, 2026-09-28: fits scope items 5–8, 13, 14, 17).
-- Plan reviewed by: product-manager (2026-09-30, scope confirmed, see below); architect review of card design still owed at wave-plan time.
+- Plan reviewed by: product-manager (2026-09-30, scope confirmed, see below); architect (2026-09-30, `reviews/wave-plan-architect.md`: approve-with-changes; all 3 blocking and 2 other findings applied to T-A2..T-A5 the same day).
 
 ## Spec status (product-manager, 2026-09-30): **ready**
 - Scope confirmed (open question 1 in the spec, `waves/analytics-scope-check.md`): B-168..B-177 fit items 5, 6, 7, 8, 13, 14, 17; Track D (B-178..B-181) stays gated on OI-18.
@@ -14,21 +14,24 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation (+ qa-engineer tests) | sonnet | reviewer (opus) + qa-engineer, data-analyst | golden path | planned |
-| T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) + backend-foundation, web-engineer, ai-engineer | contract | planned |
+| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | planned |
+| T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | planned |
 | T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | planned |
 | T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | planned |
-| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + architect (cross-module) | tenancy | planned |
+| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + security-reviewer (tenancy) | tenancy | planned |
 
-Co-reviewers follow decision 0019; data-analyst checks definitions at the gate, not as a co-reviewer.
+Co-reviewers follow decision 0019 (trimmed 2026-09-30 after the architect plan review): co-reviewers run on sonnet, the primary reviewer on opus. QA and data-analyst checks run at the gate.
 
 ## File and migration split under `src/modules/analytics/**` (fixes the ownership conflict flagged in the wave 23b handoff)
 Sequence, not full parallelism, on the shared files: **T-A2 (contract) first**, then T-A3, then T-A4, then T-A5 — each of the last three adds only its own lines to files a prior card created.
-- **`analytics/router.ts`**: created by T-A3 (with its own 6 registrations: unitEconomics, losingOrders, leakage, shippingMargin, profitBridge, breakEven). T-A4 adds one registration (`operations`) after T-A3 lands. T-A5 adds three (`inventoryHealth`, `supplierTrends`, `designLifecycle`) plus `export`, after T-A4 lands. No card may edit another card's existing registrations.
+- **`analytics/router.ts`**: created as a pure `stubRouter` stub by T-A2 (grant below), taken over by T-A3 (with its own 6 registrations: unitEconomics, losingOrders, leakage, shippingMargin, profitBridge, breakEven). T-A4 adds one registration (`operations`) after T-A3 lands. T-A5 adds three (`inventoryHealth`, `supplierTrends`, `designLifecycle`) plus `export`, after T-A4 lands. No card may edit another card's existing registrations.
 - **`analytics/shared.ts`**: T-A3 only (the `computeNet` function backing AC-G1 parity).
 - **`analytics/finance-service.ts`**: T-A3 only. **`analytics/operations-service.ts`**: T-A4 only. **`analytics/inventory-service.ts`**, **`analytics/design-service.ts`**: T-A5 only.
 - **Migrations**: T-A3 generates `finance_fixed_monthly_cents` first; T-A4 generates `shipping_dest_zone` second (regenerates the journal if it collides, per `CLAUDE.md`). T-A5 adds no migration (size-split logic only, no schema change).
 - **`db/schema/finance.ts`**: T-A3 only. **`db/schema/shipping.ts`**: T-A4 only. **`inventory/reorder.ts`**: T-A5 only (size-split addition, not a rewrite).
+
+## Grants (tech lead)
+- 2026-09-30, T-A2 (architect): `invai-backend/src/modules/analytics/router.ts` (new, stub only) and the one `analytics: analyticsRouter` line plus its import in `invai-backend/src/api/router.ts` (backend-foundation's file). Reason: the root `os.router()` fails typecheck without it; architect plan review ruling 1.
 
 ## Handoff from wave 23b (2026-09-30, tech lead)
 - **State:** everything from wave 23 and 23b step 1 is pushed after a full `pnpm gate` pass (`invai-infra/.gate/run-20260930T045101Z.log`): contracts `7ee15b6`, ui `952c174`, backend `61c6396`, web `eb1e86b`, floor `7900d0a`, imaging `58b67ee`. The dev DB is freshly seeded by that gate (now with a digest and market demand data).

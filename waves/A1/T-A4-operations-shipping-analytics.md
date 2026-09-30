@@ -15,7 +15,8 @@
 ## Owned paths (edit)
 - `invai-backend/src/modules/analytics/router.ts` (add **only** the `operations` procedure registration; land after T-A3 lands, don't touch T-A3's existing registrations)
 - `invai-backend/src/modules/analytics/operations-service.ts` (**create**: reprint cost by reason/station/vendor, film waste $, waits per step (median/p90/still-waiting) and bottleneck step, measured press minutes per unit per station, late-shipment drivers with counts)
-- `invai-backend/src/modules/shipping/**` (zone only: add a `destZone` computation at label-purchase time, from origin/destination ZIP3 held in memory — no new field storing an address or ZIP)
+- `invai-backend/src/modules/shipping/zone.ts` (**create**: a pure ZIP3 → zone 1-9 function) and its test, plus only the label-buy path in `shipping/service.ts` that sets `dest_zone` (no other shipping edits; no new field storing an address or ZIP)
+- `invai-backend/src/modules/analytics/*.test.ts` for this card's files (name them `operations-*.test.ts`)
 - `invai-backend/src/db/schema/shipping.ts` (add `shipments.dest_zone` smallint, nullable) + its migration (`pnpm db:generate --name shipping_dest_zone`, run **after** T-A3's finance migration is committed, per `CLAUDE.md`'s migration-collision rule)
 
 ## Read-only paths
