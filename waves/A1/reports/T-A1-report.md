@@ -218,3 +218,55 @@ and the card's "Today's queue counts ... unchanged or the diff is called out" �
 `invai_ta1`-specific baseline to diff against since this is that baseline; order/item totals
 (1325 orders / 1793 items on the final reseed) are consistent across all three reseeds this session,
 within the seed's normal randomness).
+
+## Round 2
+
+Verification-only, read-only SQL against the shared dev DB (`docker exec -i local-postgres-1 psql -U
+invai -d invai`), freshly seeded by the tech lead's gate at commit 5170e12 (log
+`invai-infra/.gate/run-20260930T172303Z.log`: backend suite + golden path + browser + floor all
+green at this commit). Did not reseed, did not run the full test suite (already proven by the gate).
+Company `01354862-c5d7-4490-9e35-ec848902bee8` (Desert Bloom Tees).
+
+| AC-Seed1 item | Threshold | Result | Met? |
+|---|---|---|---|
+| History span | ≥18 months | 2025-02-27 → 2026-09-30 = 19.0 months | yes |
+| Q4 peak vs trailing avg | ≥1.5x | Nov-2025 439 / Dec-2025 462 vs Mar-Oct-2025 avg 214.4/mo = **2.05x / 2.15x** | yes |
+| No live-window cliff | live vs prior ~2x | last 30d (live) = 358 orders; three prior 30d windows = 322, 315, 305 (avg 314) → **1.14x**, no cliff | yes |
+| Late drivers ≥30 shipped, ≥2 | `late_rate_drivers.sql` | `blocked_over_24h=true` 50 shipped/50 late; `rush=true` 77/50; `personalized=true` 411/57 — **3 drivers** clear 30 with real, varied lateness | yes |
+| Station ≥100 timed units | `press_minutes_per_unit.sql` | 1 station: 176 timed units, median 4.16 min, p75 5.60 min (non-constant) | yes |
+| Supplier×style cost/lead pairs | ≥2, ≥5%/>3d | `supplier_trends.sql`: G64000 cost 260→285¢ (+9.6%), CC1717 lead 4→9d (+5d) | yes |
+| Repeat Shopify buyers | ≥2 buyers, ≥2 orders | 7 buyers, 2+ Shopify orders each | yes |
+| Reprints | ≥3 reasons, ≥2 stations, ≥2 vendors | 4 reasons (ghosting/misprint/peel/wrong_placement), 3 stations, 2 vendor connections | yes |
+| Size-mix gap | ≥15 pts, ≥30 units in group | `size_mix_gap.sql`: BC3001/Black/3XL +18.0pts, BC3001/Dusty Blue/L -18.6pts (groups ≥30 units) | yes |
+| Dead stock | nonzero $ | `blank_stock_health.sql`: 9 dead variants, $1,170.50 | yes |
+| dest_zone spread (edge case) | not always 1 | 8 distinct zones | yes |
+| No profit line yet (edge case) | present | 38 open orders with no `profit_lines` row | yes |
+| Cancelled after on_sheet (edge case) | present | 12 order_items | yes |
+| Golden path unchanged | gate | Already proven green at 5170e12 by the gate (API 13/13, browser 34/34, floor 3/3); not re-run here | yes |
+
+**Review r1 finding 1 (history-volume cliff) — answered:** fixed by ramping closed-history daily
+volume from 6/day (18 months back) to 11/day (at `histEnd`, ~31 days ago), times 1.75 in Q4, so it
+meets the live window's own rate instead of stopping flat at ~1.5/day. Verified above: live 30-day
+window (358 orders) is now only **1.14x** the trailing three 30-day history windows (avg 314), well
+inside the ~2x target — no cliff. (Round 1's own numbers, 8x, are gone.)
+
+**Review r1 finding 2 (Q4-year picks a partial, in-progress quarter) — answered:** fixed by picking
+the most recent year whose Dec 31 falls on or before `histEnd`, instead of `histEnd`'s own year.
+`histEnd` this run is ~2026-08-30 (before Dec 31 2026), so `q4Year` resolves to 2025 — the full,
+already-closed Nov 1-Dec 31 2025 — not a partial in-progress quarter. Confirmed in the monthly
+counts: Nov-2025 (439) and Dec-2025 (462) are both fully boosted, each ≈2.1x the pre-Q4 trailing
+average, not just a few boosted days.
+
+**Optional notes (a-e) from review r1:** left as-is, per the tech lead's instructions (round 2 was
+scoped to findings 1 and 2 only). None of a-e block AC-Seed1: (a) late-iff-driver probability shape
+is cosmetic realism, not a threshold; (b) scan/reprint/PO timing precision issues don't change any
+AC-Seed1 count; (c) the weekly-digest comment is pre-existing and unrelated to this card's diff; (d)
+AC-C1's premise recheck is T-A5's card, not this one; (e) the runtime claim was independently
+reconfirmed by the gate (5377 orders, 43s — see gate log), settling it.
+
+No code changed this round; no processes started; shared dev DB read-only (SELECT only, no reset).
+
+### Verdict
+
+All AC-Seed1 items pass against the dev DB at commit 5170e12. Both review r1 blocking findings are
+resolved with numbers. Recommend: approve.
