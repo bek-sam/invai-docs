@@ -31,7 +31,7 @@ Card: T-A2  Owner: architect  Scope ref: `product/scope.md#mvp-in` items 5, 6, 7
 | Repo | Command | Result |
 |---|---|---|
 | invai-contracts | `pnpm typecheck && pnpm lint && pnpm test` | tsc clean; biome 59 files, no fixes; `Test Files 9 passed, Tests 105 passed` |
-| invai-backend | `pnpm typecheck && pnpm lint` | tsc clean; biome 425 files, no fixes |
+| invai-backend | `pnpm typecheck && pnpm lint && pnpm test` (own DB `invai_ta2_test`, Redis 6; dropped/flushed after) | tsc clean; biome 425 files, no fixes; `Test Files 158 passed, 2 skipped; Tests 1214 passed, 3 skipped, 1 todo` |
 | invai-web | `pnpm typecheck` | tsc clean |
 | invai-floor | `pnpm typecheck` | tsc clean |
 

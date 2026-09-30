@@ -14,11 +14,11 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | building (started 00:13) |
+| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | building: run 1 stalled in the OrbStack crash (00:39); run 2 added seeded `dest_zone`, full suite green; run 3 (01:45) doing the fresh seed, AC-Seed1 counts, API golden path, and the `seed/market-demand.test.ts` load-timeout flake |
 | T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | **approved r1** (contracts f466088, backend 9228343). AC5 deviation accepted: `channel?` only on the 7 sales-based reads. `supplierTrends.avgUnitCost` fractional cents accepted as a documented derived average. |
-| T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | **reviewer approved r1** (95e9d69, 1afdfc3, 31db7f3); full backend suite green at 31db7f3 (tech lead re-run after the OrbStack crash: 162 files, 1255 tests). `analytics/finance-testkit.ts` (test helper) acknowledged as inside T-A3's `finance*` split. Follow-up for review note 2 (zone grouping on `dest_zone`) running; co-reviews after it |
-| T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | reviewer r1 **changes-required** (flaky sort with no tiebreak, `operations-service.ts:141`); round 2 fix running. Built: efdc193, d256a78, 6a5791c, 2dce8f3; live curl: owner 200, designer 403 |
-| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + security-reviewer (tenancy) | tenancy | planned |
+| T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | **reviewer approved** r1 (95e9d69, 1afdfc3, 31db7f3) and r2 (8c616ef, zone grouping on `dest_zone`); **security approved** r1; backend-foundation (migration) running. `analytics/finance-testkit.ts` acknowledged inside the `finance*` split |
+| T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | reviewer r1 changes-required (flaky sort, no tiebreak) → r2 **approved** (2e564af); **security approved** r1; backend-foundation (migration) running |
+| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + security-reviewer (tenancy) | tenancy | building (started 01:40) |
 
 Co-reviewers follow decision 0019 (trimmed 2026-09-30 after the architect plan review): co-reviewers run on sonnet, the primary reviewer on opus. QA and data-analyst checks run at the gate.
 
@@ -48,6 +48,11 @@ Sequence, not full parallelism, on the shared files: **T-A2 (contract) first**, 
 - **Environment traps (in `team/agent-brief.md`):** pin `REDIS_URL` to your own DB on every backend command, `db:reset` included (B-219). The web dev CSP allows only API :3000 (B-220). The market tests leak cache rows between files (B-221, Medium): if the gate's backend suite fails in `src/modules/market`, that's the cause. **B-221 stays a backlog row, not an A1 card** — the wave is already at its 5-card cap (T-A1..T-A5), B-221 has no dependency on the analytics work, and `backend-engineer (market)` already owns it outside this wave. If it flakes the A1 gate, re-run the backend suite alone (`pnpm test src/modules/market` isolated from the rest) rather than adding a 6th card; only promote it into A1 if a card slips and a slot opens.
 - **Unknown processes, leave alone:** :3142 (PID 98947), vite :5183 (PID 73962), PIDs 11838 and 72215.
 - **Owner:** OI-20 (disk; 13 GB free on 2026-09-30), OI-21 (CI read token), OI-22 (T-23-6 round 3). OI-17 and OI-18 are not approved.
+
+## Gate risks seen during the wave
+- 2026-09-30 00:55-01:10: OrbStack crashed (Docker socket gone, Valkey and Postgres hung). Tech lead ran `orb stop/start` + `compose up`; volumes survived. Three builders lost their final runs; the tech lead re-ran the full backend suite at 31db7f3 (green) and the T-A4 live curl.
+- Load-timeout flakes in full-suite runs (same class as B-221): `src/db/seed/market-demand.test.ts` (30 s timeout; T-A1 run 3 fixes it) and `src/modules/shipping/side-effects.acceptance.test.ts` "batchBuy: two batches ... one label per order" (30 s timeout once; 8/8 alone). If the gate flakes on either, re-run that file alone and log it; don't add retries.
+- Non-blocking review notes carried to A2: T-A3 channel/service groupings sort by margin only (ties can swap); `shipmentsWithoutZone` counts orders, the contract text says shipments; `break_even.sql` v2 needed (Net includes dated refunds) for data-analyst.
 
 ## Integration gate
 - [ ] `pnpm gate` passes on a fresh seed, with the SHAs stamped

@@ -53,3 +53,18 @@ Author: backend-engineer (production, shipping) on opus
 ## Processes and data
 - API :3141 tsx watch PID 99229 + node 99238: stopped (port free). Background test run and curl tasks: stopped.
 - Shared dev DB: migrated only (additive column); one mock label bought on seed order #1454. Not reset.
+
+## Round 2 (review r1 fix)
+
+Commit: `2e564af63c48cbb95ed407e0fbbd5c788935ac3e` "T-A4: stable tiebreak on sorted operations cuts (review r1)" (`invai-backend`, files `src/modules/analytics/operations-service.ts`, `src/modules/analytics/operations-service.test.ts` only).
+
+- Blocking finding fixed: `operations-service.ts:141` `cut()` sort (drives `byReason`, `byStation`, `byVendor`) now ends with `|| a.key.localeCompare(b.key)`. Also fixed the same missing-tiebreak pattern at two more spots the review flagged checking: film-waste `byVendor` SQL `order by waste desc` -> `order by waste desc, coalesce(g.vendor_connection_id::text, '')` (~line 181), and `pressMinutes` SQL `order by 2` (station name, not unique) -> `order by 2, 1` (station id) (~line 284). Checked late-drivers and waits too: both already end their sort on a full, non-random tiebreak (`value.localeCompare` / fixed `WAIT_STATES` iteration order) — no change needed there.
+- Added a new test, "reprint byReason keeps a stable order when two reasons tie (review r1)": two reprints on a fresh company, reasons `ghosting` and `color_off`, engineered to tie on cost (0) and count (1); asserts `color_off` sorts first across 4 repeated calls in the same run.
+- Checks: `pnpm typecheck` clean; `pnpm lint` — biome 434 files, no fixes.
+- `vitest run src/modules/analytics/operations-service.test.ts` x8 on `invai_ta4b_test` / `REDIS_URL=redis://localhost:6379/10`: **16/16 passed every run** (15 existing + 1 new tie test), no flakes.
+- Cleanup: dropped `invai_ta4b_test` and the leftover `invai_ta4_test` (blocked in round 1 by the Docker hang); flushed Redis DBs 10 and 9.
+- Not pushed; awaiting tech lead push after the gate.
+
+## Round 2 addendum: full `pnpm test`
+
+Post-commit gate check: `pnpm typecheck` and `pnpm lint` clean (own runs, no pipe, exit 0/0). Full `pnpm test` on `invai_ta4c_test` / Redis DB 11: `1 failed | 161 passed | 2 skipped (164 files)`, `1256 passed | 1 failed | 3 skipped | 1 todo` — the one failure is `src/db/seed/market-demand.test.ts` ("writes mock outside-demand rows and is a no-op on a second call"), timing out at the 30 s test limit under the full suite's 164 parallel workers. That file is in `src/db/seed/**` (backend-foundation's uncommitted WIP area per my task brief — not owned or touched by this card). Re-ran it alone on a fresh DB (`invai_ta4d_test` / Redis 12): passed in 19 s, confirming it's resource-contention under full-suite load, not a regression from this fix. `operations-service.test.ts` is among the 161 passing files (its tests are part of the 1256 passed). Cleanup: dropped `invai_ta4c_test` and `invai_ta4d_test`, flushed Redis DBs 11 and 12.

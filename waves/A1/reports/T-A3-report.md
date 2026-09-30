@@ -64,3 +64,7 @@ Card T-A3 (B-170), scope `mvp-in` items 7, 8. Owned: `analytics/{router,shared,f
 - Started/stopped: API node PID 98951 (wrong entry, killed at once), 98988 (API :3131, killed); orphan vitest 99559 (killed); my hung `docker exec`/`docker ps` probes 356/358, 99809/99811, 116/118 (killed). Other agents' vitest/docker processes untouched.
 - `invai_ta3_test` and redis DB 8 not yet dropped/flushed (infra hang): to do once Postgres answers.
 - Commits (not pushed): backend `95e9d69`, `1afdfc3`, `31db7f3`.
+
+## Follow-up (zone)
+- Commit `8c616ef`: `shippingMargin({groupBy: "zone"})` now groups labeled shipments by `shipments.dest_zone` (rows keyed `"1"`..`"9"`, sorted numerically); a labeled shipment with no zone is counted in `shipmentsWithoutZone`, never a made-up row (review note 2).
+- `vitest run src/modules/analytics/finance-` on `invai_ta3b_test` (Redis db 8): 2 files, 20/20 passed (new test: "T-A3 follow-up (review note 2)"). `pnpm typecheck` and `pnpm lint` clean. Scratch DB dropped, Redis 8 flushed, leftover `invai_ta3_test` also dropped.
