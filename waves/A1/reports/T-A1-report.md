@@ -88,3 +88,37 @@ None.
   builder.ts/index.ts/weekly-digest.ts diff plus this session's `dest_zone` + varied-destination
   edit to `src/db/seed/builder.ts`. Not committed because verification (test suite, seed run,
   AC-Seed1, golden path) is not yet complete.
+
+## Resumed session 2026-09-30 (backend-foundation on Sonnet 5)
+
+Progress log (one line per step, per instructions):
+- Step 0: Confirmed `invai_ta1` seed from the prior session was complete (not a stalled/partial
+  run): `.ta1-seed.log` shows `[seed] done {"orders":1326,...,"seconds":543}` at 12:05:25, and DB
+  counts match exactly (orders 1326, order_items 1780, order_item_transitions 11324, shipments
+  1185, purchase_orders 32, listings 160). The log's tail also has a second process's failure
+  output (`parse_relation.c` / `EXIT 1 at 06:56:19`) appended after the success line — a colliding
+  concurrent reset attempt, not a corruption of the completed run. `.seed-output-ta1.json` present
+  and matches (`counts: {orders:1326, items:1780, transitions:11324, dueSoon:88}, seconds:543`).
+  Did not reseed.
+- Step 1a: Wrote `invai-backend/.ta1-ac-seed1.sql` (AC-Seed1 verification queries, sourced from
+  `specs/business-analytics-v2.md` AC-Seed1 and `metrics/sql/{late_rate_drivers,
+  press_minutes_per_unit,supplier_trends,size_mix_gap,blank_stock_health}.sql`) and ran it against
+  `invai_ta1`. **Found a real AC-Seed1 #2 failure**: 0 late-shipped orders across every driver cut
+  (rush/personalized/blocked_over_24h all showed `late=0` out of hundreds of shipped orders),
+  even though `src/db/seed/builder.ts`'s closed-history block clearly computes a late `shippedAt`
+  (`shipBy + [4,36)h`) for `plan.driver !== null` orders.
+- Step 1b: Root-caused it (own paths only, `src/db/seed/builder.ts`): historical orders are also
+  pushed onto the shared `shippedOrders` array (used by both the live-flow and closed-history
+  blocks to build `shipments` rows), but that array didn't carry the already-decided `shippedAt`.
+  The shared "shipments" loop then always computed `labeledAt = min(shipBy - 3h, placedAt + 40h)`
+  for every order — always **before** `shipBy** — silently overwriting every historical order's
+  carefully-chosen on-time/late `shippedAt` with an always-on-time one. Net effect: no order in
+  the whole seed could ever be late, regardless of its driver.
+- Step 1c: Fixed (small, in-owned-path): added an optional `shippedAt?: Date` field to the
+  `shippedOrders` array's type; the closed-history push now passes its already-computed
+  `shippedAt`; the shipments loop now does `labeledAt = o.shippedAt ?? <old formula>` (live-flow
+  orders, which never had a pre-computed `shippedAt`, are unaffected). `pnpm typecheck`: clean.
+  (files: `invai-backend/src/db/seed/builder.ts`)
+- Step 1d: Reseeded `invai_ta1` from scratch to verify the fix (pinned
+  `DATABASE_URL`/`MIGRATION_DATABASE_URL`/`REDIS_URL`/`SEED_OUTPUT_FILE`, background + polled,
+  under the agent-brief's long-command rule). Results below.

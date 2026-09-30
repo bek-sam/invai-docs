@@ -14,11 +14,11 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | building: run 1 stalled in the OrbStack crash (00:39); run 2 added seeded `dest_zone`, full suite green; run 3 (01:45) doing the fresh seed, AC-Seed1 counts, API golden path, and the `seed/market-demand.test.ts` load-timeout flake |
+| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | building: scratch seed on `invai_ta1` finished in 543 s (1326 orders); run 4 (07:48) does the AC-Seed1 counts, API golden path, `market-demand.test.ts` timeout, commit |
 | T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | **approved r1** (contracts f466088, backend 9228343). AC5 deviation accepted: `channel?` only on the 7 sales-based reads. `supplierTrends.avgUnitCost` fractional cents accepted as a documented derived average. |
-| T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | **reviewer approved** r1 (95e9d69, 1afdfc3, 31db7f3) and r2 (8c616ef, zone grouping on `dest_zone`); **security approved** r1; backend-foundation (migration) running. `analytics/finance-testkit.ts` acknowledged inside the `finance*` split |
-| T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | reviewer r1 changes-required (flaky sort, no tiebreak) → r2 **approved** (2e564af); **security approved** r1; backend-foundation (migration) running |
-| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + security-reviewer (tenancy) | tenancy | building (started 01:40) |
+| T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | **reviewer approved** r1 (95e9d69, 1afdfc3, 31db7f3) and r2 (8c616ef, zone grouping on `dest_zone`); **security approved** r1; **backend-foundation (migration) approved**. `analytics/finance-testkit.ts` acknowledged inside the `finance*` split |
+| T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | reviewer r1 changes-required (flaky sort, no tiebreak) → r2 **approved** (2e564af); **security approved** r1; **backend-foundation (migration) approved** |
+| T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + security-reviewer (tenancy) | tenancy | reviewer r1 changes-required (3 blocking) → r2 **approved** (85fa715, 6b531c2, b5ea7d0); **security approved** r1. Watch at gate: 1 of 7 targeted runs failed while loading `design-service.test.ts` (no assertion failed; not reproduced) |
 
 Co-reviewers follow decision 0019 (trimmed 2026-09-30 after the architect plan review): co-reviewers run on sonnet, the primary reviewer on opus. QA and data-analyst checks run at the gate.
 
@@ -32,6 +32,9 @@ Sequence, not full parallelism, on the shared files: **T-A2 (contract) first**, 
 
 ## Grants (tech lead)
 - 2026-09-30, T-A2 (architect): `invai-backend/src/modules/analytics/router.ts` (new, stub only) and the one `analytics: analyticsRouter` line plus its import in `invai-backend/src/api/router.ts` (backend-foundation's file). Reason: the root `os.router()` fails typecheck without it; architect plan review ruling 1.
+
+- 2026-09-30 02:05, T-A5 (backend-engineer inventory): extend owned paths to `invai-backend/src/modules/inventory/service.ts` and `inventory/router.ts` (+ their tests), only to wire `splitBySizeCurve` into `reorderSuggestions`/`createPoFromSuggestions` for AC-C3. Reason: the card granted `reorder.ts` alone, which couldn't meet AC-C3 (card gap, tech lead's).
+- 2026-09-30 01:40, T-A5: `analytics/export-service.ts` + its test (given in the build prompt, recorded late here: the card promised `export` but named no file). Lesson: grants go into wave.md in the same step.
 
 ## Handoff from wave 23b (2026-09-30, tech lead)
 - **State:** everything from wave 23 and 23b step 1 is pushed after a full `pnpm gate` pass (`invai-infra/.gate/run-20260930T045101Z.log`): contracts `7ee15b6`, ui `952c174`, backend `61c6396`, web `eb1e86b`, floor `7900d0a`, imaging `58b67ee`. The dev DB is freshly seeded by that gate (now with a digest and market demand data).
