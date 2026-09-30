@@ -212,3 +212,19 @@ Entry format:
 - Recommendation: C. The build cache is safe to clear; other projects' images are yours to judge.
 - Cost of waiting: gates need about 2 GB of scratch space; another full disk stops every agent and Docker again.
 - Answer:
+
+## OI-21: How should CI read the other private InvAI repos for the E2E job?   status: open
+- From: tech-lead, 2026-09-29. Deadline: 2026-10-06 18:00 CDT. Default if no answer: the E2E workflows stay manual-only (`workflow_dispatch`) and the regular CI keeps using today's two read-only deploy keys.
+- Context: T-23-7 adds an end-to-end CI job in backend, web and floor that checks out the sibling repos. All 8 repos are private. Today only `CONTRACTS_DEPLOY_KEY` and `UI_DEPLOY_KEY` exist, so the E2E job can't check out backend, imaging, web, floor or infra. The security review (`waves/23/reviews/T-23-7-security-reviewer-r1.md`) advises against adding more per-repo SSH keys. Setting a secret is yours: agents can't and won't.
+- Options: A) A GitHub App on the 8 repos with Contents: Read only; CI mints short-lived tokens (`actions/create-github-app-token`), and you add its app id and private key as org/repo secrets. B) One fine-grained personal access token, read-only on these repos, with a 90-day expiry, stored as a secret. C) Keep E2E manual-only and rely on the local `pnpm gate` before each push.
+- Recommendation: A. It has one place to revoke access, short-lived tokens and read-only scope. B is acceptable if you want it done in 5 minutes.
+- Cost of waiting: E2E doesn't run automatically on push. The local pre-push gate (T-23-6) still runs it before every push, so no untested code is pushed.
+- Answer:
+
+## OI-22: May T-23-6 (pre-push gate) have a third review round to redesign its push check?   status: open
+- From: tech-lead, 2026-09-29. Deadline: 2026-10-01 12:00 CDT. Default if no answer: T-23-6 stays unpushed; the live push check stays as it is (it over-blocks one push form and misses two path forms, and is no weaker than before it existed); pushes keep following the integration-gate rule.
+- Context: The team rule sends a card to you after two failed review rounds. All 5 round-1 findings are fixed. Round 2 (`waves/23/reviews/T-23-6-reviewer-r2.md`) found 2 more, both in the push check: (1) a push with a `2>&1` redirect is wrongly refused even with a valid pass, and (2) paths written with `~` or `{}` aren't checked at all. The security review (`T-23-6-security-reviewer-r1.md`, S-42 Medium) found a third: a push wrapped in `$(...)` skips the check. All three are in the same guesswork about which folder a command runs in; no existing guard is weakened.
+- Options: A) Allow round 3 as a simpler redesign: the hook accepts a push of a code repo only in one exact form (`git -C /abs/path/<repo> push origin <ref>`, alone in its command) and refuses every other form, so there's no folder guessing. Same reviewer plus security. B) Accept as is and log both as known gaps (the stamp is a speed bump, not a security boundary). C) Drop the push block and keep only the `pnpm gate` script.
+- Recommendation: A. Point patches found three new holes in two rounds; one allowed form is simpler to prove. About an hour of work.
+- Cost of waiting: none for product work; only the automatic push check waits.
+- Answer:

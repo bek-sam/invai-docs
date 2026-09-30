@@ -29,3 +29,4 @@
 ## Build log
 - 2026-09-29 Cards written (T-24-1..4). Grant T-24-1: `invai-web/vite.config.ts` and `src/lib/build/csp.ts`, prod `connect-src` only (B-190), web-engineer co-reviews. T-24-1 started (runs beside wave 22's T-22-2 and T-22-3; 3 builders).
 - 2026-09-29 T-24-1 built: infra `3dbb899`, web `c1d53a8` (B-190 prod connect-src). In review (reviewer, security).
+- 2026-09-29 Paused by the owner (decision 0019) until the AWS setup starts; analytics A1/A2 go first. T-24-1 state is unchanged: reviewer-approved; security and web co-reviews missing; the web build needs VITE_API_URL.
