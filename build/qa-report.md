@@ -487,3 +487,32 @@ Fresh seed built **with two workers running** (T-20-5: `queues obliterated in /0
 Filed (details and owners in the gate file): **High** the production CSP `connect-src 'self' <api>` blocks the browser's presigned PUT to S3/MinIO (CSV import spins forever under `vite preview`; `pnpm dev` hides it) [web-engineer, security co-review]; **Medium** on a fresh seed with a worker running, `market.sweep` treats the day as done after the outbox-triggered `computeSignals` and never enqueues `refreshDemand`, so no outside mock sources, no `Sample data` badge and `market.spec.ts:91` red until 03:00 UTC [backend-engineer market]; **Medium** the assistant seasonality answer still prints `Act by 2026-08-04 … Act now` for an under-way peak (`assistant-tools.ts:1026`) [ai-engineer]; **Low** Spanish digest action chips `~704,47 US$` next to es-US numbers [web-engineer]; **Low** `src/db/seed/outbox-hold.test.ts` flaky under load, shared `companyId` with no cleanup cascades [backend-foundation]. QA fixed its own `e2e/digest-dates.spec.ts` AC1 race (wait for the route change after the row click).
 
 Suite notes: the full browser run makes 16 sign-ins in ~40 s against the 20/min per-IP Redis-shared bucket (decision 0008): don't run another suite or curl sign-ins in the same minute. The floor helper hard-codes `origin: http://localhost:5173`, so the floor suite only runs against an API whose `WEB_ORIGIN` is `:5173`.
+
+## 10. Wave 22 gate (2026-09-29/30, `invai-docs/waves/22/reviews/gate.md`) — PASS
+
+Attempt 4 (attempts 2–3 stalled on an OrbStack hang and the 10-minute no-progress watchdog; this attempt ran
+every long step in the background, polled). Carried forward from attempt 1: contracts 88 passed, backend full
+suite 1188 passed at `04e72a0` (`REDIS_URL=/14`), web 117 passed, floor 96 passed (web/floor builds need
+`VITE_API_URL`, expected). Fresh reset/migrate/seed with imaging running: 360 orders, 59/59 personalized
+artwork rendered, 4/4 sheet files composed (25 sheets, 597 transfers). On that seed: API golden path **13/13**
+(16.0s, utilization `[0.8912, 0.8564]`), browser `golden-path.spec.ts` **13/13**, `screens.smoke.spec.ts`
+**2/2**, `market.spec.ts` **5/5**, `digest.spec.ts` **10/10**, floor **3/3**.
+
+Wave 22 spot checks: SCAN form create is idempotent on (carrier, date) and returns `409
+NO_LABELS_TO_MANIFEST` before any label exists for the day (T-22-3); a cross-tenant composite FK insert into
+`station_maintenance_events` is refused under RLS as `invai_app` (T-22-2/T-22-4); starting maintenance on a
+station blocks a press scan with `station_maintenance`, and — the round-2 fix (`03d780e`) — a scan replayed
+after the window closed but timestamped inside it is **still** blocked, while one timestamped after the
+window presses normally (T-22-4 AC3, independently reproduced on a fresh seed, not just the reviewer's scratch
+DB); pick-list lines carry `binCode`/`shelf`/`transferAgeDays`/`transferAgeWarning` (T-22-4 AC2/AC4; no
+populated bin in this seed, a known gap, not a regression); the vendor gang-sheet email went out exactly once
+to `vendor@suncitydtf.test` (T-22-5, Mailpit); the gang-sheet preview image for a full 238.76 in sheet
+(89.12% film use) shows clean art, readable order numbers and intact QR/caption labels on every transfer.
+
+Filed: **Low, pre-existing, out of scope** `e2e/digest-dates.spec.ts` (T-20-2/wave 20) fails 3/3 on this fresh
+seed because no weekly digest exists yet for `/digests` to list — the same digest-sweep timing dependency
+already noted in the wave 20 gate (§9), not touched by any wave 22 card. Not blocking.
+
+T-22-4's outstanding floor co-review is closed (`T-22-4-qa-engineer-r1.md`, approve): floor golden path and
+all 3 floor E2E specs green against the card's API, plus the AC3 maintenance/replay reproduction above. All
+five wave 22 cards now have every required reviewer at `approve`.
