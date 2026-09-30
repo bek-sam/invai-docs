@@ -9,15 +9,21 @@
 | T-23-3 Imaging polish and film-use metric (B-103 rest, B-41) | imaging-engineer | sonnet | reviewer (opus) + architect (bounds in contract) | files | planned |
 | T-23-4 AI and market polish: markdown and footer, stream close, mock follow-ups, eval cleanup, detrended seasonality in code, shared ConfidenceBadge adoption (B-114, B-131, B-132, B-135, B-165; B-134 via a product-designer grant) | ai-engineer (+ backend-engineer market for the B-131 engine by grant; never `specs/**`) | sonnet | reviewer (sonnet) | ai | planned |
 | T-23-8 A fresh seed builds this week's digest (B-207; bug, pulled forward: blocks the push gate) | backend-foundation | sonnet | reviewer (opus) | none | approved r1 (runs in wave 23; push with wave 23's gate) |
-| T-23-5 E2E and test coverage: roles, Spanish, offline replay, clickIfShown, property tests, axe, visual regression, runtime contract test, i18n drift, scale seed profiles, market tool latency (B-22 rest, B-34, B-38, B-97 rest, B-138, B-142) | qa-engineer | sonnet | reviewer (opus) | — | planned |
+| T-23-9 Two browser specs pass on a fresh seed (digest-dates heading race; market.spec Sample data precondition) | qa-engineer (`invai-web/e2e/**`) | sonnet | reviewer (opus) | none | approved r1 (web `eb1e86b`; market answer b → T-23-10) |
+| T-23-10 A fresh seed has outside market data (`market_series_cache` via `refreshDemand()`), so market.spec passes | backend-foundation (`src/db/seed/**`) | sonnet | reviewer (opus) | none | approved r1 (backend `61c6396`) |
+| T-23-5 E2E and test coverage: roles, Spanish, offline replay, clickIfShown, property tests, axe, visual regression, runtime contract test, i18n drift, scale seed profiles, market tool latency (B-22 rest, B-34, B-38, B-97 rest, B-138, B-142) | qa-engineer | sonnet | reviewer (opus) | — | moved to wave 25 (cap; handoff) |
 
 ## Integration gate
-- [ ] `pnpm gate` (T-23-6) passes on a fresh seed; screens looked at in en/es
-- [ ] Pushed to `main`
+- [x] `pnpm gate` passed in full on a fresh seed, 2026-09-30 04:51 UTC (`invai-infra/.gate/run-20260930T045101Z.log`): all repo checks, API golden path 13/13, browser 34 passed (1 skipped: unsubscribe token), floor 3/3. Stamp `.gate/pass.json`.
+- [ ] Screens looked at in en/es: **not done this run.** The floor screens at 1280×800 (T-23-2) are still owed; moved to the A1 gate.
+- [x] Pushed to `main` 2026-09-30: contracts `7ee15b6`, ui `952c174`, backend `61c6396`, web `eb1e86b`, floor `7900d0a`, imaging `58b67ee`. Infra held (`3dbb899` S-45; `b62ad92`/`3215fc6` OI-22; `9fe0c55`/`490884d` on top).
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
+| 3/3 (T-23-8, T-23-9, T-23-10) | no canary this wave (OI-15) | 0 | 0 | T-23-9 ~25 min, T-23-10 ~60 min build + review | T-23-9 273k + 72k review; T-23-10 326k + 81k review (backend-foundation ran on opus, card said sonnet) |
+
+Notes: T-23-9's scratch `db:reset` wiped dev Redis DB 0 queues (no harm: the gate reseeded), now B-219 and a brief rule; dev CSP only allows API :3000 (B-220); market tests leak cache rows (B-221, can fail a gate). T-23-3 and T-23-4 not started; they follow A1 as the PM ranks them.
 
 ## Handoff from wave 23 (2026-09-30, tech lead)
 - **State:** every wave 23 card except T-23-6 is approved, with reviews in `waves/23/reviews/`, and T-23-8 is approved too. **Nothing from wave 23 is pushed.** The live push hook needs a full `pnpm gate` pass on the same SHAs, and the last run (`invai-infra/.gate/run-20260930T030247Z.log`) had 2 browser failures that are spec-harness issues, not product bugs. Don't bypass the hook and don't skip or weaken specs.
