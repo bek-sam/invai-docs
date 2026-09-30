@@ -122,3 +122,99 @@ Progress log (one line per step, per instructions):
 - Step 1d: Reseeded `invai_ta1` from scratch to verify the fix (pinned
   `DATABASE_URL`/`MIGRATION_DATABASE_URL`/`REDIS_URL`/`SEED_OUTPUT_FILE`, background + polled,
   under the agent-brief's long-command rule). Results below.
+
+### AC-Seed1 results (fresh `invai_ta1`, reseeded after the fix, 31s total — see timing note below)
+
+Full counts pasted from `docker exec -i local-postgres-1 psql -U invai -d invai_ta1 -v from="'2025-02-01'" -v to="'2026-10-01'" -v days=600 -f invai-backend/.ta1-ac-seed1.sql`:
+
+| # | AC-Seed1 item | Threshold | Result | Met? |
+|---|---|---|---|---|
+| 1 | Span | ≥18 months | 2025-02-27 → 2026-09-30 = 19.0 months | yes |
+| 1 | Q4 peak | ≥1.5x trailing avg | Nov 2025: 99 orders vs 44.0 trailing avg = **2.25x**; Dec 2025: 100 vs 44.0 = **2.27x** | yes |
+| 2 | Late-shipment drivers ≥30 orders each | ≥2 | `blocked_over_24h=true`: 50 shipped / 50 late (100%); `rush=true`: 77/50 (64.9%); `personalized=true`: 158/62 (39.2%) — 3 drivers clear 30, all show nonzero lateness | yes (was **failing before the fix below**) |
+| 3 | Station(s) with ≥100 timed units | ≥1 | Press 1 station: 176 timed units, median 4.02 min/unit, stddev 1.61 (non-constant) | yes |
+| 4 | Supplier×style cost/lead changes | ≥2 pairs, ≥5% cost or >3d lead | ssactivewear×CC1717 (lead +5d), ssactivewear×G64000 (cost +9.6%) | yes |
+| 5 | Repeat Shopify buyers | ≥2 buyers, ≥2 orders each | 7 buyers with 2-3 orders each | yes |
+| 6 | Reprint reasons/stations/vendors | ≥3 reasons, ≥2 stations, ≥2 vendors | 4 reasons (peel/ghosting/misprint/wrong_placement), 3 stations, 2 vendors | yes |
+| 7 | Size-mix gap | ≥1 gap ≥15pts, ≥30 units (group) | Top: G64000/Black/S, gap 60.5pts (group well over 30 units); 9 more rows ≥15pts | yes |
+| 8 | Dead stock | ≥1 variant, nonzero $ | 14 dead variants, $1,619.27 | yes |
+| 9 | (edge case) dest_zone spread | not always 1 | 8 distinct zones, 88-233 shipments each | yes |
+| 10 | (edge case) orders with no profit line | present | 41 orders | yes |
+| 11 | (edge case) cancelled-after-on_sheet | present | 7 orders | yes |
+
+**Bug found and fixed (AC-Seed1 #2 was failing before this session's fix):** the closed-history
+block in `builder.ts` computes a late `shippedAt` (`shipBy + [4,36)h`) for orders whose
+`plan.driver !== null` (personalized/rush/blocked), but historical orders are also pushed onto the
+shared `shippedOrders` array that both the live-flow and closed-history code use to build
+`shipments` rows. The shared shipments loop unconditionally recomputed
+`labeledAt = min(shipBy - 3h, placedAt + 40h)` — always **before** `shipBy` — and then overwrote
+`orders.shippedAt` with it, silently erasing every historical order's on-time/late decision. Net
+effect on the seed as it stood at session start: **0 late-shipped orders anywhere**, regardless of
+driver (confirmed: `is_rush=true` historical orders all had `shipped_at` before `ship_by`).
+Fix (in owned path `invai-backend/src/db/seed/builder.ts`, 3 small edits): added an optional
+`shippedAt?: Date` field to the `shippedOrders` array type; the closed-history push now carries its
+already-decided `shippedAt`; the shared shipments loop uses `o.shippedAt ?? <old formula>` (live-flow
+orders, which never had a pre-decided `shippedAt`, are unaffected — confirmed no other AC or count
+regressed). `pnpm typecheck`: clean. Verified by reseeding `invai_ta1` from scratch and re-running
+the AC-Seed1 SQL (table above): all 3 driver cuts now show real, varied lateness.
+
+**Timing note:** this reseed finished in 31s (`[seed] done {...,"seconds":31}`), vs. 543s for the
+prior session's run. Not a shortcut: MinIO holds real files from this exact run window (57 artwork
+PNGs at 13:45:29-30 UTC, 47-66 KiB each; 4 gang-sheet PNGs at 13:45:32-39 UTC, 2.9-7.7 MiB each — a
+plausible few seconds per multi-MB sheet compose, not instant/cached), DB row counts match the
+log's own summary exactly, and every AC-Seed1 query above returned real, varied data. The likely
+cause: the prior 543s run happened right after an OrbStack crash and cold Docker restart (per that
+session's own report), while this run had Postgres/imaging/MinIO already warm for hours. Either
+way this is well **under** the "no slower than today" (15-20 min) budget, so not a regression to
+chase further.
+
+- Step 2a: First golden-path attempt (API on :3111, `invai_ta1`, Redis 5) failed at test 4 ("a
+  personalized item gets a proof and is approved") with "timed out waiting for personalization
+  render" — cause: I'd started only the API, no worker, so the `personalization.renderArtwork` job
+  never ran. Started a worker pinned to the same `invai_ta1`/Redis 5 and re-ran; that second attempt
+  (reusing the same, now-partially-mutated DB from attempt 1) failed at test 3 with a state
+  mismatch (`expected "needs_attention", got "new"`) — the golden path isn't idempotent across two
+  runs on the same seed (test 2's CSV import behaves differently against its own leftover data).
+  Reseeded `invai_ta1` from scratch a third time (`[seed] done {...}` clean), then ran the suite
+  **once**, API + worker both up, against the fresh seed. Result below.
+- Step 3: Fixed the flaky `src/db/seed/market-demand.test.ts` (own path) — gave its one `it(...)` a
+  `60_000` ms third-argument timeout (matches the existing pattern in
+  `src/modules/channels/webhooks.test.ts`'s "Shopify OAuth state" tests, added by Biome's own
+  formatter back onto one line). No assertion touched. Ran it alone twice against a fresh
+  `invai_ta1_test` (created for this session) + Redis 5: **pass, pass** (7.99s, then 8.19s each
+  time). Did not run the full suite (left to the gate per instructions).
+
+### Golden path + Today queue counts (fresh `invai_ta1`, API :3111 + worker, one clean run)
+
+`E2E_API=1 E2E_API_URL=http://localhost:3111 pnpm e2e e2e/api-golden-path.spec.ts --reporter=line`:
+**7 passed, 1 failed, 5 did not run** (Playwright `serial` mode stops the rest of the file after a
+failure). Tests 1-7 all green: sign-in/Today, Etsy CSV import, SKU mapping, personalization proof,
+gang-sheet build (utilization **83.41% / 83.14%**, well inside the realistic 80%+ target and far
+from the old "51.7%" bug), send-to-vendor, sheet-received.
+
+Test 8 ("floor: PIN login...") failed with `Station token required`/`CLIENT_TOO_OLD` root cause:
+`invai-web/e2e/helpers/api.ts`'s `seedOutput()` hardcodes reading `<backend>/seed-output.json` (no
+env override), and that file belongs to the **shared dev DB's** shop (mtime Sep 29 23:56, a
+different `shopId`/station token than `invai_ta1`'s). My role's rules forbid writing
+`seed-output.json` (agent-brief "Never: ... write seed-output.json"), and another agent is reading
+it read-only for the concurrent T-A5 review, so I did not touch it. This is an environmental gap in
+the E2E harness for running this suite against any scratch DB other than the shared one, not a
+regression from this card's changes: **verified directly** by calling `POST /rpc/floor/staff` with
+`invai_ta1`'s own station token (from `.seed-output-ta1.json`) and the `x-contract-version: 0.9.0`
+header by hand — it returned the real staff list (admin/designer/presser/office/...), so the floor
+auth path itself works fine against this seed; only the E2E test's fixed file path can't reach it.
+Flagging for QA/tech-lead: `seedOutput()`/`stationSession()` would need an env override (e.g.
+`E2E_SEED_OUTPUT_FILE`) to run this suite against a scratch DB end-to-end; out of my owned paths
+(`e2e/**` is QA's).
+
+Today's queue (`GET today.summary`, called directly as the signed-in owner against the fresh seed):
+```
+orders:  dueToday=37  overdue=17  atRisk=30  onHold=0  newSinceYesterday=15
+blocked: needsMapping=7  needsArtwork=3
+stations waiting/doneToday: pick 57/0, press 57/22, qc 23/0, pack 26/0
+```
+All nonzero and varied (satisfies test 1's `dueToday+overdue+atRisk > 0` and `stations.length > 0`,
+and the card's "Today's queue counts ... unchanged or the diff is called out" — I have no prior
+`invai_ta1`-specific baseline to diff against since this is that baseline; order/item totals
+(1325 orders / 1793 items on the final reseed) are consistent across all three reseeds this session,
+within the seed's normal randomness).
