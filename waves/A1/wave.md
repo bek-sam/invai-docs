@@ -14,10 +14,10 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | planned |
-| T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | planned |
-| T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | planned |
-| T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | planned |
+| T-A1 Analytics-ready seed (B-168, absorbs B-130) | backend-foundation | sonnet | reviewer (opus) | golden path | building (started 00:13) |
+| T-A2 `analytics.*` contract (B-169) | architect | fable | reviewer (opus) | contract | **approved r1** (contracts f466088, backend 9228343). AC5 deviation accepted: `channel?` only on the 7 sales-based reads. `supplierTrends.avgUnitCost` fractional cents accepted as a documented derived average. |
+| T-A3 Finance analytics service + `fixed_monthly_cents` migration (B-170) | backend-engineer (finance) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy) | tenancy, migration, money | building (started 00:31, against committed T-A2) |
+| T-A4 Operations and shipping analytics + `shipments.dest_zone` (B-171) | backend-engineer (production, shipping) | opus | reviewer (opus) + backend-foundation (migration), security-reviewer (tenancy, pii) | tenancy, migration, pii | building (started 00:50; router line only after T-A3's router commit) |
 | T-A5 Inventory and design analytics (B-172) | backend-engineer (inventory) | sonnet | reviewer (opus) + security-reviewer (tenancy) | tenancy | planned |
 
 Co-reviewers follow decision 0019 (trimmed 2026-09-30 after the architect plan review): co-reviewers run on sonnet, the primary reviewer on opus. QA and data-analyst checks run at the gate.
