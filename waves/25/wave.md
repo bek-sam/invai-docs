@@ -20,3 +20,4 @@
 - [ ] Fresh reset, migrate, seed; `run-golden-path`; traces visible locally (OTel exporter to console or a local collector)
 - [ ] Owner checklist updated; roadmap criterion 3 and 5 status written honestly
 - [ ] Pushed to `main`
+- 2026-09-29 Paused by the owner until the AWS setup starts (decision 0019); analytics A1 and A2 go first. T-25-2 AC1 and AC3 (E2E in CI, pinned and linted workflows) were pulled forward to wave 23 as T-23-7; AC2 (contracts consumer CI) stays here.

@@ -29,13 +29,14 @@
 | T-22-5 | `invai-backend/src/modules/{orders,vendors,finance}/**`, `src/db/schema/{orders,vendors}.ts` columns + migration; grant: `src/modules/ai/service.ts` attributes mapping only |
 
 ## Integration gate
-- [ ] Fresh reset, migrate, seed; `run-golden-path`
-- [ ] RLS coverage and tenant-isolation tests green; a cross-tenant FK insert is refused
-- [ ] Pushed to `main`
+- [x] Fresh reset, migrate, seed; `run-golden-path` (`reviews/gate.md`, PASS on attempt 4: API 13/13, browser golden path 13/13, smoke, floor 3/3; `digest-dates.spec.ts` 3 failed, pre-existing, B-207)
+- [x] RLS coverage and tenant-isolation tests green; a cross-tenant FK insert is refused (psql as invai_app)
+- [x] Pushed to `main` (2026-09-29): contracts `9e8ea0c`, backend `04e72a0`, docs with this retro
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
+| Primary reviewer r1: 3 of 5 (T-22-1, T-22-2, T-22-3; T-22-4 and T-22-5 needed round 2, both real floor/email-loss bugs). All required reviewers r1: 2 of 5 (T-22-3 security r1 changes-required, S-38). Every card approved by round 2 | not planted | 0 so far (the gate found none in wave 22 areas; 1 pre-existing Low, B-207) | 0 | about 1.5 days wall clock (plan 2026-09-28 to gate PASS 2026-09-29 evening); the gate alone took 4 attempts over ~6 h | not measured per card; gate attempt 4 about 225k, relaunched agents 90k–160k each |
 
 ## Retro
 - 2026-09-28 Grant T-22-1: backend router stub lines in `src/modules/{shipping,production,inventory,vendors,tenancy}/router.ts` (NOT_IMPLEMENTED stubs only; backend-foundation co-reviews). T-22-1 started.
@@ -64,3 +65,11 @@
 - 2026-09-29 T-22-5 reviewer r1 changes-required (`97caf13`): a vendor email could be lost silently (worker death after claim -> 'unknown', 0 emails, no alert). Round-2 fix (opus) running: claim just before SMTP, raiseAlert on unknown/failed, advisory-lock test.
 - 2026-09-29 T-22-5 round 2 `04e72a0` (claim before SMTP, office alert on unknown/failed, lock test; full suite 1188 pass). Interim alert kind tracking_push_failed -> B-206 (wave 23 T-23-1). Reviewer r2 running.
 - 2026-09-29 T-22-5 reviewer r2 approve (`2a6337c`). All cards approved except T-22-4's qa-engineer floor co-review (at the gate). Gate started (qa-engineer, sonnet).
+- 2026-09-29 (tech lead, new session) The first gate attempt came back incomplete. Carried forward (green): contracts 88, backend 1188 (REDIS_URL /14), web 117, floor 96 (web and floor builds need VITE_API_URL). Not valid: it seeded with imaging down (it killed the dev:all group, not just the worker). SendMessage wasn't available, so a qa-engineer (sonnet) was relaunched with that state to redo only reseed → golden path → spot checks → T-22-4 floor co-review → gate.md.
+- 2026-09-29 Gate attempts 2 and 3 stalled. OrbStack/Docker hung (Redis timeouts; tech lead restarted OrbStack ~17:00), and agents hit the 10-minute no-progress watchdog on long foreground commands. Attempt 4 launched at 19:00 with the rule: long steps run in the background and are polled, and no foreground wait is over 5 minutes. It stops the stale stack by PID first. If attempt 4 stalls too, the tech lead records it here and escalates, no further loop.
+
+### Retro (2026-09-29, brief)
+- **Worked:** reviews caught two real floor/data bugs before push: an offline scan replayed after a maintenance window still pressed (T-22-4), and a vendor email could be lost silently (T-22-5). Security caught S-38. Composite tenant FKs (S-26) landed without breaking the golden path.
+- **Didn't:** the gate took 4 attempts. Attempt 1 killed the whole dev:all group, so the seed ran with imaging down. Attempt 2 hit an OrbStack/Docker hang. Attempts 2 and 3, and two builder instances, died on the 10-minute no-progress watchdog during long foreground commands. The recurring backend "flakes" were Redis DB 0 sharing (B-205, now T-23-0).
+- **Changes:** long commands run in the background and are polled (lesson + `team/agent-brief.md`). T-23-6 makes the gate one script with a push block. Decision 0019 cuts co-reviews to real risk. The QA agent overwrote its own `gate-traps.md` memory after misreading its memory path: the lost topics are listed in the file for re-derivation.
+- **Agent memory read:** qa-engineer (gate traps, VITE_API_URL), reviewer (async side-effect visibility). No other new entries relevant to the process.

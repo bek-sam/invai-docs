@@ -8,11 +8,11 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
+| T-23-0 Backend tests never use the dev Redis DB (B-205; always in scope: bug) | backend-foundation | sonnet | reviewer (opus) | none | building |
+| T-23-6 Pre-push test gate script + push block without a fresh pass (owner-approved) | platform-sre | sonnet | reviewer (opus) + security-reviewer (hook) | security | planned |
+| T-23-7 GitHub Actions CI on push to main, E2E included (CI part of B-22 / T-25-2) | platform-sre | sonnet | reviewer (opus) + security-reviewer (CI permissions) | security | planned |
 | T-23-1 Web: SCAN forms, address check, vendor resend, settings toggles, maintenance and QC-reason reports, buyer-photo upload, bundle split (B-25, B-35, B-81, B-102, B-107, B-162 web halves) | web-engineer | sonnet | reviewer (opus) + product-designer, security-reviewer (upload: files) | ui, files | planned |
-| T-23-2 Floor: QC fail reasons, maintenance block, transfer-age warning, bin in pick list, camera scanner, bundle (B-32, B-35, B-105, B-107 floor) | floor-engineer | sonnet | reviewer (sonnet) + product-designer, qa-engineer | floor-correctness, ui | planned |
-| T-23-3 Imaging polish and film-use metric (B-103 rest, B-41) | imaging-engineer | sonnet | reviewer (opus) + architect (bounds in contract) | files | planned |
-| T-23-4 AI and market polish: markdown and footer, stream close, mock follow-ups, eval cleanup, detrended seasonality in code, shared ConfidenceBadge adoption (B-114, B-131, B-132, B-135, B-165; B-134 via a product-designer grant) | ai-engineer (+ backend-engineer market for the B-131 engine by grant; never `specs/**`) | sonnet | reviewer (sonnet) + product-designer (badge) | ai | planned |
-| T-23-5 E2E and test coverage: roles, Spanish, offline replay, clickIfShown, property tests, axe, visual regression, runtime contract test, i18n drift, scale seed profiles, market tool latency (B-22 rest, B-34, B-38, B-97 rest, B-138, B-142) | qa-engineer | sonnet | feature owners (web, floor) + reviewer (opus) | — | planned |
+| T-23-2 Floor: QC fail reasons, maintenance block, transfer-age warning, bin in pick list, camera scanner, bundle (B-32, B-35, B-105, B-107 floor) | floor-engineer | sonnet | reviewer (sonnet) + product-designer | floor-correctness, ui | planned |
 
 ## Order
 - **Prerequisite (PM plan review):** the product-manager writes the B-131 Step 3 formula change in `specs/market-signals.md` before T-23-4 starts; T-23-4 implements it.
@@ -38,3 +38,10 @@
   - B-204: the seed has no bins or transfer ages.
   - T-22-5 non-blocking notes (in its report): `updateExisting` doesn't lock the order row, SMTP socket-error retries could rarely double-send, `mergeTotals` ignores a real change to 0.
 - **Environment:** leftover dir `invai-backend-T-22-1-rev` (the tech lead wasn't permitted to delete it); API :3142 (tsx watch since 2026-09-26) and vite :5183, owners unknown. Earlier "stalled" agents can still be alive: check `ps` and `git log` before relaunching (lesson 2026-09-29).
+
+## Build log
+- 2026-09-29 T-23-0 (B-205) carded and started per the owner's instruction ("first card is B-205"). That makes 6 cards, one over the 5-card cap. It's a small test-infra bug fix and runs alone in this session; the next tech lead moves T-23-5 (E2E coverage, the largest card) to wave 25 unless the PM chooses a different card.
+- 2026-09-29 Decision 0019 (owner) applied: co-reviewers cut to real risk. T-23-2 loses qa-engineer (moves to the gate). T-23-4 loses product-designer (adopting the badge isn't a new component). T-23-5 loses the feature-owner reviews. T-23-1 keeps product-designer and security-reviewer (files), plus architect on the B-206 contract kind. T-23-3 keeps architect only if the contract changes. Reviewers re-run typecheck, lint, the affected tests and RLS/authz; full suites and E2E run at the gate only.
+- 2026-09-29 Owner approved two cards to run first, beside T-23-0: T-23-6 (a pre-push gate script plus a push block unless there's a fresh pass on the same SHAs) and T-23-7 (GitHub Actions CI with E2E, pulled forward from T-25-2 AC1/AC3). To keep the 5-card cap, wave 23 is now T-23-0, T-23-6, T-23-7, T-23-1 and T-23-2 (web and floor screens for wave 22's backend, the wedge). T-23-3 (imaging polish), T-23-4 (AI polish) and T-23-5 (E2E coverage) move to wave 23b (`waves/23b/wave.md`; card files stay in `waves/23/`), the lowest value for now. Order: T-23-0 → T-23-6 and T-23-7 (both platform-sre, separate paths) → T-23-1 and T-23-2.
+- 2026-09-29 T-23-0 built: backend `e22129c` (under test, Redis DB 0 or unset -> DB 15; an explicit non-zero DB or TEST_REDIS_URL wins). Full suite with plain `pnpm test` while the gate's worker was live on DB 0: 1194 pass, and none of the suite's keys landed on DB 0. Reviewer (opus) running.
+- 2026-09-29 T-23-0 reviewer r1 changes-required (`83a4c02`): the env redirect parsed the DB index with Number() but ioredis uses parseInt, so `/0/` escaped the redirect and tests ran on DB 0. Round 2 fix (sonnet) running.
