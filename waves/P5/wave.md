@@ -1,0 +1,40 @@
+# Wave P5: Spanish alert and timeline text, realistic reprints in the demo, design preview loose ends
+
+- Status: **planned** (2026-10-01). Planned from the hand-off at the end of `waves/P4/wave.md`.
+- Goal (user outcome): under Spanish, Today's alert lines and the order timeline's reasons read in Spanish (today they show English sentences or nothing); the demo shop's reprints look like a real shop's (a few single shirts re-pressed inside bigger orders, not 44 orders reprinted end to end); a replaced design leaves no orphan preview files and order items mapped before their preview existed get one.
+- Scope refs: always-in-scope (bug) for every card: B-224 + B-238 (Spanish leak on a daily screen, en/es is MVP item 5), B-243 (demo data shapes the product's numbers, CLAUDE.md seed-realism lesson; profit shows only all-reprint orders), B-233 rest (orphan objects and empty thumbnails in a shipped feature).
+- Owner's scope for this wave: only agent-doable P1/P2 items (B-243, B-224 + B-238, B-233 rest, and any other P1/P2 the PM finds). Low (P3) items are skipped. If none remain after P5, the tech lead writes `waves/status-2026-10-01.md` instead of a hand-off.
+- Fences: no deploys, no AWS, no outbound sends. Track D out. OI-17 and OI-18 are not approved. `invai-infra` is read-only and never pushed (OI-22). Waves 24 and 25 stay paused (decision 0019). No buyer PII. No rate limit or security control changed. Decision 0020 (reprint semantics) stands.
+- Plan review: product-manager (scope; confirms no other agent-doable P1/P2 remains), architect (design: the contract shape for T-P5-3 and the cleanup rule in T-P5-2). The architect then builds T-P5-3 in the same run.
+
+## Cards
+| Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
+|---|---|---|---|---|---|
+| [T-P5-1](T-P5-1-seed-reprints.md) Seed reprints partial and ~3% of pressed items (B-243); seed previews through the catalog path (B-233 seed part) | backend-foundation (seed) | sonnet | reviewer (opus) | none (seed only) | planned |
+| [T-P5-2](T-P5-2-preview-cleanup.md) Replaced design's old previews removed when unreferenced; late preview backfills order items (B-233 rest) | backend-engineer (catalog, orders/mapping) | sonnet | reviewer (opus) + security-reviewer (sonnet) | files | planned |
+| [T-P5-3](T-P5-3-contract-reason-params.md) Contract: alert `params`, timeline `reasonCode` + `reasonParams`, additive (B-224, B-238) | architect | opus | reviewer (sonnet) | contract | planned |
+| [T-P5-4](T-P5-4-backend-reason-params.md) Backend fills alert params and timeline reason codes (B-224, B-238) | backend-engineer (today, orders/service timeline, alert callers in shipping, inventory, channels, vendors) | sonnet | reviewer (opus) + architect (sonnet) | none | planned (after T-P5-3 commits) |
+| [T-P5-5](T-P5-5-web-reason-params.md) Web shows alert lines and timeline reasons from codes, en and es (B-224, B-238) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | planned (after T-P5-3; live check after T-P5-4) |
+
+Interfaces: T-P5-3 fixes the names (`Alert.params`, `TimelineEntry.reasonCode`, `TimelineEntry.reasonParams`, the code lists) before T-P5-4/5 start; both read the committed contract. All new fields optional, so the old backend and the cached floor/web keep working. No shared file between cards: T-P5-2 owns `orders/mapping.ts` (+ a new orders file), T-P5-4 owns `orders/service.ts`; T-P5-1 alone owns `src/db/seed/**`.
+
+Order: plan reviews (PM + architect) → T-P5-3 (architect) and T-P5-1 → T-P5-2 → T-P5-4 → T-P5-5. Max 3 agents at once, reviewers included; max 2 heavy test runs.
+
+## Slots and ports
+- T-P5-1: scratch DB `invai_p5_seed` (drop at the end), imaging :8031, Valkey DB 13 (`REDIS_URL` pinned before any `db:reset`, B-219).
+- T-P5-2: API :3150, Valkey DB 14. T-P5-4: API :3151, Valkey DB 12. T-P5-5: API :3152, web `pnpm build && pnpm preview --port 5190` with `VITE_API_URL=http://localhost:3152` (dev CSP fixed to :3000, B-212), Valkey DB 11.
+- Gate slot (:3000, :5173, :5174, :8000) stays free. :3142 is held by an unknown API (PID 55461, since P4); left alone.
+
+## Integration gate
+- [ ] `pnpm gate invai-contracts invai-backend invai-floor invai-web` on a fresh seed (floor: contract consumer; imaging and ui unchanged)
+- [ ] Tech lead looks at: Today alerts and an order timeline in es at 1440 and 390; reprint mix on the gate seed by SQL (share partial, share of pressed items, losing reprint orders)
+- [ ] Push contracts, backend, web (floor only if it changed), docs. Never invai-infra (OI-22)
+
+## Build log
+- 2026-10-01 (P5 tech lead) Pre-wave: disk 12 GB free; docker healthy; all code repos clean at origin/main (contracts 6349ddf, backend 19a85c3, web 47acf01, floor b2cfd13, ui 2e3519d); gate ports free; :3142 held by PID 55461 (unknown, ~4 h old, left alone).
+
+## Metrics
+(at close)
+
+## Retro
+(at close)
