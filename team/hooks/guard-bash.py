@@ -15,14 +15,18 @@
   - scripts the command runs (`bash|sh|zsh <file>`, `source|. <file>`, `./<file>`, a path to a `*.sh`)
     are read (text up to 256 KB, any path; larger text is denied, binaries skipped) and checked with
     every rule above, nested scripts too. A missing file is allowed, unless the same command also
-    names it (written in this call, then run: split it into two calls);
+    may write it (a redirect into it, or a command other than a plain reader such as pnpm, grep,
+    pgrep or echo naming it): written in this call, then run, so split it into two calls;
+  - text piped into a shell must come from `echo`, `printf` or `cat` (read as commands); `curl | sh`,
+    `wget -O- | bash`, `| rev | bash`, `| sed ... | sh` are denied;
   - decoded text run as code is denied: `base64 -d`, `openssl base64|enc -d`, `xxd -r`, `uudecode`,
     `basenc|base32 -d` in the same command (pipeline or $(...)) as `bash|sh` reading stdin or `-c`,
     `eval`, `source` or `.`; decoding to a file stays allowed;
   - `sst secret set|remove|load` (any stage); `gh api` writes (-X/--method POST|PUT|PATCH|DELETE, or
-    -f/-F/--field/--raw-field/--input) to a repo itself or its branch protection, rulesets,
+    -f/-F/--field/--raw-field/--input; path or full URL, GHES `/api/v3/` too) to a repo itself or its branch protection, rulesets,
     collaborators, hooks, environments, actions permissions or transfer; GraphQL repository-setting
-    mutations; `gh repo edit|delete|rename|archive|unarchive`; `gh ruleset` other than list/view/check.
+    mutations; `gh repo edit|delete|rename|archive|unarchive` (word level only, so a commit message or
+    heredoc that mentions them passes); `gh ruleset` other than list/view/check.
 - MCP tools: anything that isn't clearly read-only (send, publish, create, update,
   delete...) needs the owner's explicit approval ("ask").
 
@@ -85,7 +89,6 @@ BASH_RULES = [
     (r"\bgh\s+workflow\s+run\b", "running workflows (deploy.yml) is triggered by the owner"),
     (r"\bgh\s+run\s+(rerun|cancel)\b", "re-running or cancelling workflow runs (deploys) is done by the owner"),
     (r"\bgh\s+(secret|variable)\s+(set|delete|remove)\b", "secrets and variables are changed by the owner"),
-    (r"\bgh\s+repo\s+(delete|edit|rename|archive)\b", "repo settings are changed by the owner"),
     (r"\bgh\s+api\b.*(secrets|variables|dispatches|/keys|-X\s*DELETE|--method\s+DELETE)",
      "secrets, deploy keys and workflow dispatch are changed by the owner"),
     (r"\bgh\s+release\s+(create|delete|edit)\b", "releases are created by the owner"),
@@ -453,6 +456,15 @@ def _gh_api_write(args):
     return m in ("POST", "PUT", "PATCH", "DELETE"), (endpoint or ""), " ".join(args)
 
 
+def _gh_api_path(endpoint):
+    """`gh api` endpoint as a path: full URLs (`https://api.github.com/repos/o/r/`, GHES `/api/v3/`) lose their
+    scheme and host, so the URL form matches the same rules as `repos/o/r`."""
+    ep = re.split(r"[?#]", endpoint, maxsplit=1)[0].strip().lower()
+    ep = re.sub(r"^(?:[a-z][a-z0-9+.-]*:)?//[^/]*", "", ep)
+    ep = re.sub(r"^/*(?:api/v3/+)?", "", ep)
+    return re.sub(r"/{2,}", "/", ep)
+
+
 def setting_rules(w):
     head = os.path.basename(w[0]).lower()
     rest = [x for x in w[1:]]
@@ -475,13 +487,18 @@ def setting_rules(w):
             return ("deny", "repo rulesets are changed by the owner")
         if sub == "api":
             write, endpoint, text = _gh_api_write(rest[1:])
-            ep = endpoint.split("?", 1)[0].lstrip("/").lower()
+            ep = _gh_api_path(endpoint)
             if ep == "graphql" and "mutation" in text.lower() and GH_SETTINGS_GRAPHQL.search(text):
                 return ("deny", "repo settings are changed by the owner (GraphQL mutation)")
             if write and GH_SETTINGS_PATH.search(ep):
                 return ("deny", "repo settings, branch protection, rulesets, collaborators, hooks and "
                                 "environments are changed by the owner (gh api write)")
     return None
+
+
+# Only literal text may be piped into a shell (its words are read as commands below); decoders get
+# encoded_rules' message.
+PIPE_TO_SHELL_SOURCES = {"echo", "printf", "cat"}
 
 
 def simple_commands(cmd, depth=0, cwd=None):
@@ -547,6 +564,10 @@ def simple_commands(cmd, depth=0, cwd=None):
             elif op in ("|", "|&") and not [x for x in w[1:] if not x.startswith("-")]:
                 j = idx - 1  # a pipe into a shell: read every earlier word in the pipeline as a command
                 while j >= 0:
+                    up = _strip_prefix(list(items[j][0]))
+                    if up and os.path.basename(up[0]).lower() not in PIPE_TO_SHELL_SOURCES and not _is_decoder(up):
+                        deny("no downloaded or transformed text piped into a shell (curl | sh, | rev | bash): the "
+                             "guard can't read what runs. Save it to a file, read it, then run the file")
                     for x in items[j][0] + items[j][2]:
                         result.extend(simple_commands(x, depth + 1, cwd))
                     if items[j][1] not in ("|", "|&"):
@@ -994,6 +1015,42 @@ def text_rules(cmd):
             deny(PUSH_REASON)
 
 
+# Commands whose mention of a script name is not a write (round 2: `pnpm vitest run` next to
+# `./node_modules/.bin/vitest` is not "written then run").
+NAME_READERS = {"pnpm", "npm", "npx", "yarn", "pnpx", "bunx", "pgrep", "pkill", "pidof", "ps", "grep", "egrep",
+                "rg", "ls", "which", "type", "stat", "file", "head", "tail", "wc", "less", "lsof", "test", "[",
+                "echo", "printf", "cat", "cd", "pushd", "rm", "diff", "kill", "true", "sleep", "exit"}
+
+
+def _written_here(cmd, word, name):
+    """True when the command may create the missing script `word` (basename `name`) before running it: a
+    redirect into it, or any other command naming it that isn't a plain reader or another run of it."""
+    pat = r"(?<![\w.-])" + re.escape(name) + r"(?![\w.-])"
+    run_words = {word, word.removeprefix("./")}
+    for seg in re.split(SEGMENT_SPLIT, cmd):
+        if not re.search(pat, seg):
+            continue
+        if re.search(r"(?:>>?|>\||&>>?)\s*[\"']?[^\s;&|]*" + pat, seg):
+            return True
+        words = [x.strip("\"'") for x in seg.split()]
+        while words and (re.match(r"^[A-Za-z_]\w*=", words[0]) or words[0] in PREFIX_CMDS):
+            words.pop(0)
+        if not words:
+            continue
+        head = os.path.basename(words[0]).lower()
+        if words[0] in run_words or words[0].removeprefix("./") in run_words:
+            continue  # this segment runs it
+        if head in SHELLS or head in ("source", "."):
+            target = _script_target(words)
+            if target is not None and target.removeprefix("./") in run_words:
+                continue
+            return True
+        if head in NAME_READERS:
+            continue
+        return True
+    return False
+
+
 def script_rules(cmd, n_top):
     """Read every script the command runs (and the scripts those run) and apply all the rules to it.
     The first `n_top` refs come from the command itself; only those can be "written in this call"."""
@@ -1013,7 +1070,7 @@ def script_rules(cmd, n_top):
         text = _read_script(real)
         if text is None:
             name = os.path.basename(path)
-            if k <= n_top and not os.path.exists(real) and cmd.count(name) >= 2:
+            if k <= n_top and not os.path.exists(real) and _written_here(cmd, word, name):
                 deny(f"the script {name} doesn't exist yet, so the guard can't read it: write it in one "
                      f"call and run it in the next")
             continue

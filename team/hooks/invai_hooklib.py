@@ -410,6 +410,20 @@ SKIP_EXT = DOC_EXT | {".log"}
 REDIRECTS = {">", ">>", ">|", "&>", "&>>"}
 
 
+class Removed(str):
+    """An `rm` target: counts as an edit only if git tracks it (or tracks files under it)."""
+
+
+def _tracked(root, full):
+    import subprocess
+    try:
+        r = subprocess.run(["git", "-C", root, "ls-files", "--error-unmatch", "--", os.path.relpath(full, root)],
+                           capture_output=True, timeout=5)
+        return r.returncode == 0
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return True  # can't tell: count it, so the checks run
+
+
 def _counts_as_code(path):
     if not path or path.startswith("/dev/"):
         return False
@@ -506,6 +520,8 @@ def _write_targets(w, cwd):
                 set(rest) & {"--check", "--stat", "--numstat", "--summary", "--cached", "-n", "--dry-run"}):
             return [base]
         return []
+    if head in ("rm", "unlink"):
+        return [Removed(a) for a in pos]
     if head in ("mv", "cp", "rsync", "install", "ln"):
         t = next((args[k + 1] for k, a in enumerate(args[:-1]) if a in ("-t", "--target-directory")), None)
         dest = [t] if t else pos[-1:]
@@ -530,7 +546,7 @@ def shell_edits(cmd, cwd):
         if not _counts_as_code(full):
             return
         repo = find_repo(full)
-        if repo:
+        if repo and (not isinstance(path, Removed) or _tracked(repo[0], full)):
             found.append((repo[0], repo[1], full))
 
     def flush():

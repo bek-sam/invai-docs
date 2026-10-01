@@ -5,7 +5,8 @@ Per session_id + agent_id ("main" for the main session) it records:
 - Edit/Write/MultiEdit/NotebookEdit: which code repo or worktree was edited, and when (docs and images
   are ignored);
 - Bash that writes into a code repo (sed -i, perl -i, > / >> / tee, git apply, patch, biome/prettier --write,
-  pnpm format/i18n/db:generate, mv/cp into a repo; invai_hooklib.shell_edits) counts as an edit of that repo,
+  pnpm format/i18n/db:generate, mv/cp into a repo, rm/unlink/git rm of a git-tracked path;
+  invai_hooklib.shell_edits) counts as an edit of that repo,
   from PostToolUse and PostToolUseFailure alike (T-P7-4). Text-based on purpose: only what this agent's own
   command names is recorded, so another agent's edits in the shared tree are never blamed on it (a git
   status fingerprint would). Checks in the same command as such a write don't count for that repo;
