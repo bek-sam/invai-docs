@@ -25,7 +25,8 @@
 2. `pnpm db:reset` against any other database refuses **before touching Postgres or Redis** (exit code non-zero, nothing dropped, no queue obliterated) when `REDIS_URL` has no explicit DB index or its index is 0. The message says what to do, for example: `[reset] refusing: resetting invai_p6_reset would wipe the queues in the shared Redis DB 0. Set REDIS_URL=redis://localhost:6379/<n> (n = 1-15) for this database.`
 3. With an explicit non-zero index (`redis://localhost:6379/13`) a reset of another database works and obliterates only that DB's queues, as today.
 4. The seed refuses (exit non-zero, before any insert) when the target database is not `invai` and `SEED_OUTPUT_FILE` is unset, with a message naming the variable. With `SEED_OUTPUT_FILE` set, or on `invai`, it behaves as today. (Decide the cheapest safe check point; a refusal after a 15-minute seed is not acceptable.)
-5. The checks are pure functions with unit tests (allowed and refused cases for both guards); each new test is red with the guard removed (say how you showed it).
+5. Architect R3 (added after start; the reviewer checks it, round 2 if missing): the reset guard runs only in reset.ts's main block (test setup and `migrate.test.ts` import `ensureDatabase` on `invai_test`); the seed guard refuses unless both `DATABASE_URL` and `MIGRATION_DATABASE_URL` point at `invai` or `SEED_OUTPUT_FILE` is set.
+6. The checks are pure functions with unit tests (allowed and refused cases for both guards); each new test is red with the guard removed (say how you showed it).
 
 ## Verification
 - Scratch DB `invai_p6_reset` only; `REDIS_URL=redis://localhost:6379/13` and `SEED_OUTPUT_FILE=/tmp/p6-1-seed-output.json` pinned before any command that resets or seeds. Never reset or seed the shared `invai` DB (other agents use it). Drop `invai_p6_reset` at the end.

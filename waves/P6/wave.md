@@ -33,6 +33,9 @@ Order: T-P6-1 + plan reviews (PM, architect) → T-P6-2 → T-P6-3 (after T-P6-2
 
 ## Build log
 - 2026-10-01 (P6 tech lead) Pre-wave: disk 9.4 GB free; docker healthy; code repos clean at origin/main (contracts d6d038b, backend 471355a, web 0ad173d, floor b2cfd13, ui 2e3519d); infra has 5 local commits (OI-22, not pushed). Stopped the orphan P4 APIs on :3141-3143 and their `pnpm dev:api` watchers (owner's order); ports 3000-3199 free.
+- 2026-10-01 Plan committed (docs 283e47b). Started T-P6-1 (backend-foundation, sonnet), the PM scope review (sonnet) and the architect design review (opus) together.
+- 2026-10-01 PM plan review: approve (`reviews/plan-pm.md`, docs 8d24ce1). Agent-doable non-Low items left after P6: B-134 (shared ConfidenceBadge in invai-ui, T-23-4 never started), B-115 (guard-bash.py gaps; platform-sre, hook paths). These go to the P7 hand-off.
+- 2026-10-01 Architect plan review: approve-with-changes (`reviews/plan-architect.md`, docs fb9c926, 0cdb194). R1: no contract change; web EventSource reconnects once, gets 401, closes (no loop). C1 added to T-P6-2 AC4 (probe `select 1` before sending `unauthorized`, else end with retry hint; no `retry:` on `unauthorized`); C2 timing ≤ 30 s one instance / ≤ 55 s across. R2: B-208 fix in the seed (run QA and pending renders inline before `releaseOutbox`), added to T-P6-4 AC6. R3: no caller breaks; guard placement notes added to T-P6-1 AC5 after its start (reviewer checks; round 2 if missing). Started T-P6-2 (backend-foundation, opus).
 
 ## Metrics
 
