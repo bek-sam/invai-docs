@@ -24,6 +24,8 @@
 - `src/modules/analytics/shared.ts` (`:61`), `analytics/finance-service.ts` (`:158,212,549-586`), `analytics/design-service.ts` (`:129`), `analytics/inventory-service.ts` (`:167`), `analytics/finance-testkit.ts` (rewrite the `:356` sibling revenue-0 line to the real model: the same item re-pressed, with a second transfer), `analytics/*.test.ts`
 - `src/modules/market/history.ts` (`:60,99`); `src/modules/digest/digest.test.ts` (`:350` fixture only)
 
+- **Grant (tech lead, 2026-10-01, during the build):** `invai-docs/metrics/sql/profit_bridge.sql` (:20, :22), `size_mix_gap.sql` (:13), `design_lifecycle.sql` (:23 filter and its comment near :11): remove only the reprint filter (`NOT pl.is_reprint` / `NOT oi.is_reprint`), per decision 0020, because `analytics/finance-parity.test.ts` checks the services against these files. Nothing else in `invai-docs/metrics/**`. Update: the grant never reached the builder, so the data-analyst (path owner, sonnet) made this edit instead, as its own invai-docs commit; the T-P4-1 reviewer covers it.
+
 ## Read-only paths
 - `src/modules/production/**` (no change), `src/ai/**` and `src/modules/ai/**` (T-P4-4), `src/modules/market/market.acceptance.test.ts` and `src/modules/digest/digest.acceptance.test.ts` (QA, T-P4-5), `src/db/**`, `src/test/**`, every other module, `invai-contracts/**`, `invai-web/**`, `invai-floor/**`
 

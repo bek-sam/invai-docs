@@ -25,7 +25,7 @@
 
 ## Verification
 - `pnpm typecheck && pnpm lint && pnpm test && pnpm build 2>&1 | tail -n 40` in `invai-web`.
-- Exercised: own API `PORT=3142`, `REDIS_URL=redis://localhost:6379/12` in `invai-backend` (allow your preview origin in the API's web-origin env for this process only); web `VITE_API_URL=http://localhost:3142 pnpm build && pnpm preview --port 5186` (the dev server's CSP is fixed to :3000, B-212). Sign in as `owner@desertbloom.test` / `demo1234!`, switch to Español, screenshot the list, a detail page and billing at 1440 and 390 in `/tmp/p4-web/`; look at each.
+- Exercised: own API `PORT=3143`, `REDIS_URL=redis://localhost:6379/12` in `invai-backend` (allow your preview origin in the API's web-origin env for this process only); web `VITE_API_URL=http://localhost:3143 pnpm build && pnpm preview --port 5187` (the dev server's CSP is fixed to :3000, B-212). Sign in as `owner@desertbloom.test` / `demo1234!`, switch to Español, screenshot the list, a detail page and billing at 1440 and 390 in `/tmp/p4-web/`; look at each.
 
 ## Rules
 - Role file `.claude/agents/web-engineer.md`; `team/agent-brief.md`. Memory: `/Users/bekbolsun/invai/.claude/agent-memory/web-engineer/`.
