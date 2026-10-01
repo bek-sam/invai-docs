@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|
 | [T-P5-1](T-P5-1-seed-reprints.md) Seed reprints partial and ~3% of pressed items (B-243); seed previews through the catalog path (B-233 seed part) | backend-foundation (seed) | sonnet | reviewer (opus) | none (seed only) | planned |
 | [T-P5-2](T-P5-2-preview-cleanup.md) Replaced design's old previews removed when unreferenced; late preview backfills order items (B-233 rest) | backend-engineer (catalog, orders/mapping) | sonnet | reviewer (opus) + security-reviewer (sonnet) | files | planned |
-| [T-P5-3](T-P5-3-contract-reason-params.md) Contract: alert `params`, timeline `reasonCode` + `reasonParams`, additive (B-224, B-238) | architect | opus | reviewer (sonnet) | contract | planned |
+| [T-P5-3](T-P5-3-contract-reason-params.md) Contract: alert `params`, timeline `reasonCode` + `reasonParams`, additive (B-224, B-238) | architect | opus | reviewer (sonnet) | contract | **approved r1** (contracts d6d038b) |
 | [T-P5-4](T-P5-4-backend-reason-params.md) Backend fills alert params and timeline reason codes (B-224, B-238) | backend-engineer (today, orders/service timeline, alert callers in shipping, inventory, channels, vendors) | sonnet | reviewer (opus) + architect (sonnet) | none | planned (after T-P5-3 commits) |
 | [T-P5-5](T-P5-5-web-reason-params.md) Web shows alert lines and timeline reasons from codes, en and es (B-224, B-238) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | planned (after T-P5-3; live check after T-P5-4) |
 
@@ -22,7 +22,7 @@ Order: plan reviews (PM + architect) → T-P5-3 (architect) and T-P5-1 → T-P5-
 
 ## Slots and ports
 - T-P5-1: scratch DB `invai_p5_seed` (drop at the end), imaging :8031, Valkey DB 13 (`REDIS_URL` pinned before any `db:reset`, B-219).
-- T-P5-2: API :3150, Valkey DB 14. T-P5-4: API :3151, Valkey DB 12. T-P5-5: API :3152, web `pnpm build && pnpm preview --port 5190` with `VITE_API_URL=http://localhost:3152` (dev CSP fixed to :3000, B-212), Valkey DB 11.
+- T-P5-2: API :3150, Valkey DB 10. T-P5-4: API :3151, Valkey DB 9 (DBs 12 and 14 are used by orphan P4 APIs on :3141/:3143, see build log). T-P5-5: API :3152, web `pnpm build && pnpm preview --port 5190` with `VITE_API_URL=http://localhost:3152` (dev CSP fixed to :3000, B-212), Valkey DB 11.
 - Gate slot (:3000, :5173, :5174, :8000) stays free. :3142 is held by an unknown API (PID 55461, since P4); left alone.
 
 ## Integration gate
@@ -36,6 +36,8 @@ Order: plan reviews (PM + architect) → T-P5-3 (architect) and T-P5-1 → T-P5-
 - 2026-10-01 PM plan review: approve (`reviews/plan-pm.md`). Three more agent-doable P1/P2 items remain open: B-31 (floor SSE `?token=`, revoke doesn't close the stream), B-208 (sheet build races the post-seed outbox drain), B-219 (`db:reset` wipes queues in any Redis). P5 is at 5 cards, so they go to a P6 hand-off. Started T-P5-1 (backend-foundation, sonnet; AC5 waits for architect R3).
 - 2026-10-01 Architect plan review: approve-with-changes (`reviews/plan-architect.md`, docs 35feb9d). R1: `Alert.messageCode` (new enum `ALERT_MESSAGE_CODES`, 14 codes, because `kind` is reused for several lines) + `Alert.params`; `TimelineEntry.reasonCode` (22) + `reasonParams`, derived at read time; consumers treat unknown codes as none. R2: delete old previews after commit, only `${cid}/preview/design/` keys referenced nowhere; late preview via `orders/preview-backfill.ts` called from `renderDesignPreviews`. R3: the seed keeps its direct `imaging.preview` call (can't see uncommitted rows; refuses placeholders), so T-P5-1 AC5 closes as a reasoned no-change.
 - 2026-10-01 T-P5-3 built: contracts d6d038b (0.11.0; contracts 132 tests; backend, web, floor typecheck clean). Grant recorded after the fact: `invai-contracts/package.json` (version bump, architect's own repo). Started T-P5-2 (backend-engineer, sonnet) and the T-P5-3 reviewer (sonnet).
+- 2026-10-01 07:30 T-P5-2 builder and T-P5-3 reviewer both died on the stream watchdog (no progress 600 s), no edits or files left. Docker and Valkey healthy. Found orphan P4 APIs (tsx watch respawned ~07:05): :3141 (Valkey 14), :3142, :3143 (Valkey 12), parents from P4; not this wave's, left alone; T-P5-2 moved to Valkey DB 10, T-P5-4 to DB 9. Relaunched both.
+- 2026-10-01 T-P5-3 reviewer r1 (sonnet): approve (`reviews/T-P5-3-reviewer-r1.md`, docs 8a47cea): contracts 132/132, web/floor/backend typecheck clean, no existing enum touched, version-pin test move judged non-weakening. **T-P5-3 approved.** Started T-P5-4 (backend-engineer, sonnet). T-P5-5 waits for a slot.
 
 ## Metrics
 (at close)

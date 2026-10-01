@@ -28,7 +28,7 @@
 
 ## Verification
 - `pnpm typecheck && pnpm lint 2>&1 | tail -n 20`; `pnpm vitest run src/modules/today src/modules/orders --reporter=dot 2>&1 | tail -n 20` in invai-backend. The gate runs the full suite.
-- Exercise for real: API `PORT=3151`, Valkey DB 12. As `office@desertbloom.test`, call the Today alerts list and one order's timeline (an order with a reprint or a sheet step); paste one alert and one timeline entry (trimmed). As `presser@` the office procedure is refused.
+- Exercise for real: API `PORT=3151`, Valkey DB 9. As `office@desertbloom.test`, call the Today alerts list and one order's timeline (an order with a reprint or a sheet step); paste one alert and one timeline entry (trimmed). As `presser@` the office procedure is refused.
 
 ## Out of scope
 - Web (T-P5-5), alerts raised in `src/worker/**` or `src/ai/**`, changing what is stored on transitions.

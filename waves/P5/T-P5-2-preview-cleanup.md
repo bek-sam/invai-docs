@@ -27,7 +27,7 @@
 
 ## Verification
 - `pnpm typecheck && pnpm lint 2>&1 | tail -n 20`; `pnpm vitest run src/modules/catalog src/modules/orders/mapping.test.ts --reporter=dot 2>&1 | tail -n 20` in `invai-backend` (plus your new test). The gate runs the full suite.
-- Exercise for real: API on `PORT=3150`, Valkey DB 14, worker on the same, imaging stub or a scratch imaging port. As `designer@desertbloom.test`, replace a design's file; list the MinIO keys under that company's preview prefix before and after (counts only); check one referenced old key is still there. As `presser@` the replace is refused (FORBIDDEN).
+- Exercise for real: API on `PORT=3150`, Valkey DB 10, worker on the same, imaging stub or a scratch imaging port. As `designer@desertbloom.test`, replace a design's file; list the MinIO keys under that company's preview prefix before and after (counts only); check one referenced old key is still there. As `presser@` the replace is refused (FORBIDDEN).
 - Don't reset the shared dev DB; any rows you change on it must be your own test design.
 
 ## Out of scope
