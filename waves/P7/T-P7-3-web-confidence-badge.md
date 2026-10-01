@@ -24,7 +24,7 @@
 3. `pnpm typecheck && pnpm lint && pnpm test && pnpm build` pass in `invai-web`; `recommendation-copy.test.ts` still passes unchanged.
 4. Screenshots of the market screen with all three bands visible if the seed has them (otherwise the ones it has), en and es at 1440 and 390 px, looked at; no raw keys, no truncation.
 
-5. **B-262.** When the assistant stream sends `{type:"error", code:"spend_cap"}` (`invai-backend/src/modules/ai/service.ts:1320`), the chat shows a translated message (en and es, plain language: what happened and what to do, e.g. that the shop's AI limit for today is reached and to try again tomorrow or ask the owner), not the server's English text. Other codes keep today's behavior. A unit test covers the mapping (spend_cap → translated key; unknown code → the server message as today).
+5. **B-262.** When the assistant stream sends `{type:"error", code:"spend_cap"}` (`invai-backend/src/modules/ai/service.ts:1320`), the chat shows a translated message (en and es, plain language: what happened and what to do, e.g. that the shop's AI limit for today is reached and to try again tomorrow or ask the owner), not the server's English text. The same for the other codes the service sends (`service.ts:1320-1327`): `credits_exhausted` (the shop's AI credits for this month are used up; the owner can add more in billing, use the wording the web already has for credits if any), `refusal` and `internal` (a short plain "couldn't answer, try again" line). A missing or unknown code keeps the server message as today. A unit test covers each code and the unknown fallback.
 
 ## Verification
 - `cd invai-web && pnpm typecheck && pnpm lint && pnpm test --reporter=dot 2>&1 | tail -n 20 && pnpm build 2>&1 | tail -n 10`.
