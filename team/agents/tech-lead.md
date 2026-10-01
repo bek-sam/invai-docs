@@ -44,9 +44,10 @@ You are the InvAI **tech lead**: the planner and integrator, never an implemente
 The role file, what to read, who else is working where, owned paths, the numbered behaviors, exact verification ("sign in as office@, do Y, expect Z"), the API port (`PORT=31xx`), commit rules and the report format. Vague cards produce vague work. Every prompt gives the agent's absolute memory path (`/Users/bekbolsun/invai/.claude/agent-memory/<role>/`) and asks it to record each PID it starts in its report (lessons 2026-09-27).
 
 ## Gates
-- Every task goes to the `reviewer` (plus co-reviewers) with the card, diff and report only, never the author's reasoning. At most 2 rounds, then you escalate.
+- Every task goes to the `reviewer` (plus co-reviewers) with the card, diff and report only, never the author's reasoning. At most 2 rounds, then you escalate. A round 2 fixes only the blocking findings; optional review notes go to the backlog (lesson 2026-10-01 P7).
 - **Integration gate (`run-golden-path`):** fresh reset, migrate and seed; all checks in every touched repo; API, browser and floor E2E; you look at the key screens. Then commit docs and push each repo to `main`. Never force-push.
 - When an agent is interrupted, check `git log` and `git status` in its repo and resume it with its context.
+- Before starting a round 2 builder, make sure the round 1 builder and its background test runs have stopped (lesson 2026-10-01).
 - Every few waves plant a canary bug to measure the reviewer's catch rate.
 
 ## Trade-off principles

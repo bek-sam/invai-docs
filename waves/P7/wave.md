@@ -1,6 +1,6 @@
 # Wave P7: a repeatable gate pool, one shared confidence badge, tighter guard hooks and a per-round AI spend check
 
-- Status: **planned** (2026-10-01). Planned from the hand-off at the end of `waves/P6/wave.md`.
+- Status: **done** (2026-10-01): T-P7-1, T-P7-2, T-P7-3, T-P7-5 approved, gated and pushed; T-P7-4 (hooks) built and installed but not approved after two security rounds (OI-23). Last wave by the owner's decision: no P8 hand-off; see `waves/status-2026-10-01.md`. Planned from the hand-off at the end of `waves/P6/wave.md`.
 - Goal (user outcome): the gate's gang-sheet step builds from the same pool every run (no mock order landing mid-run); the market's confidence badge lives once in the design kit, so every screen shows confidence the same way; the team's guard sees scripts it is asked to run, blocks secret and repo-setting changes it missed, and the Stop check notices code edited through the shell; one assistant question can't run past the shop's or the platform's AI spend cap.
 - Scope refs: T-P7-1 `always-in-scope: bug` (B-255: flaky gate on the wedge); T-P7-2/T-P7-3 `scope.md#market-signals` (B-134, design-system debt on a shipped screen); T-P7-4 `always-in-scope: security` (B-115 hook gaps, B-189 guard gap); T-P7-5 `always-in-scope: security` (B-115 third gap: LLM10 unbounded consumption, research 12 §1.9).
 - Owner's scope for this wave: only agent-doable P1/P2 items. Low (P3) items skipped. If none remain after P7, the tech lead writes `waves/status-2026-10-01.md` instead of a hand-off.
@@ -10,11 +10,11 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| [T-P7-1](T-P7-1-gate-pool-pinned.md) The golden-path suites hold the mock Shopify auto-import while they run (B-255) | qa-engineer | sonnet | reviewer (opus) | golden path | planned |
-| [T-P7-2](T-P7-2-ui-confidence-badge.md) Shared `ConfidenceBadge` in `invai-ui` (B-134, kit half) | product-designer | sonnet | reviewer (opus) | ui (shared component) | planned |
-| [T-P7-3](T-P7-3-web-confidence-badge.md) Market screens use the kit badge; local copy removed (B-134, web half); assistant spend-cap message in en/es (B-262) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | planned |
-| [T-P7-4](T-P7-4-hook-gaps.md) Guard reads scripts it runs, blocks `sst secret` and repo-setting API calls; Stop check counts shell edits (B-115, B-189) | platform-sre | opus | reviewer (sonnet) + security-reviewer (fable) | auth (team controls) | planned |
-| [T-P7-5](T-P7-5-assistant-round-spend.md) The assistant re-checks the spend caps before every tool round and records spend per round (B-115) | ai-engineer | opus | reviewer (sonnet) + security-reviewer (fable, same agent as T-P7-4) | payments (AI spend) | planned |
+| [T-P7-1](T-P7-1-gate-pool-pinned.md) The golden-path suites hold the mock Shopify auto-import while they run (B-255) | qa-engineer | sonnet | reviewer (opus) | golden path | **approved r1** (web c33421f) |
+| [T-P7-2](T-P7-2-ui-confidence-badge.md) Shared `ConfidenceBadge` in `invai-ui` (B-134, kit half) | product-designer | sonnet | reviewer (opus) | ui (shared component) | **approved r1** (ui 52af2b8) |
+| [T-P7-3](T-P7-3-web-confidence-badge.md) Market screens use the kit badge; local copy removed (B-134, web half); assistant spend-cap message in en/es (B-262) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | **approved r2** (web f20021b, a23e4ef) |
+| [T-P7-4](T-P7-4-hook-gaps.md) Guard reads scripts it runs, blocks `sst secret` and repo-setting API calls; Stop check counts shell edits (B-115, B-189) | platform-sre | opus | reviewer (sonnet) + security-reviewer (fable) | auth (team controls) | **not approved**: reviewer approve r1, security changes-required r2 → OI-23 (docs 74d0058, 8cd5f18, 675d072; live hooks installed) |
+| [T-P7-5](T-P7-5-assistant-round-spend.md) The assistant re-checks the spend caps before every tool round and records spend per round (B-115) | ai-engineer | opus | reviewer (sonnet) + security-reviewer (fable, same agent as T-P7-4) | payments (AI spend) | **approved r1** (backend 33c09fd) |
 
 Interfaces: none across repos. T-P7-3 builds on T-P7-2's committed export (`ConfidenceBadge` from `@invai/ui`, props agreed in T-P7-2's card). T-P7-1 uses the existing `channels.update` settings field `autoImport` (`invai-contracts/src/schemas/channels.ts:30`, honored by `pollableConnections`, `invai-backend/src/modules/channels/sync.ts:658`); no contract or backend change.
 
@@ -29,9 +29,9 @@ Order: plan reviews (PM, architect) + T-P7-4 → T-P7-1, T-P7-2, T-P7-5 → T-P7
 - Gate slot (:3000, :5173, :5174, :8000) stays free.
 
 ## Integration gate
-- [ ] `caffeinate -i pnpm gate invai-backend invai-web invai-ui`
-- [ ] Tech lead looked at: market badge en/es at 1440/390, the gate log's step 5 pool count
-- [ ] Pushed (never invai-infra)
+- [x] `caffeinate -i pnpm gate invai-backend invai-web invai-ui` PASSED first attempt (`invai-infra/.gate/run-20261001T201404Z.log`): backend 1484, web 163 + build, ui 35, API golden path 13/13, web e2e 34, floor e2e 3. The unexplained T-P7-5 full-suite exit 1 did not recur.
+- [x] Tech lead looked at: step 5 pool 44 items in the gate log, identical to T-P7-1's scratch run (sheets 0.879 / 0.857, the same two lengths); assistant market answer en 1440 and es 390 (QA screenshots `/tmp/p7-look/`, API + web only, no worker so the seed stayed put): kit badge "Medium confidence: test it" / "Confianza media: pruébalo" with icon, "Sample data" / "Datos de muestra", no raw keys, no truncation. Seen: the es 390 "No me sirve" button reaches a few px past the card edge (pre-existing, B-265 Low).
+- [x] Pushed 2026-10-01: backend a64533e..33c09fd, web 0ad173d..c33421f, ui 2e3519d..52af2b8, docs (this commit). Contracts and floor unchanged. invai-infra not pushed (OI-22). Hooks live in `.claude/hooks` (not a repo); their backup is in docs.
 
 ## Build log
 - 2026-10-01 (P7 tech lead) Pre-wave: disk 8.3 GB free; docker healthy; code repos clean at origin/main (contracts d6d038b, backend a64533e, web 0ad173d, floor 9304da1, ui 2e3519d); infra 5 local commits (OI-22, not pushed); ports 3000-3199, 8000, 5173, 5174 free.
@@ -58,7 +58,14 @@ Order: plan reviews (PM, architect) + T-P7-4 → T-P7-1, T-P7-2, T-P7-5 → T-P7
 - 2026-10-01 Security-reviewer r2 on T-P7-4 (fable, docs 47235e8): changes-required. The r1 gap is closed (178 samples), but r2's written-then-run change parses a redirect target as a script run, so write-only script creation through a redirect is refused (six forms the old guard allowed); it also refused my own inbox heredoc that only quoted such a command. Non-blocking: `repositories/<id>` URL form, `_tracked` on git errors, npm family in the name readers, a `$(curl …)` echoed into a shell. Two failed security rounds → escalated as **OI-23** (round 3 limited to that fix; default: keep the live guard, stricter not weaker). T-P7-4 is not approved; the `operating-system.md` text and the `settings.json` backup wait for it. The P7 code cards don't depend on it.
 
 ## Metrics
-- First-pass approval, canary (none: OI-15 open), escaped defects, reopens, cycle time, tokens per card: at the close.
+- First-pass approval: 3/5 (T-P7-1, T-P7-2, T-P7-5). Round 2: T-P7-3 (one misleading string, from my card's example wording), T-P7-4 (full-URL gap). Escalated: T-P7-4 after round 2 (regression introduced by round 2's extras), OI-23.
+- Canary: none (OI-15 open). Escaped defects: 0 found after approval. Reopens: 0.
+- Cycle time: about 4.5 h plan to push; gate passed first try (about 25 min).
+- Tokens per card (subagent totals, approx.): T-P7-1 350k (build, review); T-P7-2 200k (build, half a review); T-P7-3 560k (two builds, two reviewer rounds, two designer rounds); T-P7-4 810k (two builds, reviewer, two security rounds); T-P7-5 370k (build, half security, half reviewer); plan reviews PM 200k, architect 150k; gate screen look 145k.
 
 ## Retro
-- At the close.
+- Worked: the architect's plan review caught that the `autoImport` hold alone couldn't pin the pool (queued syncs still land) and added the preview-ids build; the gate then showed the same 44-item pool as the scratch run. All rulings reached the cards before any builder started (lesson P4/P6 applied), and no card needed a round 2 for a late rule.
+- Folding B-262 into a not-yet-started card with the same owner cost nothing and closed a real es bug. My card's example copy ("ask the owner") was wrong for a server-side cap and cost T-P7-3 a round: check example copy against where the setting lives.
+- T-P7-4: optional extras added in round 2 (to save a later card) introduced the regression that failed round 2. Rule: a round 2 fixes only the blocking findings; optional items go to the backlog. The regression also blocked my own heredoc that merely quoted a script-writing command.
+- A full suite exited 1 once with its failure lines cut by `| tail`; the rule now lives in `CLAUDE.md` (pipefail, log file, grep FAIL).
+- Agent memories read: qa-engineer (seed-output override, mock transit hours), reviewer (guard probes, generator-forwarding check), security-reviewer (guard probe set), architect, product-manager (backlog staleness: scan the whole file).
