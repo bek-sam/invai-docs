@@ -1,6 +1,6 @@
 # Wave P6: floor live updates without a URL token and closed on revoke, safe db:reset, a seed that settles and repeats
 
-- Status: **planned** (2026-10-01). Planned from the hand-off at the end of `waves/P5/wave.md`.
+- Status: **done** (2026-10-01): four cards approved, gate passed on a fresh seed, pushed. Hand-off to P7 at the end. Planned from the hand-off at the end of `waves/P5/wave.md`.
 - Goal (user outcome): a station token or floor session that the owner revokes stops getting live updates within 30 s, and the floor no longer puts its session in a URL (S-30); resetting a scratch database can't wipe the shared queues or the shared `seed-output.json` again; two seeds give the same numbers, and the gate's sheet build no longer races the post-seed backlog (no more sub-80% golden-path sheets).
 - Scope refs: always-in-scope for every card: B-31 (security: v1-#4, S-30, S-G9; pilot safety), B-219 (bug: dev queues wiped twice), B-249 + B-208 (bug: demo data shapes the product's numbers; flaky gate on the wedge).
 - Owner's scope for this wave: only agent-doable P1/P2 items. Low (P3) items skipped. If none remain after P6, the tech lead writes `waves/status-2026-10-01.md` instead of a hand-off.
@@ -10,10 +10,10 @@
 ## Cards
 | Card | Owner | Model | Reviewer + co-reviewers | Risk flags | Status |
 |---|---|---|---|---|---|
-| [T-P6-1](T-P6-1-safe-reset.md) `db:reset` refuses to wipe shared queues; seed refuses to overwrite the shared `seed-output.json` (B-219) | backend-foundation | sonnet | reviewer (opus) | none (dev tooling) | planned |
-| [T-P6-2](T-P6-2-sse-auth-backend.md) `/events` drops `?token=`, re-checks the session every ping and closes revoked streams (B-31 backend) | backend-foundation | opus | reviewer (sonnet) + security-reviewer (fable) | auth | planned |
-| [T-P6-3](T-P6-3-sse-auth-floor.md) Floor sends the session only as a header and signs out on `unauthorized` (B-31 floor) | floor-engineer | sonnet | reviewer (opus) + security-reviewer (fable, same agent as T-P6-2) | auth, floor-correctness | planned |
-| [T-P6-4](T-P6-4-settled-deterministic-seed.md) Seed counts repeat run to run (B-249); the stack is settled before the gate builds sheets (B-208) | backend-foundation (seed) | opus | reviewer (opus) | floor-correctness (golden path) | planned |
+| [T-P6-1](T-P6-1-safe-reset.md) `db:reset` refuses to wipe shared queues; seed refuses to overwrite the shared `seed-output.json` (B-219) | backend-foundation | sonnet | reviewer (opus) | none (dev tooling) | **approved r2** (backend fb424fe, a64533e) |
+| [T-P6-2](T-P6-2-sse-auth-backend.md) `/events` drops `?token=`, re-checks the session every ping and closes revoked streams (B-31 backend) | backend-foundation | opus | reviewer (sonnet) + security-reviewer (fable) | auth | **approved r1** (backend 5557014) |
+| [T-P6-3](T-P6-3-sse-auth-floor.md) Floor sends the session only as a header and signs out on `unauthorized` (B-31 floor) | floor-engineer | sonnet | reviewer (opus) + security-reviewer (fable, same agent as T-P6-2) | auth, floor-correctness | **approved r1** (floor 9304da1) |
+| [T-P6-4](T-P6-4-settled-deterministic-seed.md) Seed counts repeat run to run (B-249); the stack is settled before the gate builds sheets (B-208) | backend-foundation (seed) | opus | reviewer (opus) | floor-correctness (golden path) | **approved r1** (backend 8de1b64) |
 
 Interfaces: T-P6-2 fixes the SSE event name before T-P6-3 starts: on a failed re-check the server writes `event: unauthorized` (data `""`) and ends the stream; a reconnect then gets HTTP 401. The floor already sends `Authorization: Bearer`, so the backend change is safe against a cached old floor (it also sends the header) and the floor change is safe against the old backend. No shared files: T-P6-1 owns `src/db/reset.ts`, `src/db/reset.test.ts` and `src/db/seed/index.ts`; T-P6-2 owns `src/api/events.ts` + a new test; T-P6-4 owns `src/db/seed/**` only after T-P6-1 has committed.
 
@@ -27,9 +27,9 @@ Order: T-P6-1 + plan reviews (PM, architect) → T-P6-2 → T-P6-3 (after T-P6-2
 - Gate slot (:3000, :5173, :5174, :8000) stays free. Orphan P4 APIs on :3141-3143 (PIDs 4218, 4221, 4222 + watchers 64192, 52296, 11838, 11830) stopped by the P6 tech lead before the wave.
 
 ## Integration gate
-- [ ] `pnpm gate invai-backend invai-floor` (+ `invai-web` only if a card touched it)
-- [ ] Tech lead looked at the floor live-update screen after a revoke and the seed count comparison
-- [ ] Pushed (bare `git -C <repo> push origin main`); invai-infra not pushed (OI-22)
+- [x] `caffeinate -i pnpm gate invai-backend invai-floor` attempt 4 PASSED (`invai-infra/.gate/run-20261001T163445Z.log`): backend 1478, floor 114 + build, API golden path 13/13, web e2e 34, floor e2e 3. Attempts 1-3 failed on environment (Valkey DB 15 held by a late suite; Mac idle sleep 11:09-11:12 and 11:18-11:29 CDT stalled tests and deadlocked `db:reset`), see build log
+- [x] Tech lead looked at: the revoke evidence in the T-P6-2/T-P6-3 reports and reviews (curl `unauthorized` in 22 s; tablet to station-removed in 23.4 s en/es; the builder deleted its screenshots, so no image of my own); gate seed by SQL: 168 reprints of 6407 items, golden-path sheets at 0.879 and 0.857 film use. Two seed sheets in `received` show utilization 0.000 (same code before this wave; not investigated, B-260)
+- [x] Pushed 2026-10-01: backend 471355a..a64533e, floor b2cfd13..9304da1, docs (this commit). Contracts, web, ui unchanged. invai-infra not pushed (OI-22)
 
 ## Build log
 - 2026-10-01 (P6 tech lead) Pre-wave: disk 9.4 GB free; docker healthy; code repos clean at origin/main (contracts d6d038b, backend 471355a, web 0ad173d, floor b2cfd13, ui 2e3519d); infra has 5 local commits (OI-22, not pushed). Stopped the orphan P4 APIs on :3141-3143 and their `pnpm dev:api` watchers (owner's order); ports 3000-3199 free.
@@ -51,5 +51,21 @@ Order: T-P6-1 + plan reviews (PM, architect) → T-P6-2 → T-P6-3 (after T-P6-2
 - 2026-10-01 Gate attempt 3 (`run-20261001T161631Z.log`): same shape: `import-csv.test.ts` chunked-job test timed out (30 s limit, 681 s wall), and dev:all's migrate failed on a half-reset `invai` (attempt 2's reset had dropped the drizzle schema, then deadlocked), then the gate's reset deadlocked again. Root cause from `pmset -g log`: the Mac went into idle sleep during both runs (11:09–11:12, 11:18–11:29 CDT), so timers and connections stalled; not a product failure. Stopped two more 3141/3143 watchers (59156/59148, 76842/76834; no children). Repaired the dev DB (reset + migrate, nothing connected), started attempt 4 under `caffeinate -i`.
 
 ## Metrics
+- First-pass approval: 3/4 (T-P6-2, T-P6-3, T-P6-4). Round 2: T-P6-1 (seed guard ignored `DATABASE_URL`; an architect rule added to the card after the build started). None reached escalation.
+- Canary: none (OI-15 open). Escaped defects: 0 found after approval. Reopens: 0.
+- Cycle time: about 4.5 h (plan to push), of which about 1 h was three failed gate attempts on environment.
+- Tokens per card (subagent totals, approx.): T-P6-1 515k (two builds, two reviews), T-P6-2 360k (build, reviewer, half the security review), T-P6-3 350k (build, reviewer, half the security review), T-P6-4 385k (build, reviewer); plan reviews PM 180k, architect 160k.
 
 ## Retro
+- Worked: the architect's plan review caught a real lock-out risk before build (C1: a DB blip during the re-check would read as a revoke and lock every tablet); the builder and both reviewers proved the probe with a mutation. The floor fix also removed a real 401 retry storm (592 retries/s on the old code).
+- An architect rule reached T-P6-1 after it started, and that was its round 2 (the same pattern as lesson 2026-10-01 A2/P4). Starting a builder in parallel with plan reviews to fix B-219 early was the owner's call; the price was one small round.
+- T-P6-4 measured instead of assuming: the architect's B-208 mechanism didn't reproduce, and the real pool mover is the mock Shopify poll (B-255). The fix was applied anyway as a harmless settle step.
+- Gate failures came from the Mac idle-sleeping mid-run (tests at 142 s and 681 s against a 30 s limit; a `db:reset` deadlock that left the dev DB half-reset). Rule: run the gate under `caffeinate -i` (lesson row added). Before calling a timing failure a product bug, check `pmset -g log`.
+- Orphan P4 APIs kept coming back: several `pnpm dev:api` watchers per port. All 3141/3143 watchers are now stopped. Four old `tsx watch src/index.ts` watchers (52249, 53652, 57395, 72215) watch a file that doesn't exist; they're left for the owner.
+- Agent memories read: backend-foundation (two P6 notes), reviewer (four), security-reviewer (the SSE fail-open pattern), floor-engineer.
+
+## Hand-off (P6 tech lead, 2026-10-01): what the P7 tech lead does first
+1. Agent-doable non-Low items remain (PM `reviews/plan-pm.md` + this wave): **B-255** (mock Shopify poll grows the golden-path pool during the gate; qa-engineer + integrations-engineer; Medium, flaky gate risk), **B-134** (shared ConfidenceBadge in invai-ui; product-designer then web), **B-115** (guard-bash.py gaps; platform-sre, `.claude/hooks/**`). Have the PM confirm and the architect review the design.
+2. Low (skip unless the owner asks): B-244..B-248, B-250..B-254, B-256..B-260.
+3. Gate: `caffeinate -i pnpm gate <touched repos>` (the Mac sleeps otherwise); push each repo with a bare `git -C <repo> push origin main`; never invai-infra (OI-22).
+4. Fences unchanged: Track D out, OI-17/OI-18 not approved, waves 24/25 paused (decision 0019), canary needs OI-15. Max 3 agents, 2 heavy test runs. Dev DB freshly seeded by the P6 gate; infra running.
