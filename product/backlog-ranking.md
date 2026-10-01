@@ -2,6 +2,55 @@
 
 Owned by `product-manager`. New dated sections go on top; never rewrite an old one.
 
+## 2026-10-01 plan review: wave P4 take, and P5 candidates
+
+**P4 takes** (plan review, `waves/P4/reviews/plan-pm.md`): T-P4-1/4 B-242 (reprint stays a sale, both the
+finance/orders/analytics/market half and the AI-tools half), T-P4-2 B-241 (floor es header pill), T-P4-3
+B-184 confirm + /catalog/designs es, T-P4-5 B-221 rest + fixture-model fix. All five are always-in-scope
+bugs; no new scope. **B-243 (seed reprint realism) explicitly held for P5**, not a 6th P4 card: it should be
+built after T-P4-1 lands (the card says so) and P4 is already at the 5-card cap.
+
+Candidates below are scored from `waves/backlog.md`'s open P1/P2 rows, agent-doable, excluding Track D,
+OI-17/OI-18 items and waves 24/25 (decision 0019), and excluding approval-blocked rows (B-108, B-127, B-128,
+B-160, B-161). Many `backlog.md` "open" rows are stale (already closed in waves 22/23/A1/A2/P1–P3 without
+the row being updated — checked B-25, B-30, B-139, B-164, B-183, B-223, B-236, B-237, B-240's siblings
+against the wave files that actually did them, not the row text alone).
+
+| Rank | Item | Owner role | Why | Shops/evidence |
+|---|---|---|---|---|
+| 1 | B-243: seed reprint realism — 44 orders land 100% reprinted, so the demo shows only all-reprint orders; real QC failures hit ~3% of items, mostly partial on multi-item orders | backend-foundation (seed) | Demo credibility for every pilot conversation once T-P4-1 lands the real revenue model; single owner, ready immediately after P4's gate | `waves/P3/reports/T-P3-4.md`; pattern is seed-wide (44/44), not one order |
+| 2 | B-224 + B-238: typed `reasonCode` for Today alert bodies and the order-drawer timeline reason, translated in web | architect (shape the field), then backend-engineer (orders, today) + web-engineer | Twice-confirmed Spanish-correctness bug on two daily-use screens (A1 gate screens, repeated P1 hand-off); held for an architect slot across the P2 and P3 rankings with none opened yet — due for one now | A1 gate screens; `waves/backlog.md` B-223/B-224 (B-223 alone already fixed, T-P2-4); pain: en/es convention on golden-path screens |
+| 3 | B-233 (rest): design-preview cleanup on replace, the late-preview orders subscriber, the seed's direct `imaging.preview` call | backend-engineer (catalog, orders) | The DB-transaction half of B-233 is already done (T-P2-2); this is the named, still-open remainder — real correctness gaps (stale gray placeholders, orphaned preview objects) on the catalog/listing path | `waves/P1/reports/*` (T-P1-4 reviews); `waves/P2/T-P2-2-preview-job-tx.md` names the remainder explicitly |
+
+**Not now — needs a second owner with no slot yet, lower urgency than #2:**
+- B-231 (wire imaging photo flags through the contract enum): same architect-then-integrations-engineer
+  shape as #2; only one architect-dependent item fits a wave comfortably, and #2 has two gate findings to
+  B-231's one review note.
+- B-132 (assistant stream `net::ERR_ABORTED`): architect must pick patch-the-dependency vs. keep QA's
+  allow-list; already mitigated, cosmetic log noise only.
+
+**Not now — lower pain/evidence, good filler if a 4th/5th slot opens:**
+- B-235 (pre-v6 assistant tools answer English under es; separate eval-credit exhaustion): legacy path,
+  partial mitigation already, `ai` flag adds a co-review step.
+- B-239 (small test gaps: `useInView` unit test, Today sweep's `requeueBuild` call, stray MinIO scratch
+  files): real but test-only, no shop-facing effect.
+- B-232 (imaging `/preview` missing from the concurrency limiter; ICC profile has no size cap): hardening
+  gap from review, not an observed failure.
+- B-234 (two test flakes under load), B-227 (one-off `db:reset` deadlock): internal gate reliability, no
+  repeat occurrence recorded since filed.
+- B-240 (contract `rateBucket` meta): already named "later" in the P3 build log; no new urgency.
+
+**Not now, out of scope:** none of the candidates are outside `scope.md`.
+**Not now, waiting on approval:** B-108 (Etsy direct API, OI-3), B-127 (real market adapters, OI-9/OI-11/SP-API/Walmart), B-128 (digest email send, OI-12/13/14), B-129 (digest AI summary on, OI-8), B-160 (Amazon Buy Shipping, SP-API), B-161 (TikTok sample tracker, TikTok Partner) — all excluded from ranking on that ground, unchanged from prior rankings.
+
+**What changed and why:** This is the first ranking pass since the A1/A2 analytics waves and P1–P3 closed
+out most of the wave-22/23 backlog (confirmed row by row against the wave files, not `backlog.md`'s stale
+status text). B-243 is new (filed from T-P3-4's finding, same root cause as P4's B-242) and is the clean
+next step once P4's fix lands. B-224+B-238 is a repeat from the P2 and P3 "needs a second owner" holds —
+third time flagged, and with B-223 (its twin) already fixed, it's the strongest remaining architect-shaped
+item. B-233's remainder is newly surfaced here: T-P2-2 did only the transaction half and named the rest as
+backlog, so it had no ranking entry until now.
+
 ## 2026-10-01 ranking (for wave P3, slots 3–5)
 
 Wave P3's first two slots (T-P3-1 B-236, T-P3-2 B-237) are already set: both always-in-scope bugs from the

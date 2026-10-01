@@ -1,6 +1,6 @@
 # Wave P3: the floor rate-limit fix, one gate, push P1 + P2 + P3
 
-- Status: **T-P3-1/2 approved, gate passed, P1+P2+P3 pushed; T-P3-3..5 building** (2026-10-01). Planned from the hand-off at the end of `waves/P2/wave.md`.
+- Status: **closed** (2026-10-01). All five cards closed; two gates passed; everything pushed except invai-infra. Next: wave P4 (`waves/P4/wave.md`, planned and plan-reviewed, not started). Planned from the hand-off at the end of `waves/P2/wave.md`.
 - Goal (user outcome): a busy floor never gets a scan rejected because thumbnails used up the shop's write allowance; if the server does say "slow down", the presser sees "busy", not "offline". Then P1, P2 and P3 pass one gate and are pushed.
 - Scope refs: always-in-scope (bug) for T-P3-1 (B-236, High) and T-P3-2 (B-237). Slots 3–5 from the backlog's agent-doable P1/P2 items, PM-ranked, after the gate.
 - Fences: no deploys, no AWS, no outbound sends. Track D out. OI-17 and OI-18 are not approved. `invai-infra` is read-only and never pushed (OI-22). Waves 24 and 25 stay paused (decision 0019). No buyer PII. No rate limit is raised or lowered.
@@ -12,8 +12,8 @@
 | [T-P3-1](T-P3-1-rate-bucket-by-intent.md) Rate-limit buckets by intent (B-236) | backend-foundation | sonnet | reviewer (opus) + security-reviewer (opus) | auth, floor-correctness | **approved r1** (backend b5c649f) |
 | [T-P3-2](T-P3-2-floor-busy-state.md) Floor shows 429 as busy; fewer signed URLs (B-237) | floor-engineer | sonnet | reviewer (opus) | floor-correctness, ui (copy) | **approved r2** (floor 0dd01ee, 5389e5f; QA e2e 8ed8ad3) |
 | [T-P3-3](T-P3-3-es-money-grouping.md) es money: thousands separator on 4-digit amounts | product-designer | sonnet | reviewer (opus) | ui | **approved r2** (ui 0649165, 2e3519d) |
-| [T-P3-4](T-P3-4-losing-orders-units.md) Losing orders Units 0 / Revenue $0 (B-230, verify first) | backend-engineer (analytics) | sonnet | reviewer (opus) | none | building |
-| [T-P3-5](T-P3-5-market-test-cache-leak.md) Market tests stop leaking cache rows (B-221) | backend-engineer (market) | sonnet | reviewer (sonnet) | none | building |
+| [T-P3-4](T-P3-4-losing-orders-units.md) Losing orders Units 0 / Revenue $0 (B-230, verify first) | backend-engineer (analytics) | sonnet | reviewer (opus) | none | **closed: no product change; pinning test dropped** (root cause is B-242) |
+| [T-P3-5](T-P3-5-market-test-cache-leak.md) Market tests stop leaking cache rows (B-221) | backend-engineer (market) | sonnet | reviewer (sonnet) | none | **approved r1 as a partial fix** (backend 9eae8fd; AC2 unmet: acceptance files → P4 T-P4-5) |
 
 ## Slots and ports
 - T-P3-1: API :3136, Valkey DB 13. T-P3-2: API :3137, floor dev :5184, Valkey DB 14.
@@ -23,6 +23,8 @@
 ## Integration gate
 - [x] `pnpm gate invai-backend invai-imaging invai-floor invai-web` passed on a fresh seed (run 2, log `invai-infra/.gate/run-20261001T050953Z.log`): backend 1387, imaging 119, floor 112 + build, web 136 + build, API golden path 13/13, web e2e 34, floor e2e 3
 - [x] Tech lead looked at the floor busy screenshots (`/tmp/p3-floor/`): wrong blank stays red BLOCKED while busy ("Checked on this tablet. Busy — confirming in 1 s."); amber OCUPADO panel in es. The es shot predates the r2 copy fix (unit-tested). Minor: the es header pill "1 escaneo por sincronizar" wraps to two lines at 1280 px (B-241)
+- [x] Close-out gate `pnpm gate invai-ui invai-backend invai-imaging invai-floor invai-web` passed on a fresh seed (run 2, `.gate/run-20261001T061229Z.log`): ui 32, backend 1387, imaging 119, floor 112 + build, web 136 + build, API golden path 13/13, web e2e 34, floor e2e 3. Run 1 (`run-20261001T060530Z.log`) failed only at backend test start-up with no output (after an OrbStack restart, beside a reviewer's vitest); not reproduced.
+- [x] Pushed 2026-10-01 (close-out): ui 952c174..2e3519d (T-P3-3), backend b5c649f..e3c3cf7 (T-P3-5 9eae8fd; T-P3-4 commit + revert, net zero), docs. Tech lead checked es money: `1.234,50 US$`.
 - [x] Pushed to `main` 2026-10-01: backend 522433b..b5c649f, imaging 58b67ee..26699d8, floor 72a842d..8ed8ad3, web fdce8c3..edc66d9, docs 4653c1e..d0ed343 (P1 + P2 + T-P3-1/2). `invai-infra` not pushed
 
 ## Build log
@@ -44,11 +46,31 @@
 - 2026-10-01 T-P3-3 reviewer r1: changes-required (`reviews/T-P3-3-reviewer-r1.md`): en 3-digit and en negative tests missing (AC2). Re-grouping correct (1,530 cases identical to `useGrouping: "always"`). Ruling for round 2: use `useGrouping: "always"` instead of custom code. Web and floor link `../invai-ui` source, so the next gate must include invai-ui. Round 2 started (round 1 builder already stopped).
 - 2026-10-01 T-P3-3 r2: ui 2e3519d (`useGrouping: "always"`, custom re-grouping removed; en 3-digit and negative tests; ui 32 tests; web/floor typecheck). Reviewer r2 (opus) started.
 - 2026-10-01 T-P3-3 reviewer r2: approve (`reviews/T-P3-3-reviewer-r2.md`; removing useGrouping fails 3 tests).
+- 2026-10-01 (P3 tech lead 2) T-P3-4 reviewed by the tech lead: the builder's data check is right (44 losing orders, every item `isReprint`), but the cause is a finance bug, not "by design": `floor.ts:642` `openReprint` flips `isReprint` on the same item row and `finance/service.ts:605-633` gives `isReprint` items no revenue, so a reprinted unit loses its sale. The uncommitted test pins that bug as intended, so it is **dropped** (backend-engineer restores the file); the fix is B-242 (High), carded in P4. Killed the stopped builders' leftover runs (my PIDs: 43702 = T-P3-4 full suite, 45882 chain + 45934/45941 = T-P3-5 full suite); dropped `invai_test_42049`, `_45941`, `_43702` (0 connections).
+- 2026-10-01 T-P3-5 state: `service.test.ts` edit (clearCache in 4 afterAll) uncommitted since 00:22; with it, sequential runs 2 and 3 still failed (`market.acceptance.test.ts` AC26/AC33, `market-prod-mode.acceptance.test.ts` AC29), runs 4, 5 and two parallel pairs passed. So the leak is not fixed in the acceptance files. One bounded relaunch (backend-engineer, sonnet), foreground runs only; if it fails again, back to the backlog.
+- 2026-10-01 T-P3-5: the first builder's commit 9eae8fd landed (clearCache in 4 `service.test.ts` blocks); scoped runs 0,1,1,0,0 failures, the remaining failures in the `*.acceptance.test.ts` files (same missing cleanup), so AC2 is not met; review judges it as a partial fix, the acceptance files go back to the backlog (B-221 stays open). The bounded relaunch stalled and was stopped. T-P3-4 restore: the haiku agent reported the file restored but `git status` still shows it modified; re-sent to a sonnet backend-engineer. OrbStack hung (docker exec stalled); `orb stop && orb start` + compose up, Valkey PONG. Killed leftover runs 46292, 46321, 46833 (+ children), dropped their test DBs.
+- 2026-10-01 T-P3-4: the earlier agents committed the pinning test (e29484a) and reverted it (e3c3cf7); net diff vs 9eae8fd is empty, so both ride along in the push as a no-op. Backend tree clean. Gate started (PID 47706, `pnpm gate invai-ui invai-backend invai-imaging invai-floor invai-web`, out `/tmp/p3b-gate.out`) while T-P3-5 review and the P4 architect plan review run (neither edits code); a T-P3-5 changes-required means a re-run.
+- 2026-10-01 T-P3-5 reviewer r1: approve as a partial fix (`reviews/T-P3-5-reviewer-r1.md`; only `afterAll` bodies added, scan-test-weakening clean, service.test.ts 26/26). Gate run 1 (`.gate/run-20261001T060530Z.log`): everything passed (ui 32, imaging 119, floor 112 + build, web 136 + build, API golden path 13/13, web e2e 34, floor e2e 3) except backend `pnpm test`, which died at start with no test output (likely global setup right after the OrbStack restart, while the T-P3-5 reviewer's vitest ran). A single backend file passes now; no vitest left. Gate run 2 started (out `/tmp/p3b-gate2.out`).
 
-## Hand-off (P3 tech lead, 2026-10-01): what the next tech lead does first
-1. **Pushed:** P1 + P2 + T-P3-1/2 (gate run 2 passed, `.gate/run-20261001T050953Z.log`). Not pushed: T-P3-3 (invai-ui 0649165, 2e3519d; **approved r2**), T-P3-4, T-P3-5.
-2. **T-P3-4 (B-230):** builder found no bug (all 44 Units 0/Revenue $0 losing orders are delivered, reprint-only); only a regression test in `invai-backend/src/modules/analytics/finance-service.test.ts`, uncommitted when this hand-off was written; its report `reports/T-P3-4.md` exists. Check `git -C invai-backend status`, get it committed by its owner, then reviewer (opus).
-3. **T-P3-5 (B-221):** builder stopped three times without a report while its 5+2 market test runs continued; `src/modules/market/service.test.ts` uncommitted, no `reports/T-P3-5.md`. Check `ps` for its vitest runs; relaunch backend-engineer (market) with the card if it doesn't finish, then reviewer (sonnet).
-4. **Gate:** `cd invai-infra && pnpm gate invai-backend invai-imaging invai-floor invai-web` and include **invai-ui** (web and floor link `../invai-ui` source; check whether `pnpm gate` accepts it, else push invai-ui after web/floor build green in the gate). On pass push backend, ui, docs. Never push invai-infra.
-5. Backlog added: B-240 (contract `rateBucket` + suggest/useAi guard), B-241 (floor es header pill wraps). Retro items: identify own PIDs by port before kill (T-P3-1 killed another session's :3142 API, not restarted); builders that end with background runs still going give no report.
-- Metrics so far: first-pass approval 1/3 reviewed (T-P3-1; T-P3-2 r2 double sound; T-P3-3 r2 missing tests). Canary none (OI-15). Escaped defects 0. Fences unchanged: Track D out, OI-17/OI-18 not approved, waves 24/25 paused.
+## Hand-off (P3 tech lead, 2026-10-01): superseded, kept short
+- The first P3 hand-off (T-P3-3 unpushed, T-P3-4/5 open) is done: see the close-out lines above.
+
+## Metrics
+- First-pass approval: 2/5 (T-P3-1, T-P3-5 partial; T-P3-2 r2 double sound, T-P3-3 r2 missing tests; T-P3-4 closed by the tech lead without a code change).
+- Canary: none (OI-15 open). Escaped defects: 0 found after approval. Reopens: 0. Found by verification: B-242 (High; reprinted units lose revenue and re-import double-creates a unit), which T-P3-4's "verify first" surfaced.
+- Cycle time: one day for five cards. Tokens per card: not measured.
+
+## Retro
+- Worked: "verify first" cards (T-P3-4) find the real bug even when the named symptom is "by design"; the architect's plan review turned it into decision 0020 and found the re-import double unit.
+- Builders that end their turn while background test runs continue give no report and leave orphans that compete for RAM (T-P3-4, T-P3-5 four stops). Cards now say "foreground runs only; don't end your turn with a run going".
+- Machine at about 15 of 16 GB with swapping; two full runs died and gate run 1 failed at start-up. Rule: at most 2 heavy test runs at once (in P4 wave.md).
+- A haiku agent reported a `git restore` it didn't do (the guard blocked it). Check `git status` yourself after any agent claims a file change.
+- OrbStack hung again (docker exec stalled 2 min); `orb stop && orb start` fixed it.
+
+## Hand-off (P3 tech lead 2, 2026-10-01): what the P4 tech lead does first
+1. Read `waves/P4/wave.md`: 5 cards, plan reviews approved (architect approve-with-changes, applied; PM approve). Decision 0020: `isReprint` = re-pressed, informational.
+2. Start T-P4-1 (backend-engineer, opus), T-P4-4 (ai-engineer, sonnet) and one of T-P4-2/T-P4-3; at most 3 agents and 2 heavy test runs at once. T-P4-5 (QA) starts after T-P4-1 commits.
+3. One gate when all five are approved: `pnpm gate invai-backend invai-imaging invai-floor invai-web` (+ invai-ui only if it changed). Push backend, floor, web, docs; never invai-infra.
+4. Also in P4: a haiku backlog reconciliation (PM found stale "open" rows: B-25, B-30, B-139, B-164, B-223); tech lead owns `waves/backlog.md`.
+5. P5 candidates (PM): B-243 seed reprint realism, B-224+B-238 typed reasonCode, B-233 rest.
+- Fences unchanged: Track D out, OI-17/OI-18 not approved, waves 24/25 paused, invai-infra never pushed (OI-22), canary needs OI-15.

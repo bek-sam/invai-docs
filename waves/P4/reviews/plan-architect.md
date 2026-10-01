@@ -1,0 +1,26 @@
+# Plan review (design): wave P4. Architect
+
+- Reviewer: architect (opus). Scope: design of T-P4-1 (B-242); a quick check of T-P4-2/3 for contract or cross-repo problems.
+- **Verdict: approve-with-changes.** T-P4-1 is right to exist, but it is wider than drafted: re-import can create a second unit **today**, and the fix touches orders, analytics, market and refunds as well as finance. Production needs no change. The ruling is recorded as `decisions/0020-is-reprint-means-re-pressed.md` (indexed).
+- T-P4-2 and T-P4-3: no contract, cross-repo or shared-file problem. Approve as written.
+
+## Evidence (grep and reads only)
+- The only writer is `openReprint` (`production/floor.ts:642`), which flips the flag on the same row. No sibling insert exists anywhere: the only `insert(orderItems)` calls are `import.ts:257,704` and seed `builder.ts:943,1476`, and none sets `isReprint`. The seed flips the same row (`builder.ts:1069,1593`).
+- Production reads the flag as "re-pressed": `sheets.ts:193,230` (reprints go first) and `floor.ts:775` (QC-fail replay). The UI shows it as a badge: contracts `OrderItem.isReprint` and `OrderProfitLine.isReprint`, web `order-detail.tsx:275` and `order-profit.tsx:230`, floor `stations/common.tsx:17`.
+- Re-import (`orders/import.ts`): `applyLineEdits` drops reprinted units (`:533`). Case 1: a line whose only unit was reprinted has no `ExistingLine`, so it pairs to `ex=null` and goes through "line added" (`:595`), which inserts a second unit and routes it to production. Case 2: a quantity-2 line with one unit reprinted gives `counted=1 < 2`, which adds a replacement unit. Case 3: a channel line-cancel (`:872`) skips the reprinted unit, so a cancelled shirt still ships. `updateExisting` runs on every refresh of an order that hasn't shipped (staleness check is `<` only, `:408`; `partially_shipped` is not in `SHIPPED`).
+
+## Ruling (paste into T-P4-1)
+1. **Q1, meaning.** Option (b). `isReprint` on `order_items`, `profit_lines` and `transfers` means "re-pressed at least once". It is informational and never decides whether a unit is a sale. A sale unit is any non-cancelled item (analytics may still exclude refunded lines). `openReprint` stays as it is. Reprint cost is already in transfer cost (`finance/service.ts:691`, every transfer for the item).
+2. **Q2, re-import.** Yes, it double-creates today (cases 1 to 3 above): this is a never-double-ship bug, not a risk. Fix: drop the `isReprint` filter at `import.ts:533,688,872`. Required tests (orders): after a reprint, re-import of the same payload gives the same item count and `changed` is empty, for a quantity-1 line and for a quantity-2 line with one unit reprinted; a channel line-cancel cancels the reprinted unit too.
+3. **Q3, existing rows.** No backfill job. `profit_lines` is a per-item upsert, so the gate reseed fixes the seed, `finance.nightly` recomputes the last 45 days, and `finance.recompute` (`finance.manage`) covers older ranges. Put one line in the report for release notes.
+4. **Q4, migration or seed.** Neither. There is no schema, contract or seed change, so no backend-foundation card and no backend-foundation co-review. Optional follow-up for backend-foundation: a doc comment on the three columns pointing to ADR 0020.
+5. **Owned paths for T-P4-1** (backend-engineer, one role across modules):
+   - `src/modules/finance/service.ts` (`recomputeProfit` sellable `:605`, order summary `:1034-1036`), `src/modules/finance/refunds.ts` (`:143,148,272`), and their tests.
+   - `src/modules/orders/import.ts` (`:533,688,872`) and `src/modules/orders/import*.test.ts`.
+   - `src/modules/analytics/{shared.ts:61,finance-service.ts:158,212,549-586,design-service.ts:129,inventory-service.ts:167}`, `analytics/finance-testkit.ts` (rewrite the `:356` sibling revenue-0 line to the real model: the same item re-pressed, with a second transfer), and `analytics/*.test.ts`.
+   - `src/modules/market/history.ts` (`:60,99`) and `src/modules/digest/digest.test.ts` (`:350` fixture).
+   - Remove `production/floor.ts` from owned paths: it stays read-only (no change).
+6. **Split.** Add one small card, **T-P4-4 (ai-engineer, sonnet)**: drop `eq(profitLines.isReprint,false)` at `ai/analyst-queries.ts:385` and `ai/assistant-tools.ts:601`, plus a test. It has no dependency on T-P4-1 and can take slot 4 or run next to it.
+7. **QA, same day.** `market/market.acceptance.test.ts:666` and `digest/digest.acceptance.test.ts:501` build a sibling revenue-0 reprint row. After the fix those units count, and the market assertion is likely to break. qa-engineer rewrites both fixtures to the real model. That corrects the fixture; it doesn't weaken the test. The tech lead adds this to the gate or gives QA a grant.
+8. **AC changes.** AC1 and AC2 as drafted. AC3 becomes the three re-import tests in item 2. AC4 becomes: tests for orders without reprints pass unmodified; tests whose fixtures used the sibling model are rewritten to the real model, and the report lists each one. Add **AC6**: re-import on the dev seed (one reprinted order, its CSV or mock payload sent twice) leaves the item count unchanged.
+9. **Risk flags.** Money and floor-correctness. Reviewer fable, as planned. Architect co-reviews T-P4-1 (cross-module semantics). No contract consumer impact: field shapes are unchanged, and only the numbers become correct.
