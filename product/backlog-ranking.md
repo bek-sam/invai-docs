@@ -2,6 +2,52 @@
 
 Owned by `product-manager`. New dated sections go on top; never rewrite an old one.
 
+## 2026-10-01 ranking (for wave P3, slots 3–5)
+
+Wave P3's first two slots (T-P3-1 B-236, T-P3-2 B-237) are already set: both always-in-scope bugs from the
+P2 gate root cause (`waves/P2/wave.md` hand-off item 2–3). Candidates for the remaining 3 slots, from the
+hand-off (`waves/P2/wave.md` hand-off item 4) and `waves/backlog.md` B-220..B-240. Excluded per the tech
+lead's fences: Track D, OI-17/OI-18 items, waves 24/25 (decision 0019). All candidates are always-in-scope
+bugs or small follow-ups (`product/scope.md#always-in-scope`); none needs an outside marketplace/partner
+approval, so none is held back on that ground.
+
+| Rank | Item | Owner role | Why | Shops/evidence |
+|---|---|---|---|---|
+| 1 | es 4-digit money group separator (inside "invai-ui follow-ups") | product-designer | Flagged in the 2026-10-01 P2 ranking as worth its own card: affects every Spanish-reading shop's profit/cost display, not a cosmetic clip. Single owner, no dependency, closes this week | All Spanish-UI shops; carried evidence from A1/A2 gate screens pattern (B-226 and siblings) |
+| 2 | B-230: Profit v2 "losing orders" shows Units 0 / Revenue $0 (verify first) | backend-engineer (finance) | Profit accuracy is the wedge pain "unknown profit" (research 03); every seeded losing order shows the same wrong pattern. Quick verify-then-fix, single owner | A2 T-A6 reviews; seed-wide pattern, not one order |
+| 3 | B-221: `src/modules/market/**` tests leak into global `market_series_cache`, failed 3/3 isolated runs plus a deadlock under concurrent processes | backend-engineer (market) | Tagged Medium ("can fail the gate") — the only candidate that risks every future wave's gate pass, not just one shop screen. Single owner, no dependency | T-23-10 report; reproduced 3/3, not a one-off |
+
+**Not now — needs a second owner (architect) before a single-owner card fits, same rule as the 2026-10-01 P2
+ranking (hold until the architect has a free slot):**
+- B-238 + B-224 (typed `reasonCode` for timeline/Today alert reasons): architect must shape the contract
+  field first; then backend (orders, today) + web. Real Spanish-correctness pain, but not closeable by one
+  owner this week.
+- B-231 (wire imaging photo flags through the contract enum): same shape — architect, then
+  integrations-engineer.
+- B-132 (assistant stream `net::ERR_ABORTED`): architect must decide patch-the-dependency vs. keep QA's
+  allow-list; already mitigated (allow-list), cosmetic console noise only, lowest priority of the three.
+
+**Not now — lower pain/evidence than the top 3, good filler if the tech lead opens a 4th/5th slot:**
+- B-235 Spanish half (pre-v6 assistant tools answer English under es): single owner (ai-engineer), but a
+  legacy code path with a partial mitigation already (footer translates), and the `ai` flag adds a co-review
+  step. Leave the unrelated eval-credit-exhaustion half out of any card that picks this up.
+- B-239 (small test gaps: `useInView` unit test, Today sweep's `requeueBuild` call, stray MinIO scratch
+  files): real but test-only follow-ups from P2 reviewers, no shop-facing effect. Cheap to do, low priority.
+- B-232 (imaging `/preview` missing from the concurrency limiter; ICC profile has no size cap): a hardening
+  gap from review, not an observed failure; worth a security look eventually, not evidenced as exploited now.
+- B-234 (two test flakes under load): internal gate reliability, scores lower than B-221 because it hasn't
+  been tied to an actual gate failure yet (B-221 has: 3/3 + a deadlock).
+
+**Not now, out of scope / waiting on approval:** none of the candidates are outside `scope.md` or depend on
+an outside marketplace/partner approval.
+
+**What changed and why:** The P2 ranking already flagged the es money-separator fix as deserving its own
+card "next wave" — this is that wave. B-230 repeats from the P2 alternates list, still unconfirmed as a real
+bug but still evidence-backed and cheap to verify. B-221 is new to this ranking: it wasn't scored for P2
+(excluded by that wave's catalog-path fence) and its "can fail the gate" tag makes it a stronger pick than
+the other test-flake items (B-234, B-239) once in scope. B-238/B-231/B-132 repeat the architect-dependency
+hold from the P2 ranking; none has gained a second owner's slot since.
+
 ## 2026-10-01 ranking (for wave P2, slots T-P2-4 and T-P2-5)
 
 Candidates are the P1 hand-off list (`waves/P1/wave.md` "Hand-off" item 4) plus `waves/backlog.md`.
