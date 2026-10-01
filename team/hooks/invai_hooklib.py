@@ -399,3 +399,185 @@ def parse_verifications(cmd, cwd, output=""):
         if check in required_checks(kind):
             found.append((root, kind, check))
     return found
+
+
+# ---------- shell edits (T-P7-4, B-115) ----------
+# Bash commands that write files count as edits, like Edit/Write. Text-based: only what this agent's own
+# command says it writes is recorded, so another agent's edits in the shared tree are never blamed on it.
+SKIP_PARTS = {"node_modules", "dist", ".git", ".gate", "test-results", "coverage", ".turbo", ".vite", ".venv",
+              "__pycache__", ".pytest_cache", ".ruff_cache", ".sst", ".report", ".results", "build"}
+SKIP_EXT = DOC_EXT | {".log"}
+REDIRECTS = {">", ">>", ">|", "&>", "&>>"}
+
+
+def _counts_as_code(path):
+    if not path or path.startswith("/dev/"):
+        return False
+    if os.path.splitext(path)[1].lower() in SKIP_EXT:
+        return False
+    return not (set(Path(path).parts) & SKIP_PARTS)
+
+
+def _write_targets(w, cwd):
+    """Paths (relative to cwd unless absolute) one simple command writes, '.' meaning "somewhere in cwd"."""
+    w = _strip_prefixes(w)
+    if not w:
+        return []
+    head, args = os.path.basename(w[0]), w[1:]
+    if head in ("pnpm", "npm", "yarn"):
+        rest = list(args)
+        while rest and rest[0].startswith("-"):
+            opt = rest.pop(0)
+            if opt in ("-C", "--dir", "--prefix", "--cwd") and rest:
+                d = rest.pop(0)
+                return [os.path.join(d, t) for t in _write_targets([head] + rest, cwd)]
+        if rest and rest[0] in ("exec", "dlx", "run") and len(rest) > 1:
+            if rest[0] == "run":
+                rest = rest[1:]
+            else:
+                return _write_targets(rest[1:], cwd)
+        if rest and rest[0] in ("biome", "prettier"):
+            return _write_targets(rest, cwd)
+        sub = rest[0] if rest else ""
+        if sub in ("format", "i18n", "db:generate") or (
+                sub.startswith("lint") and any(a in ("--write", "--fix", "--apply") for a in rest)):
+            return ["."]
+        return []
+    pos = [a for a in args if not a.startswith("-")]
+    if head == "sed":
+        if not any(a == "--in-place" or a.startswith("--in-place=")
+                   or (a.startswith("-") and not a.startswith("--") and "i" in a) for a in args):
+            return []
+        files, script_given, skip_next = [], any(a in ("-e", "-f") or a.startswith(("-e", "-f")) and len(a) > 2
+                                                 for a in args), False
+        for k, a in enumerate(args):
+            if skip_next:
+                skip_next = False
+                continue
+            if a in ("-e", "-f", "-l"):
+                skip_next = True
+                continue
+            if a == "-i" and k + 1 < len(args) and (args[k + 1] == "" or args[k + 1].startswith(".")):
+                skip_next = True  # BSD sed -i '' / -i .bak
+                continue
+            if a.startswith("-") or a == "":
+                continue
+            if not script_given:
+                script_given = True  # the first positional is the sed script
+                continue
+            files.append(a)
+        return files
+    if head == "perl":
+        if not any(a.startswith("-") and not a.startswith("--") and "i" in a for a in args):
+            return []
+        files, skip_next = [], False
+        for a in args:
+            if skip_next:
+                skip_next = False
+                continue
+            if a in ("-e", "-E", "-M", "-I", "-m"):
+                skip_next = True
+                continue
+            if not a.startswith("-"):
+                files.append(a)
+        return files
+    if head == "tee":
+        return pos
+    if head in ("biome", "prettier"):
+        if not any(a in ("--write", "--fix", "--apply", "--apply-unsafe", "-w") or a.startswith("--write=")
+                   for a in args):
+            return []
+        targets = [a for a in pos if a not in ("check", "format", "lint", "ci")]
+        return targets or ["."]
+    if head == "patch":
+        if "--dry-run" in args:
+            return []
+        d = next((args[k + 1] for k, a in enumerate(args[:-1]) if a in ("-d", "--directory")), ".")
+        return [d]
+    if head == "git":
+        rest, base = list(args), "."
+        while rest and rest[0].startswith("-"):
+            opt = rest.pop(0)
+            if opt == "-C" and rest:
+                base = os.path.join(base, rest.pop(0))
+            elif opt in ("-c", "--git-dir", "--work-tree") and rest:
+                rest.pop(0)
+        if rest and rest[0] in ("apply", "am", "mv", "rm") and not (
+                set(rest) & {"--check", "--stat", "--numstat", "--summary", "--cached", "-n", "--dry-run"}):
+            return [base]
+        return []
+    if head in ("mv", "cp", "rsync", "install", "ln"):
+        t = next((args[k + 1] for k, a in enumerate(args[:-1]) if a in ("-t", "--target-directory")), None)
+        dest = [t] if t else pos[-1:]
+        return dest + (pos[:-1] if head == "mv" else [])  # mv also changes where it moves from
+    return []
+
+
+def shell_edits(cmd, cwd):
+    """[(root, kind, path)] code repos a Bash command writes into (sed -i, perl -i, > / >> / tee, git apply, patch,
+    biome/prettier --write, pnpm format/i18n/db:generate, mv/cp/rsync/install/ln). [] if it can't be parsed."""
+    try:
+        toks = _tokens(cmd)
+    except ValueError:
+        return []
+    found, stack, cur, i = [], [cwd], [], 0
+
+    def note(path):
+        base = stack[-1]
+        if path is None or "$" in path or (base is None and not os.path.isabs(path)):
+            return
+        full = os.path.normpath(os.path.join(base, os.path.expanduser(path)) if base else path)
+        if not _counts_as_code(full):
+            return
+        repo = find_repo(full)
+        if repo:
+            found.append((repo[0], repo[1], full))
+
+    def flush():
+        w = list(cur)
+        cur.clear()
+        if not w:
+            return
+        if w[0] in ("cd", "pushd"):
+            target = os.path.expanduser(w[1] if len(w) > 1 else "~")
+            if target == "-" or "$" in target:
+                stack[-1] = None
+            elif os.path.isabs(target):
+                stack[-1] = os.path.normpath(target)
+            elif stack[-1] is not None:
+                stack[-1] = os.path.normpath(os.path.join(stack[-1], target))
+            return
+        if os.path.basename(w[0]) in ("sh", "bash", "zsh"):
+            c_at = next((k for k, x in enumerate(w[1:], 1) if re.fullmatch(r"-[a-z]*c[a-z]*", x)), None)
+            if c_at is not None and c_at + 1 < len(w) and stack[-1] is not None:
+                found.extend(shell_edits(w[c_at + 1], stack[-1]))
+            return
+        for t in _write_targets(w, stack[-1]):
+            note(t)
+
+    while i < len(toks):
+        t = toks[i]
+        if t in SEPARATORS:
+            flush()
+        elif t == "(":
+            flush()
+            stack.append(stack[-1])
+        elif t == ")":
+            flush()
+            if len(stack) > 1:
+                stack.pop()
+        elif t in REDIRECTS:
+            if cur and cur[-1].isdigit():
+                cur.pop()
+            if i + 1 < len(toks):
+                note(toks[i + 1])
+            i += 1
+        elif t[:1] in ("<", ">") or t in ("&>", "&>>"):
+            if cur and cur[-1].isdigit():
+                cur.pop()
+            i += 1  # input redirects and fd dups (2>&1): skip the target
+        else:
+            cur.append(t)
+        i += 1
+    flush()
+    return found

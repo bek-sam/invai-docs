@@ -4,6 +4,11 @@
 Per session_id + agent_id ("main" for the main session) it records:
 - Edit/Write/MultiEdit/NotebookEdit: which code repo or worktree was edited, and when (docs and images
   are ignored);
+- Bash that writes into a code repo (sed -i, perl -i, > / >> / tee, git apply, patch, biome/prettier --write,
+  pnpm format/i18n/db:generate, mv/cp into a repo; invai_hooklib.shell_edits) counts as an edit of that repo,
+  from PostToolUse and PostToolUseFailure alike (T-P7-4). Text-based on purpose: only what this agent's own
+  command names is recorded, so another agent's edits in the shared tree are never blamed on it (a git
+  status fingerprint would). Checks in the same command as such a write don't count for that repo;
 - Bash: which full-repo checks succeeded afterwards (pnpm typecheck/lint/test/build, their
   node_modules/.bin forms, tsc, biome check ., vitest run, vite build; imaging uv run ruff check . and
   uv run pytest), including `cd <repo> &&`, `-C`/`--dir` and `&&` chains. A failed command fires
@@ -21,7 +26,8 @@ import time
 
 def main():
     data = json.load(sys.stdin)
-    if data.get("hook_event_name") not in (None, "PostToolUse"):
+    event = data.get("hook_event_name")
+    if event not in (None, "PostToolUse", "PostToolUseFailure"):
         return
     sys.dont_write_bytecode = True  # no __pycache__ next to the hooks (sync.sh copies hooks/* flat)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -34,6 +40,8 @@ def main():
     now = time.time()
 
     if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
+        if event == "PostToolUseFailure":
+            return  # the edit didn't happen
         path = ti.get("file_path") or ti.get("notebook_path") or ""
         if not path or os.path.splitext(path)[1].lower() in h.DOC_EXT:
             return
@@ -54,6 +62,20 @@ def main():
         return
 
     if tool == "Bash":
+        written = h.shell_edits(ti.get("command", ""), cwd)
+        if written:
+            def mark_shell_edit(state):
+                for root, kind, path in written:
+                    r = state["repos"].setdefault(root, {"kind": kind, "ok": {}})
+                    r["kind"] = kind
+                    r["edited_at"] = now
+                    r.setdefault("files", [])
+                    if path not in r["files"]:
+                        r["files"] = (r["files"] + [path])[-20:]
+
+            h.update_state(sf, mark_shell_edit)
+        if event == "PostToolUseFailure":
+            return  # a failed command proves no check, but its writes (above) still count
         resp = data.get("tool_response") or {}
         if ti.get("run_in_background") or (isinstance(resp, dict) and (resp.get("backgroundTaskId") or resp.get("interrupted"))):
             return
@@ -62,7 +84,8 @@ def main():
         output = ""
         if isinstance(resp, dict):
             output = f"{resp.get('stdout', '')}\n{resp.get('stderr', '')}"
-        found = h.parse_verifications(ti.get("command", ""), cwd, output)
+        edited_roots = {root for root, _k, _p in written}
+        found = [f for f in h.parse_verifications(ti.get("command", ""), cwd, output) if f[0] not in edited_roots]
         if not found:
             return
         started = now - float(data.get("duration_ms") or 0) / 1000.0

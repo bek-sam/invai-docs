@@ -65,8 +65,10 @@ def main():
         ruff = tool("ruff", venv=True)
         if not ruff:
             return
+        env = {k: v for k, v in os.environ.items() if k not in ("FORCE_COLOR", "CLICOLOR_FORCE")}
+        env["NO_COLOR"] = "1"  # FORCE_COLOR in the session would wrap the file:line:col in ANSI codes
         r = subprocess.run([ruff, "check", "--no-fix", "--no-cache", "--output-format=concise", rel],
-                           cwd=root, capture_output=True, text=True, timeout=6)
+                           cwd=root, capture_output=True, text=True, timeout=6, env=env)
         for line in r.stdout.splitlines():
             if re.match(r"^.+:\d+:\d+: ", line):
                 errors.append(line.strip())

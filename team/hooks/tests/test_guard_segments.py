@@ -24,7 +24,8 @@ CASES = [
     ("B04", "git push origin main\nprintf '%s' x | tr -d y", TL, "allow"),
     ("B05", "git push origin main | tr -d y", TL, "allow"),
     ("B06", "git push origin main 2>&1 | tail -3", TL, "allow"),
-    ("B07", "for r in invai-docs invai-backend; do git -C $r push origin main; done; git log -1 | tr -d x", TL, "allow"),
+    # T-23-6: a push whose repo is a loop variable (-C $r) can't be pinned, so the gate-stamp check refuses it.
+    ("B07", "for r in invai-docs invai-backend; do git -C $r push origin main; done; git log -1 | tr -d x", TL, "deny"),
     ("B08", "git push -u origin main", TL, "allow"),
     ("B09", "git push --dry-run origin main", TL, "allow"),
     ("B10", "git push origin HEAD:main", TL, "allow"),
