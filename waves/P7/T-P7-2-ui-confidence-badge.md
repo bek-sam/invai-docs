@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Wave | P7 |
-| Scope ref | `scope.md#mvp-in` (market recommendations, shipped wave 18; B-134 is design-system debt on that screen) |
+| Scope ref | `scope.md#market-signals` (shipped wave 18; B-134 is design-system debt on that screen) |
 | Spec | backlog B-134; wave 18 T-18-5 designer co-review; the local component `invai-web/src/components/market/confidence-badge.tsx` (its header says why it is local) |
 | Owner | product-designer |
 | Reviewer | reviewer (opus) |

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Wave | P7 |
-| Scope ref | `scope.md#mvp-in` (market recommendations; B-134) |
+| Scope ref | `scope.md#market-signals` (B-134) |
 | Spec | backlog B-134; T-P7-2 card (props) |
 | Owner | web-engineer |
 | Reviewer | reviewer (opus) |
