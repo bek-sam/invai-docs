@@ -31,3 +31,7 @@
 - Role file `.claude/agents/product-designer.md`; `team/agent-brief.md`. Memory: `/Users/bekbolsun/invai/.claude/agent-memory/product-designer/`.
 - Commit only your paths, attribution line at the end. **Don't push; only the tech lead pushes after the gate.** No servers needed; if you start any, record PIDs and stop them.
 - Report (≤ 60 lines) to `invai-docs/waves/P3/reports/T-P3-3.md`.
+
+## Round 2 (tech lead, from `reviews/T-P3-3-reviewer-r1.md`)
+1. **Blocking:** add en tests for a 3-digit amount (`$123.45`) and a negative 4-digit amount (`-$1,234.56`), locale passed explicitly.
+2. Ruling: replace the custom `formatToParts` re-grouping with the standard `useGrouping: "always"` (typed in TS 7's ES2023 lib; the reviewer showed it is byte-identical in 1,530 cases). Less custom code on every money value. Fix the code comment that says there is no native way. All tests from round 1 stay.

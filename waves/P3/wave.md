@@ -1,6 +1,6 @@
 # Wave P3: the floor rate-limit fix, one gate, push P1 + P2 + P3
 
-- Status: **building** (2026-10-01). Planned from the hand-off at the end of `waves/P2/wave.md`.
+- Status: **T-P3-1/2 approved, gate passed, P1+P2+P3 pushed; T-P3-3..5 building** (2026-10-01). Planned from the hand-off at the end of `waves/P2/wave.md`.
 - Goal (user outcome): a busy floor never gets a scan rejected because thumbnails used up the shop's write allowance; if the server does say "slow down", the presser sees "busy", not "offline". Then P1, P2 and P3 pass one gate and are pushed.
 - Scope refs: always-in-scope (bug) for T-P3-1 (B-236, High) and T-P3-2 (B-237). Slots 3–5 from the backlog's agent-doable P1/P2 items, PM-ranked, after the gate.
 - Fences: no deploys, no AWS, no outbound sends. Track D out. OI-17 and OI-18 are not approved. `invai-infra` is read-only and never pushed (OI-22). Waves 24 and 25 stay paused (decision 0019). No buyer PII. No rate limit is raised or lowered.
@@ -11,9 +11,9 @@
 |---|---|---|---|---|---|
 | [T-P3-1](T-P3-1-rate-bucket-by-intent.md) Rate-limit buckets by intent (B-236) | backend-foundation | sonnet | reviewer (opus) + security-reviewer (opus) | auth, floor-correctness | **approved r1** (backend b5c649f) |
 | [T-P3-2](T-P3-2-floor-busy-state.md) Floor shows 429 as busy; fewer signed URLs (B-237) | floor-engineer | sonnet | reviewer (opus) | floor-correctness, ui (copy) | **approved r2** (floor 0dd01ee, 5389e5f; QA e2e 8ed8ad3) |
-| [T-P3-3](T-P3-3-es-money-grouping.md) es money: thousands separator on 4-digit amounts | product-designer | sonnet | reviewer (opus) | ui | queued (after push) |
-| [T-P3-4](T-P3-4-losing-orders-units.md) Losing orders Units 0 / Revenue $0 (B-230, verify first) | backend-engineer (analytics) | sonnet | reviewer (opus) | none | queued (after push) |
-| [T-P3-5](T-P3-5-market-test-cache-leak.md) Market tests stop leaking cache rows (B-221) | backend-engineer (market) | sonnet | reviewer (sonnet) | none | queued (after push) |
+| [T-P3-3](T-P3-3-es-money-grouping.md) es money: thousands separator on 4-digit amounts | product-designer | sonnet | reviewer (opus) | ui | **approved r2** (ui 0649165, 2e3519d) |
+| [T-P3-4](T-P3-4-losing-orders-units.md) Losing orders Units 0 / Revenue $0 (B-230, verify first) | backend-engineer (analytics) | sonnet | reviewer (opus) | none | building |
+| [T-P3-5](T-P3-5-market-test-cache-leak.md) Market tests stop leaking cache rows (B-221) | backend-engineer (market) | sonnet | reviewer (sonnet) | none | building |
 
 ## Slots and ports
 - T-P3-1: API :3136, Valkey DB 13. T-P3-2: API :3137, floor dev :5184, Valkey DB 14.
@@ -23,7 +23,7 @@
 ## Integration gate
 - [x] `pnpm gate invai-backend invai-imaging invai-floor invai-web` passed on a fresh seed (run 2, log `invai-infra/.gate/run-20261001T050953Z.log`): backend 1387, imaging 119, floor 112 + build, web 136 + build, API golden path 13/13, web e2e 34, floor e2e 3
 - [x] Tech lead looked at the floor busy screenshots (`/tmp/p3-floor/`): wrong blank stays red BLOCKED while busy ("Checked on this tablet. Busy — confirming in 1 s."); amber OCUPADO panel in es. The es shot predates the r2 copy fix (unit-tested). Minor: the es header pill "1 escaneo por sincronizar" wraps to two lines at 1280 px (B-241)
-- [ ] Pushed to `main`: P1, P2 and P3 commits together (backend, imaging, floor, web, docs); never `invai-infra`
+- [x] Pushed to `main` 2026-10-01: backend 522433b..b5c649f, imaging 58b67ee..26699d8, floor 72a842d..8ed8ad3, web fdce8c3..edc66d9, docs 4653c1e..d0ed343 (P1 + P2 + T-P3-1/2). `invai-infra` not pushed
 
 ## Build log
 - 2026-10-01 Plan and cards T-P3-1, T-P3-2 written. Started: T-P3-1 (backend-foundation), T-P3-2 (floor-engineer), architect plan review (3 agents).
@@ -39,3 +39,16 @@
 - 2026-10-01 T-P3-2 r2: floor 5389e5f (resolved result applied only while provisional/queued; one-sound test; resolved pruned after 2 min and cleared on Next/unmount; es busy copy says it retries itself; rejected alert says "queued"/"guardado" in both). floor 112 tests + build. Blocked: QA's `e2e/offline.spec.ts:89` asserts the old alert text. Started: QA (haiku) one-line e2e copy update; reviewer r2 (opus), which also checks the QA commit (lesson 2026-09-28: gate-time QA test edits get a reviewer pass).
 - 2026-10-01 QA: floor 8ed8ad3 (`e2e/offline.spec.ts:89` expects "1 queued scan was rejected"; text only). Reviewer r2 checks it.
 - 2026-10-01 T-P3-2 reviewer r2: approve (`reviews/T-P3-2-reviewer-r2.md`; one-sound test red on 0dd01ee with tick,error,error; pruning can't drop a pending result; QA 8ed8ad3 exact string, same matcher). Gate run 2 started.
+- 2026-10-01 Gate run 2 PASSED (`.gate/run-20261001T050953Z.log`): backend 1387, imaging 119, floor 112 + build, web 136 + build, API golden path 13/13, web e2e 34, floor e2e 3 (press.spec now green: B-236 fixed). Pushed P1 + P2 + P3 (five repos, bare `git -C <repo> push origin main`). Started T-P3-3 (product-designer), T-P3-4 (backend-engineer analytics, :3138/DB 13), T-P3-5 (backend-engineer market). These need their own gate before a push.
+- 2026-10-01 T-P3-3 built: ui 0649165. `minimumGroupingDigits` is untyped in TS 7 and ignored by Node 24 ICU, so the formatter re-groups digits via `formatToParts` when es leaves a 4-digit amount ungrouped. ui 30 tests; web and floor typecheck + build. Reviewer (opus) started. T-P3-5 builder stopped without a report while its background test runs continue (market test edit uncommitted).
+- 2026-10-01 T-P3-3 reviewer r1: changes-required (`reviews/T-P3-3-reviewer-r1.md`): en 3-digit and en negative tests missing (AC2). Re-grouping correct (1,530 cases identical to `useGrouping: "always"`). Ruling for round 2: use `useGrouping: "always"` instead of custom code. Web and floor link `../invai-ui` source, so the next gate must include invai-ui. Round 2 started (round 1 builder already stopped).
+- 2026-10-01 T-P3-3 r2: ui 2e3519d (`useGrouping: "always"`, custom re-grouping removed; en 3-digit and negative tests; ui 32 tests; web/floor typecheck). Reviewer r2 (opus) started.
+- 2026-10-01 T-P3-3 reviewer r2: approve (`reviews/T-P3-3-reviewer-r2.md`; removing useGrouping fails 3 tests).
+
+## Hand-off (P3 tech lead, 2026-10-01): what the next tech lead does first
+1. **Pushed:** P1 + P2 + T-P3-1/2 (gate run 2 passed, `.gate/run-20261001T050953Z.log`). Not pushed: T-P3-3 (invai-ui 0649165, 2e3519d; **approved r2**), T-P3-4, T-P3-5.
+2. **T-P3-4 (B-230):** builder found no bug (all 44 Units 0/Revenue $0 losing orders are delivered, reprint-only); only a regression test in `invai-backend/src/modules/analytics/finance-service.test.ts`, uncommitted when this hand-off was written; its report `reports/T-P3-4.md` exists. Check `git -C invai-backend status`, get it committed by its owner, then reviewer (opus).
+3. **T-P3-5 (B-221):** builder stopped three times without a report while its 5+2 market test runs continued; `src/modules/market/service.test.ts` uncommitted, no `reports/T-P3-5.md`. Check `ps` for its vitest runs; relaunch backend-engineer (market) with the card if it doesn't finish, then reviewer (sonnet).
+4. **Gate:** `cd invai-infra && pnpm gate invai-backend invai-imaging invai-floor invai-web` and include **invai-ui** (web and floor link `../invai-ui` source; check whether `pnpm gate` accepts it, else push invai-ui after web/floor build green in the gate). On pass push backend, ui, docs. Never push invai-infra.
+5. Backlog added: B-240 (contract `rateBucket` + suggest/useAi guard), B-241 (floor es header pill wraps). Retro items: identify own PIDs by port before kill (T-P3-1 killed another session's :3142 API, not restarted); builders that end with background runs still going give no report.
+- Metrics so far: first-pass approval 1/3 reviewed (T-P3-1; T-P3-2 r2 double sound; T-P3-3 r2 missing tests). Canary none (OI-15). Escaped defects 0. Fences unchanged: Track D out, OI-17/OI-18 not approved, waves 24/25 paused.
