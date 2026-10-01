@@ -1,6 +1,7 @@
 -- size_mix_gap v1 (metrics/definitions/size_mix_gap.md)
--- Per blank style x color: each size's share of units sold (non-reprint, non-cancelled order items
--- placed in the last :'days' days) against its share of on-hand stock. gap_pts = stock share -
+-- Per blank style x color: each size's share of units sold (non-cancelled order items; a reprinted
+-- unit still counts, decision 0020) placed in the last :'days' days against its share of on-hand
+-- stock. gap_pts = stock share -
 -- sales share, in percentage points. Positive = over-stocked size, negative = under-stocked.
 -- Only style x color groups with >= 30 units sold are shown (minimum sample).
 WITH shops AS (
@@ -10,7 +11,7 @@ WITH shops AS (
 sold AS (
   SELECT oi.company_id, oi.blank_variant_id, count(*) AS units
   FROM order_items oi JOIN orders o ON o.id = oi.order_id
-  WHERE NOT oi.is_reprint AND oi.state <> 'cancelled' AND oi.blank_variant_id IS NOT NULL
+  WHERE oi.state <> 'cancelled' AND oi.blank_variant_id IS NOT NULL
     AND o.placed_at >= now() - make_interval(days => :'days'::int)
   GROUP BY 1, 2),
 stock AS (SELECT company_id, blank_variant_id, sum(on_hand) AS on_hand FROM stock_levels GROUP BY 1, 2),

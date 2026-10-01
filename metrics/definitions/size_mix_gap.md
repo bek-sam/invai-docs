@@ -17,7 +17,7 @@ For each blank style and color, whether your stock is spread across sizes the wa
 ## Source
 | Table.column | Meaning |
 |---|---|
-| order_items.blank_variant_id, is_reprint, state | units sold |
+| order_items.blank_variant_id, state | units sold (a reprinted unit still counts, decision 0020) |
 | stock_levels.on_hand | stock |
 | blank_variants.style_code, color, size | grouping |
 

@@ -8,7 +8,8 @@
 --   growing  : u4 >= 3 and u4 >= 1.25 * p4
 --   declining: p4 >= 3 and u4 <= 0.75 * p4
 --   steady   : everything else with a sale in 60 days
--- Units exclude reprints and cancelled items (one order item = one unit).
+-- Units exclude cancelled items only; a reprinted (re-pressed) unit still counts (decision 0020),
+-- one order item = one unit.
 WITH shops AS (
   SELECT id AS company_id, slug, timezone FROM companies
   WHERE type = 'shop' AND deleted_at IS NULL AND demo_owner_user_id IS NULL
@@ -20,7 +21,7 @@ sales AS (
     count(*) FILTER (WHERE o.placed_at >= w.t - interval '56 days' AND o.placed_at < w.t - interval '28 days') AS p4,
     min(o.placed_at) AS first_sale, max(o.placed_at) AS last_sale
   FROM w JOIN order_items oi ON oi.company_id = w.company_id AND oi.design_id IS NOT NULL
-   AND NOT oi.is_reprint AND oi.state <> 'cancelled'
+   AND oi.state <> 'cancelled'
   JOIN orders o ON o.id = oi.order_id AND o.placed_at < w.t AND o.placed_at >= w.t - interval '365 days'
   GROUP BY 1, 2),
 listed AS (

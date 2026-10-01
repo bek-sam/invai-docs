@@ -17,9 +17,9 @@ w AS (SELECT s.*,
   FROM shops s),
 p AS (
   SELECT w.slug, coalesce(pl.design_id::text, 'unmapped') AS design,
-    count(*) FILTER (WHERE pl.placed_at >= w.bf AND pl.placed_at < w.bt AND NOT pl.is_reprint) AS u0,
+    count(*) FILTER (WHERE pl.placed_at >= w.bf AND pl.placed_at < w.bt) AS u0,
     coalesce(sum(pl.net_cents) FILTER (WHERE pl.placed_at >= w.bf AND pl.placed_at < w.bt), 0) AS cm0,
-    count(*) FILTER (WHERE pl.placed_at >= w.f AND pl.placed_at < w.t AND NOT pl.is_reprint) AS u1,
+    count(*) FILTER (WHERE pl.placed_at >= w.f AND pl.placed_at < w.t) AS u1,
     coalesce(sum(pl.net_cents) FILTER (WHERE pl.placed_at >= w.f AND pl.placed_at < w.t), 0) AS cm1
   FROM w JOIN profit_lines pl ON pl.company_id = w.company_id
    AND ((pl.placed_at >= w.bf AND pl.placed_at < w.bt) OR (pl.placed_at >= w.f AND pl.placed_at < w.t))

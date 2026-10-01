@@ -8,7 +8,7 @@
 Where each design is in its life: new, growing, steady, declining or dead (listed but not selling), so you know what to push and what to retire.
 
 ## Formula
-- Units = non-reprint, non-cancelled order items with the design (one item = one unit), last 365 days.
+- Units = non-cancelled order items with the design (one item = one unit, a reprinted/re-pressed unit still counts, decision 0020), last 365 days.
 - u4 = units in the last 28 days; p4 = the 28 days before.
 - Stage, first match: dead (active listing, no sale in 60 days) → new (first sale < 8 weeks ago) → growing (u4 ≥ 3 and u4 ≥ 1.25 × p4) → declining (p4 ≥ 3 and u4 ≤ 0.75 × p4) → steady (a sale in 60 days) → inactive.
 - As of a date, shop time zone.
@@ -18,7 +18,7 @@ Where each design is in its life: new, growing, steady, declining or dead (liste
 ## Source
 | Table.column | Meaning |
 |---|---|
-| order_items.design_id, is_reprint, state | units |
+| order_items.design_id, state | units |
 | orders.placed_at | timing |
 | listings.state, design_id | listed designs |
 

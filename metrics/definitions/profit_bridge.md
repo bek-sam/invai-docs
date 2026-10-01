@@ -10,7 +10,7 @@ Splits the change in net profit between two periods into 'sold more or fewer' (v
 ## Formula
 - Per design d: volume_d = (u1 − u0) × cm0/u0; rate_d = (cm1 − cm0) − volume_d; a design with no units in one period puts all of its change in volume.
 - Σ volume + Σ rate = total change exactly (no residual).
-- u = non-reprint units; cm = Σ profit_lines.net_cents (CM3) in the period.
+- u = units (a reprinted/re-pressed unit still counts as a sale unit, decision 0020); cm = Σ profit_lines.net_cents (CM3) in the period.
 - Windows: base [bfrom, bto) and current [from, to), shop time zone, same length recommended.
 - Unit: cents.
 - Minimum sample: 20 orders in each period; else 'not enough orders to explain'.
@@ -18,7 +18,7 @@ Splits the change in net profit between two periods into 'sold more or fewer' (v
 ## Source
 | Table.column | Meaning |
 |---|---|
-| profit_lines.design_id, net_cents, is_reprint, placed_at | per-design CM |
+| profit_lines.design_id, net_cents, placed_at | per-design CM |
 
 ## Marketplace comparison
 None: this is InvAI's own number; no marketplace defines it.
