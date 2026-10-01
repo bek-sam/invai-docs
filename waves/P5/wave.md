@@ -1,6 +1,6 @@
 # Wave P5: Spanish alert and timeline text, realistic reprints in the demo, design preview loose ends
 
-- Status: **planned** (2026-10-01). Planned from the hand-off at the end of `waves/P4/wave.md`.
+- Status: **done** (2026-10-01): five cards approved, gate passed on a fresh seed, pushed. Hand-off to P6 at the end. Planned from the hand-off at the end of `waves/P4/wave.md`.
 - Goal (user outcome): under Spanish, Today's alert lines and the order timeline's reasons read in Spanish (today they show English sentences or nothing); the demo shop's reprints look like a real shop's (a few single shirts re-pressed inside bigger orders, not 44 orders reprinted end to end); a replaced design leaves no orphan preview files and order items mapped before their preview existed get one.
 - Scope refs: always-in-scope (bug) for every card: B-224 + B-238 (Spanish leak on a daily screen, en/es is MVP item 5), B-243 (demo data shapes the product's numbers, CLAUDE.md seed-realism lesson; profit shows only all-reprint orders), B-233 rest (orphan objects and empty thumbnails in a shipped feature).
 - Owner's scope for this wave: only agent-doable P1/P2 items (B-243, B-224 + B-238, B-233 rest, and any other P1/P2 the PM finds). Low (P3) items are skipped. If none remain after P5, the tech lead writes `waves/status-2026-10-01.md` instead of a hand-off.
@@ -14,7 +14,7 @@
 | [T-P5-2](T-P5-2-preview-cleanup.md) Replaced design's old previews removed when unreferenced; late preview backfills order items (B-233 rest) | backend-engineer (catalog, orders/mapping) | sonnet | reviewer (opus) + security-reviewer (sonnet) | files | **approved r1** (backend 0aa67d8) |
 | [T-P5-3](T-P5-3-contract-reason-params.md) Contract: alert `params`, timeline `reasonCode` + `reasonParams`, additive (B-224, B-238) | architect | opus | reviewer (sonnet) | contract | **approved r1** (contracts d6d038b) |
 | [T-P5-4](T-P5-4-backend-reason-params.md) Backend fills alert params and timeline reason codes (B-224, B-238) | backend-engineer (today, orders/service timeline, alert callers in shipping, inventory, channels, vendors) | sonnet | reviewer (opus) + architect (sonnet) | none | **approved r2** (backend cdeb3e3, 471355a) |
-| [T-P5-5](T-P5-5-web-reason-params.md) Web shows alert lines and timeline reasons from codes, en and es (B-224, B-238) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | round 2 |
+| [T-P5-5](T-P5-5-web-reason-params.md) Web shows alert lines and timeline reasons from codes, en and es (B-224, B-238) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | **approved r2** (web 44c04c1, 0ad173d) |
 
 Interfaces: T-P5-3 fixes the names (`Alert.params`, `TimelineEntry.reasonCode`, `TimelineEntry.reasonParams`, the code lists) before T-P5-4/5 start; both read the committed contract. All new fields optional, so the old backend and the cached floor/web keep working. No shared file between cards: T-P5-2 owns `orders/mapping.ts` (+ a new orders file), T-P5-4 owns `orders/service.ts`; T-P5-1 alone owns `src/db/seed/**`.
 
@@ -26,9 +26,9 @@ Order: plan reviews (PM + architect) → T-P5-3 (architect) and T-P5-1 → T-P5-
 - Gate slot (:3000, :5173, :5174, :8000) stays free. :3142 is held by an unknown API (PID 55461, since P4); left alone.
 
 ## Integration gate
-- [ ] `pnpm gate invai-contracts invai-backend invai-floor invai-web` on a fresh seed (floor: contract consumer; imaging and ui unchanged)
-- [ ] Tech lead looks at: Today alerts and an order timeline in es at 1440 and 390; reprint mix on the gate seed by SQL (share partial, share of pressed items, losing reprint orders)
-- [ ] Push contracts, backend, web (floor only if it changed), docs. Never invai-infra (OI-22)
+- [x] `pnpm gate invai-contracts invai-backend invai-floor invai-web` run 1 PASSED (`invai-infra/.gate/run-20261001T133905Z.log`): contracts 132, backend 1450, floor 112 + build, web 156 + build, API golden path 13/13, web e2e 34, floor e2e 3. After T-P5-5 r2, `pnpm gate invai-web` PASSED (`run-20261001T135118Z.log`): web 158 + build, API golden path 13/13, web e2e 34, floor e2e 3
+- [x] Tech lead looked at: `/tmp/p5-web/alerts-panel-es-390.png` and `order-timeline-es-1440.png` (Spanish alert lines with order numbers and dates; timeline "En la hoja …", "Hoja … recibida"); reprint mix by SQL on the gate seed: 168 of 6070 pressed-or-later items (2.8%), 164 of 168 reprint orders partial, 2 losing, 0 at $0
+- [x] Pushed 2026-10-01: contracts 6349ddf..d6d038b, backend 19a85c3..471355a, web 47acf01..0ad173d, docs (this commit). Floor unchanged. invai-infra not pushed (OI-22)
 
 ## Build log
 - 2026-10-01 (P5 tech lead) Pre-wave: disk 12 GB free; docker healthy; all code repos clean at origin/main (contracts 6349ddf, backend 19a85c3, web 47acf01, floor b2cfd13, ui 2e3519d); gate ports free; :3142 held by PID 55461 (unknown, ~4 h old, left alone).
@@ -50,9 +50,29 @@ Order: plan reviews (PM + architect) → T-P5-3 (architect) and T-P5-1 → T-P5-
 - 2026-10-01 T-P5-5 built: web 44c04c1 (alert line from messageCode+params, timeline reason from reasonCode, en/es; screenshots `/tmp/p5-web/`). Tech lead looked at `alerts-panel-es-390.png` (Spanish lines, order numbers, dates; 2-line clamp as before) and `order-timeline-es-1440.png` ("En la hoja 2026-10-01 #2", "Hoja … recibida"). Stopped T-P5-4's leftover API watcher on :3151 (PIDs 95499, 4225; respawned by tsx watch). Reviewer (opus) and product-designer (sonnet) started. Gate started in parallel (PID 7661, `pnpm gate invai-contracts invai-backend invai-floor invai-web`, out `/tmp/p5-gate.out`); a T-P5-5 change means a re-run. Orphan APIs on :3141-3143 (P4 and older, parents 52296, 64192, 11838) left alone; the P4 gate passed with the same kind of orphan.
 - 2026-10-01 Gate run 1 PASSED (`invai-infra/.gate/run-20261001T133905Z.log`): contracts 132, backend 1450, floor 112 + build, web 156 + build, API golden path 13/13, web e2e 34, floor e2e 3. Tech lead SQL on the gate seed: 168 of 6070 pressed-or-later items reprinted (2.8%), 164 of 168 reprint orders partial (97.6%), 2 reprint orders lose money, 0 at $0 revenue. Pushed contracts 6349ddf..d6d038b and backend 19a85c3..471355a (both approved and gated).
 - 2026-10-01 T-P5-5 product-designer r1: approve (screens fresh, copy natural, glossary right; note: QC vs "control de calidad" split, glossary question). Reviewer r1 (opus): changes-required (`reviews/T-P5-5-reviewer-r1.md`, docs ccac6aa): vendor_email lines leave a gap when `vendorName` is absent (the backend omits it on purpose). Everything else verified (15 of 20 new tests red on old; all 14 + 22 codes translated; "Importado → Listo" has a NULL reason, correct). Round 2 (web-engineer, sonnet) started; web needs a re-gate after it.
+- 2026-10-01 T-P5-5 r2: web 0ad173d (vendorless variant of both vendor_email lines; real-catalog test; 158 tests + build). Reviewer r2 (opus): approve (`reviews/T-P5-5-reviewer-r2.md`, docs d88ced8; new test red on the old code). **T-P5-5 approved; all five cards approved.** `pnpm gate invai-web` PASSED; web pushed. Backlog: B-243, B-233, B-224, B-238 done; new rows B-249 (seed not deterministic, Medium), B-250..B-254 (Low).
 
 ## Metrics
-(at close)
+- First-pass approval: 3/5 (T-P5-1, T-P5-2, T-P5-3). Round 2: T-P5-4 (params of 4 alert codes and the toAlert parse guard unpinned, shown by mutation; two Spanish-line leaks), T-P5-5 (gap in the vendor email line when the backend omits the vendor name). None reached the 2-round escalation.
+- Canary: none (OI-15 open). Escaped defects: 0 found after approval. Reopens: 0.
+- Cycle time: about 3.5 h for five cards (plan 05:30, last push 08:57 CDT), including two agents lost to the stream watchdog and one builder handing back before its suite finished.
+- Tokens per card (subagent totals, approx.): T-P5-1 525k (builder, finisher, reviewer), T-P5-2 470k (+ a stalled first launch), T-P5-3 260k (architect plan review + build, reviewer), T-P5-4 810k (two rounds, two reviewers, architect), T-P5-5 800k (two rounds, two reviews, designer); PM plan review 170k.
 
 ## Retro
-(at close)
+- Worked: the architect's plan review fixed every name and rule up front (R1 table of codes and param keys, R2 cleanup rule, R3 seed call), so T-P5-4 and T-P5-5 built against one list and neither needed a contract change. Mutation checks by the reviewer again found tests that stayed green when a key was dropped (T-P5-4) and a real Spanish gap the author's tests missed because backend and web were built in parallel against "every key optional" (T-P5-5).
+- The plan said the contract keys are all optional but no card said what the web shows when one is missing; the backend then omitted `vendorName` on purpose. Rule for future contract cards: the ruling names the fallback for every optional param.
+- Two agents (a builder and a reviewer) died together on the stream watchdog with no edits; Docker and Valkey were healthy, so this was the agent stream, not OrbStack. Relaunching with the same prompt worked.
+- The seed builder wiped the shared dev Redis DB 0 queues (second time, B-219) and overwrote `seed-output.json`; both were disclosed honestly and the gate reseed repaired them. Promoted: the card template and backend-foundation role now require pinning `REDIS_URL` and `SEED_OUTPUT_FILE` (lessons 2026-10-01 P5).
+- Two builders handed back while their full suite still ran, because the Bash tool's 2 min default moves long calls to the background. Promoted to `verify-and-report` step 5 (explicit 600000 ms timeout).
+- tsx watch API children respawn on any backend edit, so orphan APIs from earlier waves (:3141-3143) came back mid-wave and held Valkey DBs 12 and 14; cards moved to DBs 9 and 10. They did not affect the gate. Their starters are gone; the owner may stop them (parents 52296, 64192, 11838).
+
+## Hand-off (P5 tech lead, 2026-10-01): what the P6 tech lead does first
+1. More agent-doable P1/P2 items remain (PM, `reviews/plan-pm.md`), so P6 is a short wave. Have the PM confirm the ranking and the architect review the design, as in P5:
+   - B-31 floor SSE auth: the floor still sends `?token=` in the URL (`invai-floor/src/realtime/sse.ts:88`) and a revoked station token doesn't close an open stream (backend-foundation, then floor-engineer; auth flag, security-reviewer co-reviews). Top: pilot safety, skipped three times.
+   - B-208 sheet build races the post-seed outbox drain, so a sheet can come out under 80% film use (backend-engineer production, or backend-foundation; floor-correctness of the wedge).
+   - B-219 `db:reset` refuses unless `REDIS_URL` is pinned or derived from the target DB (backend-foundation); it bit twice (2026-09-29, 2026-10-01 P5). Also make the seed refuse to write the shared `seed-output.json` for a non-`invai` DB.
+   - B-249 seed run-to-run nondeterminism (backend-foundation, Medium); pairs with B-219 in one foundation card if small.
+   - Low (skip unless the owner asks): B-244..B-248, B-250..B-254.
+2. Gate: `pnpm gate <touched repos>` (add invai-ui only if it changed); push each repo with a bare `git -C <repo> push origin main`; never invai-infra (OI-22).
+3. Fences unchanged: Track D out, OI-17/OI-18 not approved, waves 24/25 paused (decision 0019), canary needs OI-15. Max 3 agents, 2 heavy test runs.
+4. Dev DB is freshly seeded by the P5 web gate; infra running. Contract is 0.11.0 (`Alert.messageCode/params`, `TimelineEntry.reasonCode/reasonParams`).
