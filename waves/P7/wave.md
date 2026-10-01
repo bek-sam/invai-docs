@@ -36,6 +36,7 @@ Order: plan reviews (PM, architect) + T-P7-4 → T-P7-1, T-P7-2, T-P7-5 → T-P7
 ## Build log
 - 2026-10-01 (P7 tech lead) Pre-wave: disk 8.3 GB free; docker healthy; code repos clean at origin/main (contracts d6d038b, backend a64533e, web 0ad173d, floor 9304da1, ui 2e3519d); infra 5 local commits (OI-22, not pushed); ports 3000-3199, 8000, 5173, 5174 free.
 - 2026-10-01 B-134's web swap became its own card (T-P7-3) so each card has one owner; B-115 split into hooks (T-P7-4, with B-189 folded in: same file, same control) and the AI loop (T-P7-5). Grant: T-P7-4 may edit `invai-docs/team/hooks/**` (tech-lead path: the backup copy of the hooks and their tests) as well as `.claude/hooks/**`.
+- 2026-10-01 Plan committed (docs fb596c5). Started the PM scope review (sonnet), the architect design review (opus) and T-P7-4 (platform-sre, opus) together.
 
 ## Metrics
 - First-pass approval, canary (none: OI-15 open), escaped defects, reopens, cycle time, tokens per card: at the close.

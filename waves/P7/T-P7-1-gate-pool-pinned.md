@@ -21,11 +21,16 @@
 ## Mechanism (default; the architect's plan review may replace it before you start)
 The poll already skips a connection whose `settings.autoImport` is `false` (`sync.ts:658`), and owners can set it through `channels.update` (`ConnectionSettings.autoImport`). The suites turn auto-import off on every API connection of Desert Bloom at their start (as `owner@`), and turn back on exactly the ones they turned off at their end (also when a test fails: `afterAll`), so the dev DB the gate leaves behind still shows imports landing.
 
+## Architect ruling R1 (`reviews/plan-architect.md`, applied before start)
+- Keep the hold, but it can't meet AC1 alone: a tick queues its sync with up to 10 min of delay (`jobs.ts:61-66`) and `syncConnection` doesn't re-check `autoImport`. Turn off only connections that are on now, send only `{autoImport}` (`channels.update` merges, `service.ts:455`; each call writes an audit row), restore exactly those in `afterAll`.
+- **API suite step 5 builds with `orderItemIds: preview.items.map(i => i.orderItemId)`** (`BatchOptions.orderItemIds` already exists) and asserts `build.itemCount === preview.items.length`. The browser suite relies on the hold.
+- Follow-up (backlog, not this card): `syncConnection` skips poll-started syncs when `autoImport` is off.
+
 ## Acceptance criteria
 1. Given a fresh seed and a running worker, when the API golden-path suite runs, then no channel poll imports orders between its first and last test: the step 5 preview and the build see the same pool whatever the wall-clock minute. Log the pool size (preview item count) at step 5 in both suites.
 2. After either suite ends (pass or fail), every connection's `autoImport` is what it was before the suite (prove with a forced failure once, then revert it).
 3. The suites still pass their 13 steps unchanged in meaning: no assertion loosened, no retry or sleep added, the ≥ 80% film-use check on full sheets kept.
-4. The residual window (a poll that fires between the stack restart and the suite's first test) is measured or argued in the report, with the number of orders it could add (the mock adds 1-3 per tick, deterministic by cursor).
+4. The residual window is stated as "one queued sync per API connection, up to 10 min after the hold", with the number of orders it could add (the mock adds 1-3 per fetch, deterministic by cursor), and why step 5 in the API suite is immune (build from the preview's ids).
 5. Proof the hold works: on your scratch stack with the worker running, with auto-import off across one poll tick (the tick is on the 10-minute wall-clock boundary plus a fixed per-connection jitter, `jobs.ts:36-50`), no new mock order (`#3xxx`) arrives; with it on, the next tick imports. Give the times and counts.
 
 ## Verification

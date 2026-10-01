@@ -13,15 +13,14 @@
 | Depends on | plan review (architect on the props) |
 
 ## Owned paths (edit)
-- `invai-ui/src/components/confidence-badge.tsx` (new), its test, `invai-ui/src/index.ts` (export line), `invai-ui/src/i18n/locales/**` if the kit carries the labels, `invai-ui/README.md` (one line in the component list if there is one)
+- `invai-ui/src/app/confidence-badge.tsx` (new, architect R2), its test, `invai-ui/src/index.ts` (export line), `invai-ui/src/i18n/locales/**` if the kit carries the labels, `invai-ui/README.md` (one line in the component list if there is one)
 
 ## Read-only paths
 - `invai-web/**`, `invai-contracts/**` (`ConfidenceBand` type), every other repo.
 
 ## Interfaces promised (T-P7-3 builds on these)
-- `export function ConfidenceBadge(props: { band: "high" | "medium" | "low"; label?: string; className?: string })` from `@invai/ui`. Same look as the local web component: high → success + shield-check icon, medium → warning + flask icon, low → outline + circle-help icon; icon `aria-hidden`, text always shown (never color alone).
-- Labels: the kit's default English/Spanish text ("High confidence" / "Medium confidence: test it" / "Not enough data", and the Spanish the web catalog already uses for `market.band.*`), overridable with `label`. Don't import from `@invai/contracts` unless the kit already does; a local string union is fine.
-- If the architect's plan review changes a prop, the card is updated before you start.
+- Architect ruling R2: `export function ConfidenceBadge(props: ConfidenceBadgeProps)` and `export type ConfidenceBadgeProps = { band: ConfidenceBand; label?: string; className?: string }` from `@invai/ui`, with `import type { ConfidenceBand } from "@invai/contracts"` (the kit already depends on it, like `ChannelBadge`/`StatusBadge`) and exhaustive `Record<ConfidenceBand, …>` maps. Same look as the local web component: high → success + shield-check icon, medium → warning + flask icon, low → outline + circle-help icon; icon `aria-hidden`, text always shown (never color alone).
+- Labels under `confidenceBand.*` in the kit's en/es locales: the kit's default English/Spanish text ("High confidence" / "Medium confidence: test it" / "Not enough data", and the Spanish the web catalog already uses for `market.band.*`), overridable with `label`.
 
 ## Acceptance criteria
 1. `ConfidenceBadge` renders each band with its variant, icon and text; `label` overrides the text.

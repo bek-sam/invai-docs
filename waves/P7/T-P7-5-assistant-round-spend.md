@@ -21,6 +21,13 @@
 ## Today
 `runAssistant` checks credits (≥ 1) and `assertSpendAvailable` once before the tool loop; the provider then runs up to `ASSISTANT_MAX_ITERATIONS` (10) model rounds; `recordSpend` and the credit charge happen once at the end (`finishJob`). One question can run all 10 rounds after the platform or shop cap is already spent.
 
+## Architect ruling R3 (`reviews/plan-architect.md`, applied before start)
+- The SDK runner only sends the next request when pulled. After each round's final message the provider yields an internal `round {usage, model, stopReason}` event; the gateway acts on it and never passes it to the service.
+- Check only when `stopReason` is `tool_use` or `pause_turn`. On a trip: close the generator, `finishJob` with the usage so far (status done, `stopReason: "spend_cap"`), rethrow without `failJob` overwriting it.
+- The error stays `ORPCError AI_SPEND_CAP_REACHED` (`breaker.ts:139`), mapped to `{type:"error", code:"spend_cap"}` by `modules/ai/service.ts:1320`. (Web shows the English message and ignores `code`: backlog row for web-engineer, not this card.)
+- Spend: after each round, record cumulative cost minus what is already recorded; `finishJob` records only what is left (never below 0). Never add up rounded per-round costs.
+- Credits: charge once at the end; between rounds check `assertCredits(tokensToCredits(usageSoFar) + 1)`.
+
 ## Acceptance criteria
 1. Before each model round after the first, the gateway (not each provider separately) re-checks the platform and shop daily caps with `assertSpendAvailable`, counting the spend of the rounds already made in this run.
 2. Spend is recorded per round (`recordSpend` with that round's cost), not only at the end, so a parallel question sees it; the total recorded for a run equals what was recorded before this change for the same token usage (no double count: test it).
