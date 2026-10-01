@@ -1,6 +1,8 @@
 # Wave 24: deployable without an AWS account (roadmap wave 10, agent part)
 
-- Dates: planned; can start in parallel with wave 22/23 cards that don't touch `invai-infra` or the backend build (at most 3 builders at once overall)
+> **PAUSED (decision 0019) until the owner starts the AWS setup. Do not run T-24-1..4.** The polish hand-off at the end of this file was planned and runs as wave **P1** (`waves/P1/wave.md`), not as wave 24.
+
+- Status: **paused** (decision 0019). Dates: planned; can start in parallel with wave 22/23 cards that don't touch `invai-infra` or the backend build (at most 3 builders at once overall)
 - Goal (user outcome): the owner's first staging deploy is a short checklist. `sst.config.ts` synthesizes with no known deploy-time failure, every image builds and runs as non-root, migrations and reference data run as a one-off task as the right DB users, and every secret, domain and account step the owner must do is an exact OI checklist.
 - **Hard fence:** no `sst deploy`, no `aws`, no secrets set, no accounts, no spend. The guard blocks these. Checks are `tsc`, `sst` config type checks without credentials if possible, `docker build`, local `docker run`, and compose.
 - Sources (backlog): B-01, B-02, B-03, B-23 (KMS part: provider interface, local fallback), B-57, B-58, B-59, B-73, B-74, B-77, B-163 (if not done in wave 22), B-107 (AWS parts: WAF, S3 gateway endpoint, ARM), wave 9 deferrals (`IMAGING_SHARED_SECRET` to all services, ECS `stopTimeout` ≥ 35 s, compose `full` profile flags).
