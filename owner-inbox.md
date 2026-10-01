@@ -228,3 +228,11 @@ Entry format:
 - Recommendation: A. Point patches found three new holes in two rounds; one allowed form is simpler to prove. About an hour of work.
 - Cost of waiting: none for product work; only the automatic push check waits.
 - Answer:
+
+## OI-23: May T-P7-4 (guard hook gaps) have a third review round to fix one regression?   status: open
+- From: tech-lead, 2026-10-01. Deadline: 2026-10-03 12:00 CDT. Default if no answer: the live guard stays as installed after round 2 (stricter, not weaker; it also refuses some harmless commands, see below); T-P7-4 stays unapproved; nothing else changes.
+- Context: Two review rounds by the security-reviewer, each with one blocking finding; the primary reviewer approved. Round 1's gap (full-URL `gh api` writes) is closed. Round 2 added a regression: a command that only writes a shell script through a redirect is refused as "written then run", and so is a heredoc that merely quotes such a command (it refused the tech lead's own inbox append). Agents can still write files with the Write and Edit tools. Evidence: `waves/P7/reviews/T-P7-4-security-reviewer-r2.md`, `T-P7-4-reviewer-r1.md`, report `waves/P7/reports/T-P7-4.md`.
+- Options: A) Round 3 limited to that one fix (skip the word after a redirect when looking for a script to read) plus allow tests for the six forms the reviewer listed, reviewed by the security-reviewer. B) Roll the guard back to its pre-P7 copy (`invai-docs` history) and drop T-P7-4. C) Keep it as it is.
+- Recommendation: A. The fix is one condition with tests already named by the reviewer; about 30 minutes. Everything else in T-P7-4 (secret and repo-setting blocks, scripts read before running, shell edits counted) passed both reviewers.
+- Cost of waiting: none for product work; some shell commands that write scripts or quote them are refused, and agents use the Write tool instead.
+- Answer:
