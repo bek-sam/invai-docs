@@ -51,6 +51,7 @@ Order: plan reviews (PM, architect) + T-P7-4 → T-P7-1, T-P7-2, T-P7-5 → T-P7
 - 2026-10-01 T-P7-3 r2: web a23e4ef (the one string in 4 places; test assertion `today`→`Today`); 163/163, build ok (report docs c8941fe). Started the reviewer (sonnet) on T-P7-5 (primary r1) + T-P7-3 r2; the designer's r2 queues for a slot.
 - 2026-10-01 T-P7-4 r2: docs 675d072. Full-URL `gh api` forms (host, GHES, trailing slash, query, case) denied for writes, GETs allowed; written-then-run heuristic narrowed (reviewer's recipe allowed); `rm` of a tracked repo file counts as an edit; pipe into a shell denied unless only echo/printf/cat feed it; line-level gh repo rule dropped (word rule still denies; mentions pass). 109/109 hook tests; 40 samples right (19 wrong before). Not covered: `gh api graphql -F query=@file`, `--input file`. Started the security-reviewer r2 (fable).
 - 2026-10-01 Reviewer (sonnet, docs 6bc1a35): **T-P7-5 r1 approve** (191 ai tests; the internal `round` event never leaves the gateway; `recordedCents` on every exit path; regeneration check in scope) → **T-P7-5 approved** (reviewer + security). T-P7-3 r2 approve (only the string + test case). Started the product-designer r2 on T-P7-3.
+- 2026-10-01 Product-designer r2 (docs 94cc5b8): approve → **T-P7-3 approved** (reviewer r2 + designer r2). Started the primary reviewer (sonnet) on T-P7-4.
 
 ## Metrics
 - First-pass approval, canary (none: OI-15 open), escaped defects, reopens, cycle time, tokens per card: at the close.
