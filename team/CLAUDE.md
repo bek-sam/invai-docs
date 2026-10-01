@@ -74,7 +74,7 @@ That gives Node 24 and pnpm 12.6. The system `/usr/local/bin/node` is Node 22 an
 
 ## Token budget (owner's rule, `decisions/0018`)
 Usage limits stop the whole team, so every agent spends tokens as carefully as money.
-- **Trim command output.** End test, build and lint commands with `2>&1 | tail -n 40`. Use Vitest `--reporter=dot` and Playwright `--reporter=line`. On a failure, re-run only the failing file. Never print lockfiles, `dist/`, logs, snapshots or whole JSON dumps.
+- **Trim command output.** End test, build and lint commands with `2>&1 | tail -n 40`. For a full suite, start with `set -o pipefail;`, write the output to a log file, then print `grep -nE 'FAIL|Error' <log> | head -n 30` and the tail, so a red run keeps its failure lines and its exit code (lesson 2026-10-01 P7). Use Vitest `--reporter=dot` and Playwright `--reporter=line`. On a failure, re-run only the failing file. Never print lockfiles, `dist/`, logs, snapshots or whole JSON dumps.
 - **Read narrowly.** `grep -n` first, then Read with `offset`/`limit`. Don't re-read a file you just wrote or edited.
 - **Test in layers.** While building, run the tests for what you changed. Run the full `typecheck && lint && test` once, at the end. E2E runs at the integration gate, and in a card only if the card changes the golden path.
 - **Short handoffs.** Reports at most 60 lines, reviews at most 40. Give paths, counts and exit codes, not pasted diffs or logs.
