@@ -31,6 +31,7 @@
 - `pnpm typecheck && pnpm lint && pnpm test` in: <repos>
 - Exercise for real: <curl script, role to sign in as, expected result, screenshots>
 - E2E: <suites, if a golden-path area>
+- Scratch DB or seed work: pin `REDIS_URL` to the card's own Valkey DB and `SEED_OUTPUT_FILE` to `/tmp/...` before any `db:reset`, migrate or seed (lessons 2026-09-29 T-23-9, 2026-10-01 P5; fix B-219)
 
 ## Out of scope
 - …
