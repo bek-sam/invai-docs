@@ -12,7 +12,7 @@
 |---|---|---|---|---|---|
 | [T-P7-1](T-P7-1-gate-pool-pinned.md) The golden-path suites hold the mock Shopify auto-import while they run (B-255) | qa-engineer | sonnet | reviewer (opus) | golden path | planned |
 | [T-P7-2](T-P7-2-ui-confidence-badge.md) Shared `ConfidenceBadge` in `invai-ui` (B-134, kit half) | product-designer | sonnet | reviewer (opus) | ui (shared component) | planned |
-| [T-P7-3](T-P7-3-web-confidence-badge.md) Market screens use the kit badge; local copy removed (B-134, web half) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | planned |
+| [T-P7-3](T-P7-3-web-confidence-badge.md) Market screens use the kit badge; local copy removed (B-134, web half); assistant spend-cap message in en/es (B-262) | web-engineer | sonnet | reviewer (opus) + product-designer (sonnet) | ui | planned |
 | [T-P7-4](T-P7-4-hook-gaps.md) Guard reads scripts it runs, blocks `sst secret` and repo-setting API calls; Stop check counts shell edits (B-115, B-189) | platform-sre | opus | reviewer (sonnet) + security-reviewer (fable) | auth (team controls) | planned |
 | [T-P7-5](T-P7-5-assistant-round-spend.md) The assistant re-checks the spend caps before every tool round and records spend per round (B-115) | ai-engineer | opus | reviewer (sonnet) + security-reviewer (fable, same agent as T-P7-4) | payments (AI spend) | planned |
 

@@ -1,9 +1,9 @@
-# T-P7-3: Market screens use the kit badge; local copy removed (B-134, web half)
+# T-P7-3: Market screens use the kit badge; local copy removed (B-134, web half); assistant spend-cap message translated (B-262)
 
 | Field | Value |
 |---|---|
 | Wave | P7 |
-| Scope ref | `scope.md#market-signals` (B-134) |
+| Scope ref | `scope.md#market-signals` (B-134); `always-in-scope: bug` (B-262: an English-only server message shown to Spanish users) |
 | Spec | backlog B-134; T-P7-2 card (props) |
 | Owner | web-engineer |
 | Reviewer | reviewer (opus) |
@@ -13,7 +13,7 @@
 | Depends on | T-P7-2 committed in `invai-ui` (`ConfidenceBadge` exported) |
 
 ## Owned paths (edit)
-- `invai-web/src/components/market/recommendation-card.tsx`, `invai-web/src/components/market/confidence-badge.tsx` (delete), any other `invai-web/src/**` file that renders a confidence band (grep `band` / `confidence` first; list them in the report), `invai-web/src/i18n/en.ts`, `invai-web/src/i18n/es.ts`, `invai-web/scripts/i18n-es.json`, `invai-web/scripts/i18n-extra-en.json` (only if a `market.band.*` key goes away or stays template-built)
+- `invai-web/src/components/market/recommendation-card.tsx`, `invai-web/src/components/market/confidence-badge.tsx` (delete), any other `invai-web/src/**` file that renders a confidence band (grep `band` / `confidence` first; list them in the report), `invai-web/src/i18n/en.ts`, `invai-web/src/i18n/es.ts`, `invai-web/scripts/i18n-es.json`, `invai-web/scripts/i18n-extra-en.json` (only if a `market.band.*` key goes away or stays template-built), `invai-web/src/routes/_app/assistant.tsx` (B-262 only: the stream `error` event branch, line ~140)
 
 ## Read-only paths
 - `invai-ui/**` (T-P7-2), `invai-web/e2e/**` (qa-engineer, T-P7-1), every other repo.
@@ -23,6 +23,8 @@
 2. On screen nothing changes for the user: same text in English and Spanish (pass the web's translated `market.band.*` text as `label`, or drop the keys if the kit text is identical; say which), same colors and icons.
 3. `pnpm typecheck && pnpm lint && pnpm test && pnpm build` pass in `invai-web`; `recommendation-copy.test.ts` still passes unchanged.
 4. Screenshots of the market screen with all three bands visible if the seed has them (otherwise the ones it has), en and es at 1440 and 390 px, looked at; no raw keys, no truncation.
+
+5. **B-262.** When the assistant stream sends `{type:"error", code:"spend_cap"}` (`invai-backend/src/modules/ai/service.ts:1320`), the chat shows a translated message (en and es, plain language: what happened and what to do, e.g. that the shop's AI limit for today is reached and to try again tomorrow or ask the owner), not the server's English text. Other codes keep today's behavior. A unit test covers the mapping (spend_cap → translated key; unknown code → the server message as today).
 
 ## Verification
 - `cd invai-web && pnpm typecheck && pnpm lint && pnpm test --reporter=dot 2>&1 | tail -n 20 && pnpm build 2>&1 | tail -n 10`.
