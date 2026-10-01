@@ -32,6 +32,10 @@ Order: plan reviews (PM + architect) → T-P5-3 (architect) and T-P5-1 → T-P5-
 
 ## Build log
 - 2026-10-01 (P5 tech lead) Pre-wave: disk 12 GB free; docker healthy; all code repos clean at origin/main (contracts 6349ddf, backend 19a85c3, web 47acf01, floor b2cfd13, ui 2e3519d); gate ports free; :3142 held by PID 55461 (unknown, ~4 h old, left alone).
+- 2026-10-01 Plan committed (docs 42e90a8). Started the PM scope review (sonnet) and the architect (opus: plan design review, then T-P5-3). Builders start after both plan verdicts.
+- 2026-10-01 PM plan review: approve (`reviews/plan-pm.md`). Three more agent-doable P1/P2 items remain open: B-31 (floor SSE `?token=`, revoke doesn't close the stream), B-208 (sheet build races the post-seed outbox drain), B-219 (`db:reset` wipes queues in any Redis). P5 is at 5 cards, so they go to a P6 hand-off. Started T-P5-1 (backend-foundation, sonnet; AC5 waits for architect R3).
+- 2026-10-01 Architect plan review: approve-with-changes (`reviews/plan-architect.md`, docs 35feb9d). R1: `Alert.messageCode` (new enum `ALERT_MESSAGE_CODES`, 14 codes, because `kind` is reused for several lines) + `Alert.params`; `TimelineEntry.reasonCode` (22) + `reasonParams`, derived at read time; consumers treat unknown codes as none. R2: delete old previews after commit, only `${cid}/preview/design/` keys referenced nowhere; late preview via `orders/preview-backfill.ts` called from `renderDesignPreviews`. R3: the seed keeps its direct `imaging.preview` call (can't see uncommitted rows; refuses placeholders), so T-P5-1 AC5 closes as a reasoned no-change.
+- 2026-10-01 T-P5-3 built: contracts d6d038b (0.11.0; contracts 132 tests; backend, web, floor typecheck clean). Grant recorded after the fact: `invai-contracts/package.json` (version bump, architect's own repo). Started T-P5-2 (backend-engineer, sonnet) and the T-P5-3 reviewer (sonnet).
 
 ## Metrics
 (at close)
