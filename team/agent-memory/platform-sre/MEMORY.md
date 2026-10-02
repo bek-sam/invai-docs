@@ -1,16 +1,5 @@
-# platform-sre memory
-
-Seeded 2026-09-26 from `team/lessons.md` (T-16-3); every line below is a row there. Add your own entries under "Learned on cards": date, card, what you learned. No PII or secrets.
-
-## Lessons that apply to you
-- 2026-09-26 W8: Never `git stash`, `reset` or `checkout --` in a shared tree; compare in your own worktree at the base commit.
-- 2026-09-26 W8: Don't push. Only the tech lead pushes, after the gate (a builder once pushed 44 ungated commits).
-- 2026-09-25 W3: Shared files: stage only your hunks (`git add -p` / `git apply --cached`), check `git diff --cached`, then commit.
-- 2026-09-24 W2: Kill only PIDs you started (`lsof -ti :<your port>`); never `pkill`/`killall`.
-- 2026-09-25 W6/7: Never run `pnpm` inside a worktree; call `node_modules/.bin/*` directly. Never re-link shared `node_modules`.
-- 2026-09-25 W3: Poll long jobs inside your turn with short sleeps; don't end your turn to wait.
-- 2026-09-24 rebuild: Every guard gets an adversarial test list and fails closed; the reviewer tries to bypass it.
-- 2026-09-24 W2: Check `df -h /` before a wave (need > 5 GB); drop per-card test DBs and worktrees at every gate.
-
-## Learned on cards
-- [Claude Code hook facts](claude-code-hook-facts.md) — verified hook inputs, feedback channels, Stop blocking, exit-1 fails open, sync.sh trap
+- [Floor dev CSP vs VITE_API_URL](floor-dev-csp-vite-api-url.md) — floor's plain `vite` dev server breaks if VITE_API_URL is set; CSP blocks every request, no network log entry
+- [Sheet-build worker race](sheet-build-worker-race.md) — gang-sheet utilization on a fresh seed is non-deterministic (worker backlog drain races production.batches.build), not a CI script bug
+- [Worker starts only after seed](worker-after-seed-ordering.md) — any stack bootstrap script must start the job worker after migrate+seed, never before/during (market.sweep race)
+- [Hooks change/test layout](hooks-testing-layout.md) — mirror in /tmp, atomic install, FORCE_COLOR breaks parsed tool output, shlex # trap
+- [SST IAM override + infra lint gaps](sst-iam-and-infra-lint.md) — executionRole transform for every ECS task; infra/** not biome-linted; hook blocks ARN text

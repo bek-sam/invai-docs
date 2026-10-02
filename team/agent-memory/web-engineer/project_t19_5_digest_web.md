@@ -25,10 +25,15 @@ Today card, Settings → Notifications, Account toggle, public `/unsubscribe` �
   `RATE_LIMITED`'s `data.retryAfterSec` — a spec reviewer's non-blocking note assumed one exists.
   Build it locally in your own route file (same pattern as `shipping.tsx`'s `voidErrorMessage()`);
   don't go looking for a shared helper that isn't there.
-- `formatDay()`/`formatDate()`/`formatDateTime()` (`src/lib/format.ts`) call
-  `toLocaleDateString(undefined, …)` — browser locale, not `i18n.language`. Any new screen that
-  shows a weekday/month name in Spanish will silently render it in English. Pre-existing, not
-  fixed by this card (not owned); worth a real fix + `log-lesson` if it recurs.
+- **Fixed as of T-A7 (2026-09-30, B-225):** `formatDay()`/`formatDate()`/`formatDateTime()`
+  (`src/lib/format.ts`) now use a private `dateLocale()` (`i18n.language`-based, not the browser's
+  default) — this bullet's old claim that they call `toLocaleDateString(undefined, …)` is stale,
+  don't repeat it. `dateLocale()` itself still isn't exported, so a file that doesn't own
+  `format.ts` needs its own 2-line copy (see `digest-copy.ts`'s precedent, or T-A7's
+  `greetingDateLocale()` in `routes/_app/index.tsx`). T-A7 also added a repo-wide Vitest ban
+  (`src/lib/date-locale-ban.test.ts`) on the raw `toLocaleDateString(undefined` /
+  `toLocaleString(undefined` pattern, built on `import.meta.glob` raw-text import (no `@types/node`
+  in this app, so no real `fs` scan).
 - A contract field can be a genuinely free string with **no enumerated values and no spec copy**
   (`DigestInsight.templateKey` for the D8 "win" — only D1-D7 have Copy-table rows). Don't block on
   it; pick your own small set of keys with copy, add a generic fallback so an unmatched value never

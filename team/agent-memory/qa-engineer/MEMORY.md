@@ -1,7 +1,24 @@
 - [Fixture margin/fee schedule pitfall](fixture_margin_fee_schedule.md) — market margin signal ignores profitLines.channelFeesCents; fee is recomputed from the default schedule
 - [Fixture ISO-week offset pitfall](fixture_iso_week_offset.md) — a fixed day offset for weeksAgo fixtures only lands right for Thu-Sun `now`; use a weekday-aware offset
 - [Gate traps](gate-traps.md) — full `pnpm e2e` trips the shared `ai` rate bucket; screenshot timing; kill/ps hook rule; es vote aria-label; SSE curl shape
+- [Vite reload storm](vite-reload-storm.md) — Playwright's outputDir/report inside invai-web collides with the watched Vite dev tree; check screencast frame gaps + `[vite] page reload` log lines before blaming product code
 - [Acceptance tests pre-contract](acceptance-tests-pre-contract.md) — dynamic-import pattern for not-yet-landed modules; re-check field names once a contract lands mid-session; split ACs across layers when the contract can't produce what the spec assumed
 - [profitLines cached columns](profit-lines-cached-columns.md) — netCents/channelFeesCents are display-only; getProfit/digest net always recomputes from cost-bucket columns
 - [Web build needs VITE_API_URL](web-build-needs-vite-api-url.md) — bare `pnpm build` needs it set; also baked at build time only, so a shared `dist/` gets fought over by concurrent agents — build to your own `--outDir`
 - [Digest gate flow](digest-gate-flow.md) — sweep timing on the seed, opt-in before the build, token from the email, undo/idempotency shapes
+- [Dev-copy DB grants](dev-copy-db-grants.md) — a `createdb -T invai` copy can miss invai_app's grants (42501 on login); also set WEB_ORIGIN/BETTER_AUTH_URL when your API runs on a non-default port
+- [StatCard arrow bug](statcard-locate-by-label.md) — StatCard always shows an arrow when `delta` is truthy (defaults "up"); locate a card by its label text + nth(2) `<p>` to test a metric's delta without forcing exact seed values
+- [Regression-proof mutations](regression-proof-mutations.md) — worktree + `git show HEAD:` revert; gate deadlock trap; layered read-backs; per-run shop ids
+- [Stale acceptance assertion after a rule change](rule-change-stale-acceptance-assertion.md) — verify a PM-approved rule before fixing my own old test; branch on fixture-varying values, don't widen
+- [Isolated backend test DB via env](isolated-backend-test-db-via-env.md) — TEST_DATABASE_URL/TEST_MIGRATION_DATABASE_URL/REDIS_URL overrides auto-create+migrate a private DB, no createdb needed
+- [Digest plan-usage locator](digest-plan-usage-locator.md) — scope to Section's h2 via ancestor::section; digest Spanish numbers group like English (es-US), not bare-es "10.000"
+- [Scratch-stack pitfalls](scratch-stack-pitfalls.md) — dev CSP hardcoded to :3000 blocks any other API port; db:reset obliterates shared Redis DB 0 unless REDIS_URL is pinned too
+- [Floor screen check](floor-screen-check.md) — pinned station tokens can't switch stations; LangToggle text is lowercase; symlink node_modules for a /tmp throwaway script
+- [i18n false positives](i18n-false-positives.md) — "Buyer" = intentional PII purge; "Transfers" is a tracked glossary gap; check `dateLocale()` before filing an English-in-Spanish date bug
+- [Eager thumbnail grid aborts](eager-thumbnail-grid-aborts.md) — a null-fileKey field going live makes every SignedImage-per-row grid fire a burst of downloadUrl calls; settled()'s swallowed timeout hides it; also flags renderDesignPreviewsJob holding a tx during imaging.preview()
+- [settled() toPass fix](settled-toPass-fix.md) — T-P2-3 fixed the swallowed timeout (now throws count+URL via toPass); full e2e run confirms T-P2-1 fixed the root cause, no call site needed a longer timeout
+- [Floor 429 looks like offline](floor-rate-limit-429-as-offline.md) — press.spec.ts "offline" fallback was a real 429 (files.downloadUrl miscounted as `writes`); check trace network status + Redis tb:writes/tb:reads before trusting the UI text
+- [Reprint fixture pattern (decision 0020)](reprint-fixture-decision-0020.md) — never model a reprint as a new/sibling item; flip `is_reprint` on an already-placed item (SQL UPDATE) so unit/revenue counts don't change
+- [Vitest "Vite servers not exiting"](vitest-vite-teardown-quirk.md) — "close timed out ... 2 Vite servers not exiting" after a market suite run with exit 0 and correct counts is a benign teardown quirk, not a real failure
+- [seedOutput() env override](seedoutput-env-override.md) — honors E2E_SEED_OUTPUT_FILE now; set it alongside E2E_API_URL for any scratch-stack e2e run or step 8 (floor auth) fails
+- [Mock carrier transit hours](mock-carrier-transit-hours.md) — hand-starting API/worker (not dev:all) must export MOCK_CARRIER_TRANSIT_HOURS=0.001 before boot, or step 9 times out at the real 2h default

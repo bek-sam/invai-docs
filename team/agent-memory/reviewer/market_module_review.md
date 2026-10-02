@@ -46,3 +46,18 @@ mock-flagged input (bypassing the LLM) reproduces this fast and deterministicall
 `evals/market/main.ts` on a fresh DB copy got 15/21 plumbing vs. the committed baseline's 19/21, because the
 extra failures depend on mock comparable counts that vary by DB/seed state, not just on code. Don't trust a
 committed eval baseline number without rerunning it once in the review.
+
+2026-10-01 T-P7-5 r1: for a generator-pipeline gateway (provider yields internal events, gateway loop
+`continue`s on them before the `yield e` line that forwards to the service/contract), grep the exact
+line number of the forwarding `yield` and confirm the internal-event branch returns/continues strictly
+before it — cheaper and more certain than reasoning about control flow from the diff alone. Also: when a
+card's "out of scope: the market... routes" line collides with an in-owned-file extension of the card's
+own control flow to an existing market-guard code path (not new market logic), read it as excluding the
+market *module*, not every line that happens to run when a market tool was called.
+
+2026-10-01 T-P3-5 r1: for a "partial fix, other failures are pre-existing/out of scope" claim, check the
+*execution order* of test files under `fileParallelism:false` (author's log order) — if a failing file runs
+*before* the fixed file in that order, the diff cannot be the cause, which is stronger proof than just
+diffing the file. Also: a shared non-tenant test cache cleared with a blunt `delete` (not scoped to one
+block's keys) is safe only because execution is sequential; check that assumption holds before trusting the
+pattern.

@@ -1,5 +1,12 @@
-- [S-34 taxonomy equality test](s34-taxonomy-equality-test.md) — "fetched set equals X" needs equality assertion, not containment; T-18-3 example; round 2: verify by mutating-then-restoring in your own worktree
-- [Market AI tenancy and PII review pattern](market_ai_tenancy_and_pii.md) — T-18-4: prove tenancy via "service never called", grep PII field names, trademark-threshold ambiguity on automated paths
-- [Outbound HTTP review pattern](outbound_http_review_pattern.md) — T-18-2: SSRF/redirect check, key-in-Redis-key grep, prod-safety by direct run, mutation-test the fix
-- [Digest narrative injection pattern](digest_narrative_injection_pattern.md) — T-19-2: strip-placeholder-then-scan defeats injection via facts; mutation-test the explicit tenant filter, not just RLS/equality asserts
-- [Link-route token and PII log pattern](link_route_token_and_pii_log_pattern.md) — T-19-4: check global onError logging c.req.path (token-in-path leaks on any exception), shared mailer log lines, clientIp() XFF spoofing on new per-IP buckets
+- [T-A5 pattern: savepoint market call](ta5-savepoint-market-call.md) — cross-module reads from analytics inside a `tx.transaction()` savepoint, caught/logged, is the safe pattern to look for.
+- [Imaging key trust model](imaging_key_trust_model.md) — imaging's `Key` is length-only, no tenant check; enforcement is the backend's `isCompanyKey()`, flag it on the backend wiring card.
+- [Imaging guard middleware deny-by-default](imaging_guard_middleware_deny_by_default.md) — new imaging routes get auth free via `OPEN_PATHS`; but `HEAVY_PATHS` is opt-in, check it separately.
+- [Tx-split explicit companyId pattern](tx-split-explicit-companyid-pattern.md) — when a card moves an external call out of a transaction, check companyId is threaded explicitly and that a natural-key write guard isn't mistaken for the tenant boundary (RLS is).
+- [Rate bucket review](rate-bucket-review.md) — bucketFor method is static contract route; recheck handlers moved to reads; suggest.useAi is unwired
+- [Guard hook review probes](guard-hook-review-probes.md) — jsonl samples vs live AND pre-change guard; redirect `> /path/x.sh` parsed as a run; rm probes need /private/tmp; `repositories/<id>`.
+- [AI spend per round](ai-spend-per-round-pattern.md) — cumulative-minus-recorded, finishJob(recordedCents), round event never reaches the service.
+- [SSE re-check fail-open pattern](sse-recheck-fail-open-pattern.md) — buildContext→anonymous needs a DB probe on re-check AND connect; check client loop teardown; /events not in authz.test.
+- [Infra role-transform review](sst-transform-iam-review.md) — object transform = shallow merge; check every Service/Task passes it; eval helper from /private/tmp .mts with hostile inputs
+- [Guard redirect-target review](guard-redirect-target-review.md) — git-archive old/new probe diff; copy settings.json beside extracted hooks; open classes: leading redirect, fd digit as script.
+- [Push-guard detection bypass probes](push-guard-detection-bypass-probes.md) — launchers (env -S, caffeinate -i, xcrun, script, osascript, awk), git-push binary, help.autocorrect psuh, docs fetch+push carrier; S-46..48.
+- [AI provider review patterns](review-patterns-ai-providers.md) — SDK env-var key fallback under test (S-49), body-level PII proof via stubbed fetch, guard-bash command limits

@@ -22,3 +22,6 @@ co-reviewer 2026-09-27; both approve-with-changes (see the review files in `inva
 - A `ConfidenceBadge` shared component (tone + icon + text per band: high/medium/low) would serve both specs
   and doesn't exist in `invai-ui` yet. Only build it once a wave actually needs it (don't speculatively add it
   now); it's a small, low-risk `add-ui-component` candidate.
+- Done 2026-10-01 (T-P7-2, B-134): built `ConfidenceBadge` in `invai-ui/src/app/confidence-badge.tsx`,
+  `confidenceBand.*` en/es keys copied verbatim from `invai-web`'s `market.band.*`. T-P7-3 swaps the web's
+  local copy for this export. See [[invai-ui-no-build-script]].

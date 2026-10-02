@@ -1,0 +1,3 @@
+- [Keep Spanish placeholders untranslated](feedback_es_placeholders.md) — {{name}} not {{nombre}}; grep both langs before committing.
+- [Help center topic-to-screen map](project_help_center_map.md) — "receiving" = floor Receiving station (3 tabs), not just the web PO page; no screenshots shot yet (T-21-4).
+- [es sweep scope](feedback_es_sweep_scope.md) — internal-words grep must also cover glossary shop words (transfer, blank...), not just technical terms.

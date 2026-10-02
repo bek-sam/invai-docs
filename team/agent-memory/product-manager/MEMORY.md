@@ -1,12 +1,7 @@
-# product-manager memory
-
-- [Owner analytics appetite](feedback_owner_analytics_appetite.md) — owner overrode "defer" on market signals/digest; offer guardrailed mock-first builds
-- [Market + digest fences](project_market_digest_fences.md) — hard limits on scope items 16/17, decision 0014, owner prerequisites OI-9..14
-- [Wave 17 assistant analyst](project_wave17_assistant_analyst.md) — item 13 tools; its cut ideas became items 16/17 after OI-6/OI-7 approval
-- [Scope-change request location](reference_scope_change_requests.md) — `product/scope-changes/SCR-NNN-*.md`, pairs with an `OI-<n>` entry when it needs the owner
-- [Wave 19 digest plan review](project_wave19_digest_plan_review.md) — AC-coverage table method; a scale AC can live in "QA's separate scale run", not just a card
-- [Sample workspace test](project_sample_workspace_test.md) — use isSampleWorkspace, not companies.demo (Desert Bloom has demo=true)
-
-## Learned on cards
-- 2026-09-27 T-18-3: niche taxonomy lives in `invai-docs/product/market-niches.md` (one JSON block). The spec table has 69 niches, not the "64" its heading said; count tables mechanically before quoting a number.
-- 2026-09-27 housekeeping: role memory must live in `/Users/bekbolsun/invai/.claude/agent-memory/product-manager/`; the `invai-docs/.claude/` copy was never loaded and was removed.
+- [P2 wave ranking](wave-p2-ranking.md) — 2026-10-01 ranked P1 hand-off candidates for P2 slots 4-5; B-223/224 and the Today jobId bug won
+- [P3 wave ranking](wave-p3-ranking.md) — 2026-10-01 ranked P2 hand-off for P3 slots 3-5; es money separator, B-230, B-221 won over architect-first items
+- [backlog.md staleness](backlog-md-staleness.md) — many "open" rows are already done in later waves; verify against wave sources/build logs before ranking, don't trust the row text
+- [P5 wave ranking](wave-p5-ranking.md) — 2026-10-01 scope review found B-31, B-208, B-219 still open and agent-doable; ranked for P6
+- [P7 wave ranking](wave-p7-ranking.md) — 2026-10-01 approved P7; found B-185..B-188 (Amazon DPP) missed by range-limited scans, agent-doable now; flagged for P8
+- [Growth research 16](project_growth_research_16.md) — SCR-003..007 await OI-17; design copying is a permanent don't-build
+- [Research limits](reference_research_limits.md) — Reddit/Facebook/Etsy Community unreachable; use forums, reviews, trade press

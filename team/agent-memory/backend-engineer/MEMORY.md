@@ -1,2 +1,22 @@
 - [Containment vs equality tests](feedback_containment_vs_equality_tests.md) — for "fetched set equals taxonomy" requirements, assert Set-equality on the captured input, not containment on the stored output.
-- [Backend gotchas (wave 19)](project_backend_gotchas_w19.md) — drizzle composite-FK order, getProfit net/margin units, frozen clocks vs DB now().
+- [Backend gotchas (wave 19-22)](project_backend_gotchas_w19.md) — drizzle composite-FK order, getProfit units, frozen clocks, dev-DB copy via pg_dump, client ids vs composite FKs, shared-tree test noise.
+- [Read-only review: no guard edits](feedback_readonly_review_no_guard_edits.md) — don't toggle product-code guards yourself to verify a regression proof; read + trust the author's own worktree proof.
+- [psql not on PATH](project_psql_not_on_path.md) — use `docker exec local-postgres-1 psql ...` / `local-valkey-1 redis-cli` for scratch review DBs.
+- [Shipping rate-TTL re-rate pattern](project_shipping_rerate_pattern.md) — buyLabel's "rerate" branch writes nothing to the row; that's what makes concurrent expired buys fail closed, not double-buy.
+- [Offline scan time](feedback_offline_scan_time.md) — floor scan guards must check scannedAt (offline replay), not only now
+- [Analytics ops T-A4](project_analytics_ops_ta4.md) — metric-SQL parity tests, lazy cost_settings, dest_zone written in buyLabel Tx 2.
+- [OrbStack hang mid-wave](project_orbstack_hang_midwave.md) — Valkey/PG hang: probe with nc+alarm, stop own PIDs, report; don't restart orb in a shared wave.
+- [T-A3 zone follow-up](project_ta3_zone_followup.md) — shippingMargin zone grouping now reads shipments.dest_zone; null zone counted, never a made-up row.
+- [T-A5 gotchas](project_ta5_gotchas.md) — raw-SQL Date params need `::timestamptz` before interval math; design_lifecycle's 365-day sale window; test a granted file via your own owned test, not the ungranted sibling test.
+- [T-A9 today actions](project_ta9_today_actions.md) — fk-coverage needs (company_id,id) FK targets; undo migration without git checkout; trackE optional.
+- [T-P1-4 thumbnails](project_tp14_thumbnails.md) — client-method-level mock fallback pattern; isCompanyKey re-check before every imaging call; cross-module "fill later" gaps get reported, not reached for.
+- [T-P2-2 scan tx A/B](project_tp22_scantx.md) — A/B a tx-contention hypothesis without git stash in a shared tree; floor-session auth chain (station token -> PIN login -> fs1 bearer) to curl production.scan.
+- [Testing jobs on the "reports" queue](testing-jobs-reports-queue.md) — prioritized not waiting state, fileParallelism:false cross-file pager noise, worker races, obliterate pattern.
+- [Refuted vs not reproduced](feedback_refuted_vs_not_reproduced.md) — say "not reproduced" when AC0 only ran a narrower path/load than the real failure.
+- [Mock fallback, per caller](feedback_mock_fallback_per_caller.md) — narrowing a client's placeholder fallback to one caller breaks direct-call tests that relied on it; mock the client there too.
+- [isReprint = re-pressed](project_isreprint_zeroes_revenue.md) — decision 0020, fixed T-P4-1; any `not is_reprint` in unit/revenue code or metric SQL is a bug.
+- [Full suite SIGTERM under load](project_full_suite_sigterm_under_load.md) — a loaded shared machine can SIGTERM `pnpm test` mid-run (exit 143, no Test Files summary) — that's a kill, not a real failure; retry detached, don't chase a nonexistent red.
+- [Re-read report before redoing lost work](feedback_reread_report_before_commit.md) — a file that reverts mid-task in a shared repo may be the tech lead's own `git restore` + a decision already written into your report file; check both before re-committing.
+- [Scratch stack tips](project_scratch_stack_tips.md) — 2026-10-01 T-P4-1: find your nohup'd worker PID with `lsof -t <its log file>`; scratch tsx scripts in /tmp must be .mts with absolute imports (drizzle via node_modules path).
+- [T-P5-4 alert reason codes](project_tp54_alert_reason_codes.md) — nest new typed fields in a jsonb `data` column under their own key + re-validate on read; derive timeline reasonCode at read time, state decides before exact strings; PRESSER has orders.read but not alerts.read.
+- [T-P5-2 preview cleanup](project_tp52_preview_cleanup.md) — red-on-main proof without git stash (blocked); afterCommit hooks finish before withTenant resolves.

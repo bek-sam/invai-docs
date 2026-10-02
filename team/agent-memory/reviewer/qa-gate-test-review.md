@@ -36,3 +36,13 @@ in scope) where the risk is either a selector fix that trades one over-count for
 under-count, or a scale test that quietly claims more AC coverage than it has.
 **How to apply:** any round where the diff is QA's own `e2e/*.spec.ts` or `*.acceptance.test.ts`/
 `*.scale.test.ts` file rather than a feature card's tests.
+
+2026-09-28 T-20-3 r1 (approve, side-effect acceptance tests):
+- The Bash tool runs zsh: `F="a b c"; vitest run $F` passes ONE arg ("No test files found"). Use an
+  array `F=(a b c); "${F[@]}"` or `${=F}`.
+- Mutating a guard shows which tests are load-bearing: a "concurrent double" test can stay green with
+  the in-flight guard off because a row lock serializes it; only the "second call while the provider
+  call is held open" variant goes red. Name that in the review so nobody cites the wrong test.
+- Read AC wording literally vs the test: "exactly one outside call" was proven for idempotent-by-key
+  effects (render, Shopify @idempotent push) as "two calls, same key, one stored effect". Acceptable,
+  but flag it as a note so the report says so plainly.

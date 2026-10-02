@@ -1,0 +1,2 @@
+- [Notion `<details>`/table quirks](notion_details_summary_blocks.md) — join multi-line `<summary>` text to one line; use XML `<table>` not pipe tables; check README/Glossary/parent pages for drift too.
+- [Course status 2026-10-02](course_status_2026_10_02.md) — all 12 modules done, Notion mirror and glossary gap closed; next is `diary/`.

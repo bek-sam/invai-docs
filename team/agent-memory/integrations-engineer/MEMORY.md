@@ -1,1 +1,5 @@
 - [ISO week-1 anchoring bug in period.ts](period_iso_week.md) — 4 Jan anchor, independent round-trip test across years, midnight-rounding gotcha
+- [Mock asOf anchor pattern](mock_asof_anchor_pattern.md) — coarse "which period" pick in mock.ts, exact end-of-period math stays in period.ts, don't duplicate it
+- [Amazon report columns](amazon_report_columns.md) — Unshipped report has no prices; Order Report has shipping-price (B-183)
+- [CarrierExtras interface](carrier_extras_interface.md) — new carrier calls on carrierExtras(), not CarrierAdapter; stale test DB copies
+- [Hash vs HMAC for logs](hash_vs_hmac_for_logs.md) — sha256Hex is for long random secrets only; use hmacHex(BETTER_AUTH_SECRET, ...) for guessable/templated text (S-38)

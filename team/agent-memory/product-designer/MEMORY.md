@@ -1,2 +1,13 @@
 - [Assistant structured-content gap](assistant-structured-content-gap.md) — chat stream has no id-bearing structured payload for interactive UI (votes, cards).
 - [Wave 18/19 market signals + digest specs](market-signals-and-digest-wave-18-19.md) — new vocabulary, shared vote pattern, ConfidenceBadge candidate.
+- [StatCard neutral-state follow-up](statcard-neutral-state-followup.md) — no no-arrow delta state; file an invai-ui task.
+- [Web target size is 24px, not 44](web-target-size-24px.md) — invai-ui web minimum is 24x24 per add-ui-component skill; 44px is an aspiration, not a blocker.
+- [Chrome tool device-select blocker](browser-tool-device-select-blocker.md) — subagents often can't answer the multi-device prompt; fall back to code-level review.
+- [Floor bin/tote glossary gap](floor-bin-tote-glossary-gap.md) — T-23-2 added "Bin"/"Compartimento" alongside existing "tote"/"caja"; needs a glossary decision.
+- [Billing money locale bug](billing-money-locale-bug.md) — invai-ui `<Money>` defaults to bare i18n.language; use es-US convention like digest-copy.ts does, or it'll mix separators again.
+- [PageHeader actions clip follow-up](pageheader-actions-clip-followup.md) — repeat gap (T-A6, T-A7): actions row clips at 390px instead of wrapping/scrolling; KpiTile label truncation too.
+- [TS7 lib .d.ts location](ts7-lib-dts-location.md) — real lib files are in the platform package (@typescript/typescript-<platform>), not typescript/lib; minimumGroupingDigits is unimplemented at runtime too.
+- [enviar glossary ambiguity](enviar-glossary-ambiguity.md) — floor "enviar" means shipping elsewhere; a bare "por enviar" sync pill misreads as "orders to ship".
+- [Check screenshot timestamps](check-screenshot-timestamps.md) — compare mtimes to the commit and sibling shots before blocking on an "after" screenshot that looks unfixed; it may be a stale frame.
+- [QC term inconsistency](qc-term-inconsistency.md) — invai-web es.ts mixes "QC" and "control de calidad" for the same concept; needs a glossary decision, not a blocker.
+- [invai-ui has no build script](invai-ui-no-build-script.md) — verify via consumer (web/floor) build + a one-off playground vite build instead; playground isn't in the root tsconfig include.

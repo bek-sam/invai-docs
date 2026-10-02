@@ -1,0 +1,12 @@
+---
+name: wave22-t22-1-review
+description: T-22-1 contract co-review (approve) — how to verify a gated/reverted contract commit pair, and the two typecheck-safety patterns (untyped switch-on-string, untyped i18n t()) that let new enum values land without a consumer break.
+metadata:
+  type: project
+---
+
+2026-09-29 T-22-1 (contracts 0.8.0 + backend day-1 stubs, co-review, approve): see [T-22-1-backend-foundation-r1.md](/Users/bekbolsun/invai/invai-docs/waves/22/reviews/T-22-1-backend-foundation-r1.md).
+
+- **Verifying a "gated commit, reverted on main, re-applies later" pattern**: when a contract change is split into a base commit plus one or more patches that are committed then immediately reverted (to keep a downstream repo's typecheck/tests green until its implementer card lands), confirm three things: (1) `git diff --stat <base>..HEAD` nets out to exactly the un-gated commit's diff (proves the gate+revert pair cancels cleanly); (2) the specific line the gate protects still shows the *old* value on the consumer side right now (e.g. `grep REPRINT_REASONS invai-backend/src/db/schema/production.ts` still had 12 values, `fees.test.ts:90` still asserted `toBe(8)`) — this proves the gate is real, not just claimed; (3) `git show <patch-sha>` and `git show <revert-sha>` are exact inverses.
+- **Two patterns that make an appended enum value typecheck-safe across repos without a same-day consumer change**: (a) a dispatch function typed as `(name: string) => X` with a `switch`+`default` (invai-web's `keysForEvent` in `src/lib/realtime.ts`) never requires exhaustiveness, unlike a switch typed over the literal union; (b) `react-i18next`'s `t()` with no module-augmented `resources` type accepts any string key and falls back at runtime, so `invai-floor`'s `src/scan/result.ts` building `` `mismatch.${r.mismatch}` `` by template-string interpolation (not a switch) never breaks typecheck when `MISMATCH_REASONS` gains a value — worth checking for both patterns before trusting a report's "no typecheck break" claim; don't just re-run tsc, trace *why* it doesn't break.
+- Both `invai-contracts`'s `p2-sweep.test.ts` (exact-version-pins-live-in-the-newest-wave's-file) and its `digest.test.ts` softened to "at least 0.7.0" via a pre-existing `isContractVersionAtLeast` helper is the established convention for keeping old wave tests from needing a touch on every version bump — not a weakened test, the exact pin still exists elsewhere.

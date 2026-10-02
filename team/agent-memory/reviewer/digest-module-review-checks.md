@@ -58,3 +58,16 @@ concurrent/idempotent job, or a pile of "red for the right reason" acceptance te
   recommendation-copy.ts` for the backend's new fallback wording) rather than trusting either
   report's paraphrase — caught that both fixes were verbatim matches, which is the actual bar for
   "matches the wording web/backend already uses", not just "plausible-looking text".
+
+2026-09-28 T-20-2 r1 (changes-required):
+- Web and backend render the same recommendation copy separately (`recommendation-copy.ts` vs
+  `digest/render.ts`): compare the *fallbacks* for optional params, not just the happy-path text.
+  Web left `{{niche}}` empty where backend falls back to the peak month.
+- Locale traps in Node 24 ICU: bare `es` = "10.000" but "1950" (no 4-digit grouping), decimal
+  comma; `es-US` = "10,000"/"1,950", period. The PM's rule is es-US for the whole digest; check web
+  helpers against it, and compare card AC examples with later PM decisions (card can be stale).
+- `pnpm build` in invai-web needs `VITE_API_URL` set; delete `dist/` after when disk is tight.
+- 2026-09-29 T-23-10: to judge cross-file test pollution, run `vitest run --sequence.shuffle.files --sequence.seed=N <files>` over several seeds (fileParallelism is false, so order is the only variable); run it in the background, since 8 seeds took more than 10 min.
+
+- 2026-09-30 T-A9: parity tests like `expect(x?.key).toBe(top?.key)` pass vacuously when both are undefined. Print the reference value in a scratch probe to prove it exists. Probe console output is swallowed by the test setup, so write it with `appendFileSync` to /tmp.
+- 2026-09-30 T-A9: when judging a destructive option (e.g. `force` rebuild drops clicks), grep for callers first. If no production path reaches it, the finding is non-blocking.

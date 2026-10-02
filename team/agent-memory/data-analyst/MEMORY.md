@@ -1,0 +1,2 @@
+- [Analytics v2 plan](project_analytics_v2.md) — spec, 20 definitions, SQL path, B-168..B-183, OI-18 gates, overlaps with PM growth rows
+- [Seed and schema analytics traps](seed_analytics_gaps.md) — 30-day seed, synthetic scans, buyer_ref is a name hash, profit/refund rule, real-shop filter, memory path
