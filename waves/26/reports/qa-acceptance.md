@@ -53,3 +53,18 @@ Author: qa-engineer on Opus 5.5
 
 ## Processes and data
 - No processes started; no servers run. Shared dev DB untouched.
+
+## Selector fixes (2026-10-02, web commit 66ab0cb)
+- `e2e/listing-photos.spec.ts` updated to match the built `/listing-photos` route (no product code
+  touched). Three fixes from the web-engineer's report T-26-5 known-gaps list, all preserving every
+  original assertion (none weakened or removed):
+- (1) `getByRole("checkbox", {name: "White"})` also matched "On model (white)" (substring match by
+  default) — added `exact: true` to every checkbox name in the spec, not just the color ones.
+- (2) The shared FORBIDDEN `ErrorState` renders both "No access" (title) and "You don't have access
+  to this page..." (description); the old loose regex matched both and broke strict mode — now
+  matches `"No access"` with `exact: true` only.
+- (3) The "unapproved image can't be downloaded/attached" test assumed an existing unapproved set
+  in Recent sets; it now builds its own fresh set (route's `idemRef` mints a new
+  `crypto.randomUUID()` idempotency key per page load) so it's correct on both a fresh seed and a
+  used database. Verified `tsc --noEmit` and `biome check` clean; not run against a live stack
+  (none started this task). Committed `invai-web` `760d6f4`.
