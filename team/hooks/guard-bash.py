@@ -5,6 +5,10 @@
   and secret or repo-setting changes.
 - Bash, the recurring lessons (invai-docs/team/lessons.md, T-16-2):
   - `git push` only from the main session or the tech-lead agent (waves 2 and 8);
+  - T-23-6 r3 (OI-22): a code repo is pushed only as the whole command
+    `git -C /Users/bekbolsun/invai/<repo> push origin main|<sha>:main`, with a fresh `pnpm gate` stamp
+    for that commit; invai-docs only as `git -C /Users/bekbolsun/invai/invai-docs push ...`; every
+    other push form is denied;
   - no `git stash` (except list/show), `git reset --hard`, `git checkout -- <path>|.`,
     `git restore` without --staged, `git clean -f` in the shared trees (waves 4 and 8);
   - no `pkill`, `killall`, or `kill` fed by a process pattern (wave 2); plain `kill <pid>` is fine;
@@ -626,28 +630,25 @@ def _short_flags(args, value_letters=""):
 
 
 PUSH_LONG_DENY = ("--force", "--force-with-lease", "--force-if-includes", "--mirror", "--delete", "--tags",
-                  "--follow-tags", "--prune")
+                  "--follow-tags", "--prune", "--all", "--branches")
 
-# ---------- T-23-6: pre-push gate stamp ----------
+# ---------- T-23-6: pre-push gate stamp (round 3, OI-22: exactly one push form) ----------
 # `pnpm gate` (invai-infra/scripts/gate.sh) writes invai-infra/.gate/pass.json on a full pass:
-# {"repos": {"invai-backend": {"sha": "<HEAD sha>", "at": "<UTC ISO time>"}, ...}}. A push of a
-# code repo to main is refused unless that repo has a fresh (<24h), matching entry. invai-docs
-# (docs-only) is exempt: it has no gate suites to run.
+# {"repos": {"invai-backend": {"sha": "<HEAD sha>", "at": "<UTC ISO time>"}, ...}}. A code repo is
+# pushed only by the one form below, as the whole Bash command, and only with a fresh (<24h) stamp
+# for the commit being pushed. No folder guessing: anything else is refused unless the push is
+# positively invai-docs (docs-only, no gate suites), written as `git -C <WORKSPACE_DIR>/invai-docs push ...`.
+WORKSPACE_DIR = "/Users/bekbolsun/invai"
 GATE_STAMP_MAX_AGE_S = 24 * 3600
-GATE_REPO_RE = re.compile(r"^invai-(contracts|ui|backend|web|floor|infra|imaging|docs)(?:$|[-_.])")
-
-
-def _find_gate_repo(start_dir):
-    """(repo_root, kind) of the invai-<kind> repo containing `start_dir`, walking up to find `.git`."""
-    d = os.path.realpath(start_dir)
-    while True:
-        if os.path.exists(os.path.join(d, ".git")):
-            m = GATE_REPO_RE.match(os.path.basename(d))
-            return (d, m.group(1)) if m else (d, None)
-        parent = os.path.dirname(d)
-        if parent == d:
-            return None
-        d = parent
+CODE_PUSH_FORM = re.compile(
+    r"git -C " + re.escape(WORKSPACE_DIR)
+    + r"/invai-(backend|web|floor|ui|contracts|imaging|infra) push origin (main|([0-9a-f]{7,40}):main)")
+DOCS_DIR = WORKSPACE_DIR + "/invai-docs"
+PUSH_CTX = {"cmd": "", "in_script": False}  # the whole Bash command; set by main() and script_rules()
+PUSH_FORM_MSG = ("a code repo is pushed only as the whole command, exactly: "
+                 "git -C " + WORKSPACE_DIR + "/<repo> push origin main (or <sha>:main), with nothing before "
+                 "or after it (no cd, &&, ;, |, 2>&1, $(...), bash -c, env prefix, ~ or relative path), "
+                 "after 'pnpm gate' passed for that commit. invai-docs: git -C " + DOCS_DIR + " push origin main")
 
 
 def _gate_stamp_path(workspace_dir):
@@ -657,122 +658,67 @@ def _gate_stamp_path(workspace_dir):
     return os.path.join(workspace_dir, "invai-infra", ".gate", "pass.json")
 
 
-def _push_target_dir(git_opts, tracked_cwd, git_dir_val):
-    """The directory this push runs in, resolved with certainty, or CWD_AMBIGUOUS (T-23-6 r2
-    finding 1). Precedence matches git's own: each `-C <dir>` in order (later ones relative to
-    earlier ones), then `--git-dir[=]<dir>` or a leading `GIT_DIR=<dir>` (`git_dir_val`, from
-    `simple_commands`), then `tracked_cwd` (from cd/pushd/subshell tracking across the whole Bash
-    call). A relative path built on an ambiguous base stays ambiguous; a `$`-containing value
-    (an unresolved variable) makes the whole thing ambiguous outright."""
-    base = tracked_cwd
-    inline_git_dir = git_dir_val
-    k = 0
-    while k < len(git_opts):
-        opt = git_opts[k]
-        if opt == "-C" and k + 1 < len(git_opts):
-            d = git_opts[k + 1]
-            if "$" in d:
-                return CWD_AMBIGUOUS
-            if os.path.isabs(d):
-                base = d
-            elif base is not CWD_AMBIGUOUS:
-                base = os.path.normpath(os.path.join(base, d))
-            k += 2
-            continue
-        if opt == "--git-dir" and k + 1 < len(git_opts):
-            inline_git_dir = git_opts[k + 1]
-            k += 2
-            continue
-        if opt.startswith("--git-dir="):
-            inline_git_dir = opt.split("=", 1)[1]
-        k += 1
-    if inline_git_dir:
-        if "$" in inline_git_dir:
-            return CWD_AMBIGUOUS
-        d = inline_git_dir
-        if not os.path.isabs(d):
-            if base is CWD_AMBIGUOUS:
-                return CWD_AMBIGUOUS
-            d = os.path.normpath(os.path.join(base, d))
-        # --git-dir/GIT_DIR names the .git directory itself; our repo-kind match is on its
-        # parent (the work tree)'s own name, unless the value already looks like the work tree.
-        return os.path.dirname(d) if os.path.basename(d.rstrip("/")) == ".git" else d
-    return base
+def _is_docs_push(w, sub_at, git_dir_val):
+    """True only when this push is positively invai-docs: a top-level command of the Bash call itself
+    (not a script, $(...), bash -c, eval, xargs or other prefix), written `git -C <DOCS_DIR>[/] push ...`,
+    with no GIT_* variable, --git-dir, git function or alias anywhere in the command."""
+    cmd = PUSH_CTX["cmd"]
+    if PUSH_CTX["in_script"] or git_dir_val is not None or w[sub_at].lower() != "push":
+        return False
+    if w[1:sub_at] not in (["-C", DOCS_DIR], ["-C", DOCS_DIR + "/"]):
+        return False
+    if "GIT_" in cmd or re.search(r"\bfunction\s+git\b|\bgit\s*\(\s*\)|\balias\b", cmd):
+        return False
+    text, _ = _substitutions(_strip_comments(re.sub(r"\\\n", " ", cmd)))
+    items = _lex(text)
+    if items is None:
+        return False
+    if any("GIT_" in x for words, _, here in items for x in words + here):
+        return False
+    return any(words == w for words, _, _ in items)
 
 
-def _refspec_sources(args):
-    """Every explicit refspec's source ref among a push's own arguments (after the subcommand),
-    e.g. 'origin main' -> ['main'], 'origin abc123:main' -> ['abc123'], 'origin HEAD:main' ->
-    ['HEAD']. [] means "no explicit refspec": the push sends the current branch, i.e. HEAD
-    (T-23-6 r2 finding 5)."""
-    refs = [a for a in args if not a.startswith("-")]
-    if len(refs) < 2:
-        return []  # just a remote (or nothing at all): current branch(es), i.e. HEAD
-    out = []
-    for r in refs[1:]:
-        src = r.split(":", 1)[0]
-        out.append(src or "HEAD")  # ':main' (a delete) has no source; PUSH_RULE denies it anyway
-    return out
+def _gate_check_push(w, sub_at, git_dir_val):
+    """None if this push may proceed, else (reason,) to deny (OI-22 answer A).
 
-
-def _gate_check_push(git_opts, tracked_cwd, git_dir_val, push_args):
-    """None if this push may proceed, else (reason,) to deny.
-
-    Resolves the target repo from -C/--git-dir/GIT_DIR (see _push_target_dir), else the cwd
-    tracked from cd/pushd/subshells across this whole Bash call. A push whose directory can't be
-    pinned with certainty - an unresolved variable, `cd -`, `popd`, or a loop - is refused
-    outright (T-23-6 r2 finding 1): this stamp exists to gate our own repos, and "maybe one of
-    ours, maybe not" is not a resolution `pnpm gate` can act on.
-
-    Once a repo IS positively identified as one of ours (kind != docs), every other read (stamp
-    file, the commit actually being pushed) fails closed on any error. `docs` and any repo
-    outside our 8, when positively identified as such, are left to the existing rules above
-    (role, force-push): this is a check on our own code repos' test suites, not a general
-    permission gate.
-    """
-    base = _push_target_dir(git_opts, tracked_cwd, git_dir_val)
-    if base is CWD_AMBIGUOUS:
-        return ("can't tell which repo this push targets with certainty (an unresolved cd, "
-                "pushd, popd, variable or loop earlier in the command). Run it as: "
-                "git -C /abs/path/<repo> push origin <sha-or-main>",)
-    found = _find_gate_repo(base)
-    if found is None:
-        return None  # positively resolved, and certainly not inside any repo: nothing of ours to gate
-    root, kind = found
-    if kind is None or kind == "docs":
-        return None  # a foreign repo, or docs-only (positively identified): not gated
-    stamp_path = _gate_stamp_path(os.path.dirname(root))
+    invai-docs, positively identified (_is_docs_push), is not gated. Every other push must be the
+    whole Bash command in CODE_PUSH_FORM, and then needs a fresh stamp whose SHA is the commit being
+    pushed; every read fails closed."""
+    if _is_docs_push(w, sub_at, git_dir_val):
+        return None
+    m = None if PUSH_CTX["in_script"] else CODE_PUSH_FORM.fullmatch(PUSH_CTX["cmd"].strip())
+    if m is None or w != ["git", "-C", f"{WORKSPACE_DIR}/invai-{m.group(1)}", "push", "origin", m.group(2)]:
+        return (PUSH_FORM_MSG,)
+    kind, src = m.group(1), m.group(3) or "main"
+    root = f"{WORKSPACE_DIR}/invai-{kind}"
+    stamp_path = _gate_stamp_path(WORKSPACE_DIR)
     try:
         with open(stamp_path) as f:
             stamp = json.load(f)
     except (OSError, ValueError):
         return (f"no fresh gate pass recorded ({stamp_path}). Run 'pnpm gate' from invai-infra first",)
-    entry = (stamp.get("repos") or {}).get(f"invai-{kind}")
+    entry = (stamp.get("repos") or {}).get(f"invai-{kind}") if isinstance(stamp, dict) else None
     if not isinstance(entry, dict) or not entry.get("sha") or not entry.get("at"):
         return (f"no gate stamp for invai-{kind}. Run 'pnpm gate' from invai-infra first",)
     try:
-        at = datetime.fromisoformat(entry["at"].replace("Z", "+00:00"))
-    except ValueError:
+        at = datetime.fromisoformat(str(entry["at"]).replace("Z", "+00:00"))
+        age = (datetime.now(timezone.utc) - at).total_seconds()
+    except (ValueError, TypeError):
         return (f"the gate stamp for invai-{kind} has an unreadable time. Run 'pnpm gate' again",)
-    age = (datetime.now(timezone.utc) - at).total_seconds()
     if age > GATE_STAMP_MAX_AGE_S or age < -60:
         return (f"the gate stamp for invai-{kind} is older than 24h. Run 'pnpm gate' again before pushing",)
-    for src in (_refspec_sources(push_args) or ["HEAD"]):
-        if "$" in src or "SUBST" in src:
-            return (f"can't resolve an unexpanded refspec ('{src}') to check the gate stamp. "
-                    f"Push a literal ref after running 'pnpm gate' again",)
-        try:
-            r = subprocess.run(["git", "-C", root, "rev-parse", f"{src}^{{commit}}"],
-                                capture_output=True, text=True, timeout=5)
-        except (OSError, subprocess.SubprocessError):
-            return (f"can't read invai-{kind}'s commit for '{src}' to check the gate stamp",)
-        pushed_sha = r.stdout.strip()
-        if r.returncode != 0 or not pushed_sha:
-            return (f"can't resolve '{src}' to a commit in invai-{kind} to check the gate stamp. "
-                    f"Run 'pnpm gate' again before pushing",)
-        if entry["sha"] != pushed_sha:
-            return (f"the gate stamp for invai-{kind} is for a different commit than '{src}' (stale). "
-                    f"Run 'pnpm gate' again before pushing",)
+    try:
+        r = subprocess.run(["git", "-C", root, "rev-parse", "--verify", "--quiet", f"{src}^{{commit}}"],
+                           capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return (f"can't read invai-{kind}'s commit for '{src}' to check the gate stamp",)
+    pushed_sha = r.stdout.strip()
+    if r.returncode != 0 or not pushed_sha:
+        return (f"can't resolve '{src}' to a commit in invai-{kind} to check the gate stamp. "
+                f"Run 'pnpm gate' again before pushing",)
+    if entry["sha"] != pushed_sha:
+        return (f"the gate stamp for invai-{kind} is for a different commit than '{src}' (stale). "
+                f"Run 'pnpm gate' again before pushing",)
     return None
 
 
@@ -818,8 +764,7 @@ def git_rules(w, cwd=None, git_dir_val=None):
                             "Commit your own paths and report the SHA")
         if _push_is_dangerous(w[1:i], args):
             return ("deny", PUSH_REASON)
-        gate = _gate_check_push(w[1:i], cwd if cwd is not None else (data.get("cwd") or os.getcwd()),
-                                 git_dir_val, args)
+        gate = _gate_check_push(w, i, git_dir_val)
         if gate is not None:
             return ("deny", gate[0])
     elif sub == "stash":
@@ -1092,6 +1037,7 @@ def script_rules(cmd, n_top):
                      f"call and run it in the next")
             continue
         text_rules(_strip_comments(text))
+        PUSH_CTX["in_script"] = True  # a push inside a script is never the one allowed form
         asks += lesson_rules(text, cwd)
     return asks
 
@@ -1101,6 +1047,7 @@ def main():
         cmd = tool_input.get("command", "")
         if not isinstance(cmd, str):
             deny("the guard hook couldn't read the command")
+        PUSH_CTX["cmd"] = cmd
         text_rules(cmd)
         asks = lesson_rules(cmd)
         asks += script_rules(cmd, len(SCRIPT_REFS))

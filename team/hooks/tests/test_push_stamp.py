@@ -1,15 +1,16 @@
-"""Tests for the T-23-6 pre-push gate stamp check in guard-bash.py (AC5, AC6).
+"""Tests for the pre-push gate in guard-bash.py (T-23-6 round 3, card T-P8-3, owner OI-22 answer A).
 
-`pnpm gate` (invai-infra/scripts/gate.sh) writes invai-infra/.gate/pass.json on a full pass:
-{"repos": {"invai-<kind>": {"sha": "<HEAD sha>", "at": "<UTC ISO time>"}, ...}}. guard-bash.py
-refuses `git push` of a code repo to main unless that repo has a fresh (<24h), matching entry.
-invai-docs (docs-only) is exempt, and every existing guard rule (force-push, role, etc.) still
-applies on top of this check.
+A code repo (invai-backend, -web, -floor, -ui, -contracts, -imaging, -infra) is pushed only as the
+whole Bash command `git -C /Users/bekbolsun/invai/<repo> push origin main|<sha>:main`, and then only
+with a fresh (<24h) `pnpm gate` stamp in invai-infra/.gate/pass.json whose SHA is the commit being
+pushed. Every other push form is refused with one message naming that form, unless the push is
+positively invai-docs (`git -C /Users/bekbolsun/invai/invai-docs push ...`, a top-level command).
+Force, tag, mirror, all, delete and role rules still apply on top.
 
-Uses the real repos already checked out next to this workspace (invai-contracts, invai-docs) as
-the "which repo is this" anchor, and INVAI_GATE_STAMP_PATH (read only from the guard's own process
-environment, never from the checked command's text) to point at a scratch stamp file per case, so
-no test touches the real invai-infra/.gate/pass.json.
+The stamp is read from INVAI_GATE_STAMP_PATH (the guard's own process environment, never the
+checked command) pointing at a scratch file per case, so no test touches the real stamp. The allowed
+form names a real workspace repo, so the guard reads invai-contracts' commits (read-only rev-parse);
+nothing is pushed: the guard only decides.
 
 Run: python3 -B -m unittest discover -s .claude/hooks/tests -p 'test_push_stamp.py'
 """
@@ -28,8 +29,15 @@ WORKSPACE = Path(os.environ.get("INVAI_WORKSPACE", "/Users/bekbolsun/invai"))
 CONTRACTS = str(WORKSPACE / "invai-contracts")
 DOCS = str(WORKSPACE / "invai-docs")
 
-CONTRACTS_SHA = subprocess.run(["git", "-C", CONTRACTS, "rev-parse", "HEAD"],
-                                capture_output=True, text=True, check=True).stdout.strip()
+
+def _git(*args):
+    return subprocess.run(["git", "-C", CONTRACTS, *args], capture_output=True, text=True, check=True).stdout.strip()
+
+
+CONTRACTS_SHA = _git("rev-parse", "main")
+PREV_SHA = _git("rev-parse", "main~1")
+FORM = f"git -C {CONTRACTS} push origin main"  # the one allowed form
+FORM_MSG = "git -C /Users/bekbolsun/invai/<repo> push origin main"
 
 
 def run(cmd, cwd, stamp_path, agent_type="tech-lead"):
@@ -60,7 +68,7 @@ def write_stamp(path, sha, at):
         json.dump({"repos": {"invai-contracts": {"sha": sha, "at": at}}}, f)
 
 
-class TestPushStamp(unittest.TestCase):
+class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -71,219 +79,244 @@ class TestPushStamp(unittest.TestCase):
     def now_iso(self, delta=timedelta()):
         return (datetime.now(timezone.utc) + delta).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    # --- AC6 case 1: a matching, fresh stamp allows the push ---
+    def fresh_stamp(self, sha=CONTRACTS_SHA):
+        sp = self.stamp_path()
+        write_stamp(sp, sha, self.now_iso())
+        return sp
+
+    def no_stamp(self):
+        return self.stamp_path("does-not-exist.json")
+
+    def assertDecision(self, cmd, expected, stamp, cwd=None, agent_type="tech-lead", msg=None):
+        r = run(cmd, cwd or str(WORKSPACE), stamp, agent_type)
+        self.assertEqual(decision(r), expected, f"{cmd!r}: {r.stderr}")
+        if msg:
+            self.assertIn(msg, r.stderr)
+        return r
+
+
+class TestOneFormStamp(Base):
+    """AC1 and AC4: the exact form, gated by the stamp."""
+
     def test_matching_fresh_stamp_allows(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "allow", r.stderr)
+        self.assertDecision(FORM, "allow", self.fresh_stamp())
 
-    # --- AC6 case 2: a stamp with a stale SHA blocks ---
+    def test_form_allows_from_any_cwd(self):
+        self.assertDecision(FORM, "allow", self.fresh_stamp(), cwd="/tmp")
+        self.assertDecision(FORM, "allow", self.fresh_stamp(), cwd=DOCS)
+
+    def test_sha_to_main_allows(self):
+        self.assertDecision(f"git -C {CONTRACTS} push origin {CONTRACTS_SHA}:main", "allow", self.fresh_stamp())
+
+    def test_short_sha_to_main_allows(self):
+        self.assertDecision(f"git -C {CONTRACTS} push origin {CONTRACTS_SHA[:7]}:main", "allow", self.fresh_stamp())
+
     def test_stale_sha_blocks(self):
-        sp = self.stamp_path()
-        write_stamp(sp, "0" * 40, self.now_iso())
-        r = run("git push origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("stale", r.stderr)
-        self.assertIn("pnpm gate", r.stderr)
+        self.assertDecision(FORM, "deny", self.fresh_stamp("0" * 40), msg="stale")
 
-    # --- AC6 case 3: an old stamp (>24h) blocks even with a matching SHA ---
+    def test_other_commit_as_source_denies_even_with_fresh_head_stamp(self):
+        self.assertDecision(f"git -C {CONTRACTS} push origin {PREV_SHA}:main", "deny", self.fresh_stamp(),
+                            msg="stale")
+
+    def test_unknown_sha_denies(self):
+        self.assertDecision(f"git -C {CONTRACTS} push origin 0000000deadbeef:main", "deny", self.fresh_stamp(),
+                            msg="can't resolve")
+
     def test_old_stamp_blocks(self):
         sp = self.stamp_path()
         write_stamp(sp, CONTRACTS_SHA, self.now_iso(timedelta(hours=-25)))
-        r = run("git push origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("24h", r.stderr)
+        self.assertDecision(FORM, "deny", sp, msg="24h")
+        self.assertDecision(f"git -C {CONTRACTS} push origin {CONTRACTS_SHA}:main", "deny", sp, msg="24h")
 
     def test_stamp_just_under_24h_allows(self):
         sp = self.stamp_path()
         write_stamp(sp, CONTRACTS_SHA, self.now_iso(timedelta(hours=-23, minutes=-55)))
-        r = run("git push origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "allow", r.stderr)
+        self.assertDecision(FORM, "allow", sp)
 
-    # --- AC6 case 4: a forced push is still blocked, even with a fresh matching stamp ---
-    def test_forced_push_still_blocked(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push --force origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("force-push", r.stderr)
-
-    def test_force_with_lease_still_blocked(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push --force-with-lease origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "deny")
-
-    # --- missing stamp / missing entry ---
     def test_missing_stamp_file_blocks(self):
-        r = run("git push origin main", CONTRACTS, self.stamp_path("does-not-exist.json"))
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("pnpm gate", r.stderr)
+        self.assertDecision(FORM, "deny", self.no_stamp(), msg="pnpm gate")
 
     def test_stamp_without_this_repos_entry_blocks(self):
         sp = self.stamp_path()
         with open(sp, "w") as f:
             json.dump({"repos": {"invai-web": {"sha": "a" * 40, "at": self.now_iso()}}}, f)
-        r = run("git push origin main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "deny")
+        self.assertDecision(FORM, "deny", sp, msg="no gate stamp for invai-contracts")
 
-    # --- invai-docs (docs-only) is exempt, even with no stamp at all ---
-    def test_docs_repo_exempt(self):
-        r = run("git push origin main", DOCS, self.stamp_path("does-not-exist.json"))
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    # --- a push whose repo can't be identified at all (no known .git above cwd) falls back to
-    # the existing rules only, so it doesn't regress the adversarial suite's plain "git push" cases ---
-    def test_unidentifiable_repo_falls_back_to_existing_rules(self):
-        r = run("git push origin main", "/tmp", self.stamp_path("does-not-exist.json"))
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    # --- role gating still applies on top of a good stamp ---
-    def test_non_tech_lead_still_denied_regardless_of_stamp(self):
+    def test_unreadable_stamp_blocks(self):
         sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push origin main", CONTRACTS, sp, agent_type="backend-engineer")
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("only the tech lead pushes", r.stderr)
+        with open(sp, "w") as f:
+            f.write("[1, 2")
+        self.assertDecision(FORM, "deny", sp, msg="pnpm gate")
+        with open(sp, "w") as f:
+            json.dump({"repos": {"invai-contracts": {"sha": CONTRACTS_SHA, "at": "yesterday"}}}, f)
+        self.assertDecision(FORM, "deny", sp, msg="unreadable time")
+
+    def test_non_tech_lead_still_denied_regardless_of_stamp(self):
+        self.assertDecision(FORM, "deny", self.fresh_stamp(), agent_type="backend-engineer",
+                            msg="only the tech lead pushes")
 
     def test_main_session_with_good_stamp_allows(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push origin main", CONTRACTS, sp, agent_type=None)
-        self.assertEqual(decision(r), "allow", r.stderr)
+        self.assertDecision(FORM, "allow", self.fresh_stamp(), agent_type=None)
 
 
-class TestPushStampRepoResolution(unittest.TestCase):
-    """T-23-6 r2 finding 1: the repo a push targets must be resolved from cd/pushd/subshells/
-    --git-dir/GIT_DIR, or the whole push is denied. Every case here starts from the WORKSPACE
-    root (not the repo itself, unlike TestPushStamp above), the form the round-1 review proved
-    bypassed the stamp check entirely (no repo resolved -> "nothing of ours to gate" -> allowed
-    with no stamp at all)."""
+class TestExistingPushGuards(Base):
+    """AC3: force, tag, mirror, all and delete pushes stay denied, in the exact form and with a fresh stamp."""
 
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
+    def test_forced_push_still_blocked(self):
+        for flag in ("--force", "-f", "--force-with-lease", "--force-if-includes"):
+            self.assertDecision(f"git -C {CONTRACTS} push {flag} origin main", "deny", self.fresh_stamp(),
+                                msg="force-push")
 
-    def stamp_path(self, name="pass.json"):
-        return os.path.join(self.tmp.name, name)
+    def test_force_with_lease_still_blocked(self):
+        self.assertDecision(f"git -C {CONTRACTS} push --force-with-lease origin main", "deny", self.fresh_stamp())
 
-    def now_iso(self, delta=timedelta()):
-        return (datetime.now(timezone.utc) + delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+    def test_plus_refspec_still_blocked(self):
+        self.assertDecision(f"git -C {CONTRACTS} push origin +main", "deny", self.fresh_stamp(), msg="force-push")
+        self.assertDecision(f"git -C {CONTRACTS} push origin +{CONTRACTS_SHA}:main", "deny", self.fresh_stamp())
 
-    def fresh_stamp(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        return sp
-
-    # --- cd, from the workspace root, before a bare `git push` ---
-    def test_cd_then_push_with_and_allows(self):
-        r = run("cd invai-contracts && git push origin main", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_cd_then_push_with_semicolon_allows(self):
-        r = run("cd invai-contracts; git push origin main", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_cd_in_subshell_then_push_allows(self):
-        r = run("(cd invai-contracts && git push origin main)", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_pushd_then_push_allows(self):
-        r = run("pushd invai-contracts && git push origin main", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_bash_c_cd_then_push_allows(self):
-        r = run("bash -c 'cd invai-contracts && git push origin main'", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_git_dir_env_prefix_allows(self):
-        r = run("GIT_DIR=invai-contracts/.git git push origin main", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_git_dir_flag_equals_form_allows(self):
-        r = run(f"git --git-dir={CONTRACTS}/.git push origin main", "/tmp", self.fresh_stamp())
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    def test_cd_resolves_docs_and_stays_exempt(self):
-        # Positively resolving to invai-docs (not just falling through unresolved) still exempts
-        # it, even with no stamp at all.
-        r = run("cd invai-docs && git push origin main", str(WORKSPACE), self.stamp_path("none.json"))
-        self.assertEqual(decision(r), "allow", r.stderr)
-
-    # --- the same forms with a stale or missing stamp: must now DENY, not silently allow ---
-    def test_cd_then_push_with_no_stamp_denies(self):
-        r = run("cd invai-contracts && git push origin main", str(WORKSPACE), self.stamp_path("none.json"))
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("pnpm gate", r.stderr)
-
-    def test_cd_then_push_with_stale_stamp_denies(self):
-        sp = self.stamp_path()
-        write_stamp(sp, "0" * 40, self.now_iso())
-        r = run("cd invai-contracts && git push origin main", str(WORKSPACE), sp)
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("stale", r.stderr)
-
-    # --- loops/variables the guard truly cannot resolve: deny, regardless of any stamp ---
-    def test_loop_variable_dash_c_denies_with_fresh_stamp(self):
-        r = run("for r in invai-contracts; do git -C $r push origin main; done",
-                str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("git -C /abs/path/<repo>", r.stderr)
-
-    def test_loop_variable_dash_c_denies_with_no_stamp(self):
-        r = run("for r in invai-contracts; do git -C $r push origin main; done",
-                str(WORKSPACE), self.stamp_path("none.json"))
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("git -C /abs/path/<repo>", r.stderr)
-
-    def test_cd_dash_denies(self):
-        r = run("cd invai-contracts && cd - && git push origin main", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "deny")
-
-    def test_popd_denies(self):
-        r = run("pushd invai-contracts && popd && git push origin main", str(WORKSPACE), self.fresh_stamp())
-        self.assertEqual(decision(r), "deny")
-
-    # --- an unresolvable case still doesn't regress the plain "outside any repo" fallback ---
-    def test_still_allows_when_genuinely_outside_any_repo(self):
-        r = run("git push origin main", "/tmp", self.stamp_path("none.json"))
-        self.assertEqual(decision(r), "allow", r.stderr)
+    def test_tags_mirror_all_delete_still_blocked(self):
+        for args in ("--tags origin main", "--mirror origin", "--all origin", "--delete origin main",
+                     "origin :main", "origin v1.0.0"):
+            self.assertDecision(f"git -C {CONTRACTS} push {args}", "deny", self.fresh_stamp())
+            self.assertDecision(f"git -C {DOCS} push {args}", "deny", self.no_stamp())
 
 
-class TestPushStampRefspec(unittest.TestCase):
-    """T-23-6 r2 finding 5: the stamp must be compared with the commit actually being pushed
-    (the refspec's source), not always the repo's local HEAD."""
+class TestEveryOtherFormDenied(Base):
+    """AC2 and AC4: every other way to push a code repo is refused with the one message, even with a
+    fresh matching stamp (S-42, T-23-6 r2 findings 1 and 2)."""
 
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
+    DENIED = [
+        "cd invai-contracts && git push origin main",
+        f"cd {CONTRACTS} && git push origin main",
+        "cd invai-contracts; git push origin main",
+        "(cd invai-contracts && git push origin main)",
+        "pushd invai-contracts && git push origin main",
+        f"{FORM} 2>&1 | tail -3",
+        f"{FORM} 2>&1",
+        f"{FORM} 2>/dev/null",
+        f"{FORM} > /tmp/push.log",
+        f"{FORM}; echo done",
+        f"{FORM} && echo done",
+        f"echo start && {FORM}",
+        f"{FORM} &",
+        "git -C ~/invai/invai-contracts push origin main",
+        "cd ~/invai/invai-contracts && git push origin main",
+        "git -C $HOME/invai/invai-contracts push origin main",
+        "git -C /Users/bekbolsun/invai/invai-{contracts,x} push origin main",
+        "git -C /Users/bekbolsun/invai/invai-contract? push origin main",
+        "git -C /Users/bekbolsun/invai/invai-docs/../invai-contracts push origin main",
+        "echo invai-contracts | xargs -I{} git -C {} push origin main",
+        f"echo x | xargs {FORM}",
+        "find . -maxdepth 1 -name invai-contracts -exec git -C {} push origin main \\;",
+        f"echo $({FORM})",
+        f"$({FORM})",
+        f"echo `{FORM}`",
+        f"bash -c '{FORM}'",
+        f"sh -c '{FORM}'",
+        f"eval '{FORM}'",
+        f"bash <<< '{FORM}'",
+        f"echo '{FORM}' | bash",
+        f"env {FORM}",
+        f"GIT_TRACE=1 {FORM}",
+        f"command {FORM}",
+        f"timeout 60 {FORM}",
+        "git -C invai-contracts push origin main",
+        "git -C ./invai-contracts push origin main",
+        f"git -C {CONTRACTS}/ push origin main",
+        f"git -C '{CONTRACTS}' push origin main",
+        f"git  -C {CONTRACTS} push origin main",
+        f"git -C {CONTRACTS} push origin HEAD:main",
+        f"git -C {CONTRACTS} push origin main:main",
+        f"git -C {CONTRACTS} push origin",
+        f"git -C {CONTRACTS} push",
+        f"git -C {CONTRACTS} push -u origin main",
+        f"git -C {CONTRACTS} push --dry-run origin main",
+        f"git -C {CONTRACTS} push upstream main",
+        f"git -C {CONTRACTS} push origin main other",
+        f"git -C {CONTRACTS} push origin {CONTRACTS_SHA}:refs/heads/main",
+        f"git -C {CONTRACTS} push origin {CONTRACTS_SHA.upper()}:main",
+        f"git -C {CONTRACTS} -C . push origin main",
+        f"git --git-dir={CONTRACTS}/.git push origin main",
+        f"GIT_DIR={CONTRACTS}/.git git push origin main",
+        f"git -C {CONTRACTS} send-pack origin main",
+        f"git -C {WORKSPACE}/invai-backend-T-22-1-rev push origin main",
+        "for r in invai-contracts; do git -C $r push origin main; done",
+        f"git() {{ command git \"$@\"; }}; {FORM}",
+    ]
 
-    def stamp_path(self, name="pass.json"):
-        return os.path.join(self.tmp.name, name)
+    def test_every_other_form_denied_with_fresh_stamp(self):
+        sp = self.fresh_stamp()
+        for cmd in self.DENIED:
+            with self.subTest(cmd=cmd):
+                self.assertDecision(cmd, "deny", sp)
 
-    def now_iso(self, delta=timedelta()):
-        return (datetime.now(timezone.utc) + delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+    def test_every_other_form_denied_with_no_stamp(self):
+        sp = self.no_stamp()
+        for cmd in self.DENIED:
+            with self.subTest(cmd=cmd):
+                self.assertDecision(cmd, "deny", sp)
 
-    def test_explicit_main_to_main_refspec_allows(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push origin main:main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "allow", r.stderr)
+    def test_deny_message_names_the_form(self):
+        for cmd in ("cd invai-contracts && git push origin main", f"{FORM} 2>&1 | tail -3",
+                    "git -C ~/invai/invai-contracts push origin main", f"bash -c '{FORM}'"):
+            with self.subTest(cmd=cmd):
+                self.assertDecision(cmd, "deny", self.fresh_stamp(), msg=FORM_MSG)
 
-    def test_other_commit_as_source_denies_even_with_fresh_head_stamp(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())  # a fresh, matching stamp for HEAD
-        r = run("git push origin HEAD~1:main", CONTRACTS, sp)  # but pushing a DIFFERENT commit
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("stale", r.stderr)
+    def test_plain_push_in_a_code_repo_cwd_denied(self):
+        self.assertDecision("git push origin main", "deny", self.fresh_stamp(), cwd=CONTRACTS, msg=FORM_MSG)
+        self.assertDecision("git push", "deny", self.fresh_stamp(), cwd=CONTRACTS, msg=FORM_MSG)
 
-    def test_nonexistent_branch_source_denies(self):
-        sp = self.stamp_path()
-        write_stamp(sp, CONTRACTS_SHA, self.now_iso())
-        r = run("git push origin no-such-branch-xyz:main", CONTRACTS, sp)
-        self.assertEqual(decision(r), "deny")
-        self.assertIn("can't resolve", r.stderr)
+    def test_push_outside_any_repo_denied(self):
+        # Round 2 allowed this as "certainly outside our repos"; round 3 refuses anything not positively docs.
+        self.assertDecision("git push origin main", "deny", self.no_stamp(), cwd="/tmp", msg=FORM_MSG)
+
+    def test_push_inside_a_script_denied(self):
+        script = os.path.join(self.tmp.name, "p.sh")
+        with open(script, "w") as f:
+            f.write(FORM + "\n")
+        self.assertDecision(f"bash {script}", "deny", self.fresh_stamp(), msg=FORM_MSG)
+        with open(script, "w") as f:
+            f.write(f"git -C {DOCS} push origin main\n")
+        self.assertDecision(f"bash {script}", "deny", self.no_stamp(), msg=FORM_MSG)
+
+
+class TestDocsPush(Base):
+    """AC2: invai-docs keeps working without a stamp, but only when positively identified."""
+
+    def test_docs_push_allowed_without_stamp(self):
+        for cmd in (f"git -C {DOCS} push origin main", f"git -C {DOCS}/ push origin main",
+                    f"git -C {DOCS} push", f"git -C {DOCS} push -u origin main",
+                    f"git -C {DOCS} push origin main 2>&1 | tail -3",
+                    f"git -C {DOCS} push origin main; git -C {DOCS} log -1 --format=%h | tr -d x",
+                    f"export PATH=\"$HOME/.local/share/pnpm/bin:$PATH\"; git -C {DOCS} push origin main"):
+            with self.subTest(cmd=cmd):
+                self.assertDecision(cmd, "allow", self.no_stamp())
+        self.assertDecision(f"git -C {DOCS} push origin main", "allow", self.no_stamp(), cwd="/tmp")
+
+    def test_docs_not_positively_identified_denied(self):
+        for cmd, cwd in (("git push origin main", DOCS),
+                         ("cd invai-docs && git push origin main", str(WORKSPACE)),
+                         ("git -C invai-docs push origin main", str(WORKSPACE)),
+                         ("git -C ~/invai/invai-docs push origin main", str(WORKSPACE)),
+                         (f"GIT_DIR={CONTRACTS}/.git git -C {DOCS} push origin main", str(WORKSPACE)),
+                         (f"export GIT_DIR={CONTRACTS}/.git; git -C {DOCS} push origin main", str(WORKSPACE)),
+                         (f"read G''IT_DIR <<< {CONTRACTS}/.git; git -C {DOCS} push origin main", str(WORKSPACE)),
+                         (f"git -C {DOCS} --git-dir={CONTRACTS}/.git push origin main", str(WORKSPACE)),
+                         (f"git -C {DOCS} -C ../invai-contracts push origin main", str(WORKSPACE)),
+                         (f"git() {{ command git -C {CONTRACTS} push origin main; }}; git -C {DOCS} push origin main",
+                          str(WORKSPACE)),
+                         (f"bash -c 'git -C {DOCS} push origin main'", str(WORKSPACE)),
+                         (f"echo $(git -C {DOCS} push origin main)", str(WORKSPACE)),
+                         (f"echo x | xargs git -C {DOCS} push origin", str(WORKSPACE))):
+            with self.subTest(cmd=cmd):
+                self.assertDecision(cmd, "deny", self.no_stamp(), cwd=cwd)
+
+    def test_docs_force_still_denied(self):
+        self.assertDecision(f"git -C {DOCS} push --force origin main", "deny", self.no_stamp(), msg="force-push")
+
+    def test_docs_push_by_non_tech_lead_denied(self):
+        self.assertDecision(f"git -C {DOCS} push origin main", "deny", self.no_stamp(),
+                            agent_type="backend-engineer", msg="only the tech lead pushes")
 
 
 if __name__ == "__main__":

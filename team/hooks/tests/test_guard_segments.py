@@ -17,21 +17,21 @@ MAIN = None
 BE = "backend-engineer"
 
 CASES = [
-    # --- push: allowed now (the lesson shapes) ---
-    ("B01", "git push origin main; echo x | tr -d y", TL, "allow"),
-    ("B02", "git push origin main; echo x | tr -d y", MAIN, "allow"),
-    ("B03", "git -C invai-docs push origin main && for r in a b; do echo $r | tr -d '\\n'; done", TL, "allow"),
-    ("B04", "git push origin main\nprintf '%s' x | tr -d y", TL, "allow"),
-    ("B05", "git push origin main | tr -d y", TL, "allow"),
-    ("B06", "git push origin main 2>&1 | tail -3", TL, "allow"),
+    # --- push: allowed now (the lesson shapes; T-P8-3: written in the one docs push form) ---
+    ("B01", "git -C /Users/bekbolsun/invai/invai-docs push origin main; echo x | tr -d y", TL, "allow"),
+    ("B02", "git -C /Users/bekbolsun/invai/invai-docs push origin main; echo x | tr -d y", MAIN, "allow"),
+    ("B03", "git -C /Users/bekbolsun/invai/invai-docs push origin main && for r in a b; do echo $r | tr -d '\\n'; done", TL, "allow"),
+    ("B04", "git -C /Users/bekbolsun/invai/invai-docs push origin main\nprintf '%s' x | tr -d y", TL, "allow"),
+    ("B05", "git -C /Users/bekbolsun/invai/invai-docs push origin main | tr -d y", TL, "allow"),
+    ("B06", "git -C /Users/bekbolsun/invai/invai-docs push origin main 2>&1 | tail -3", TL, "allow"),
     # T-23-6: a push whose repo is a loop variable (-C $r) can't be pinned, so the gate-stamp check refuses it.
     ("B07", "for r in invai-docs invai-backend; do git -C $r push origin main; done; git log -1 | tr -d x", TL, "deny"),
-    ("B08", "git push -u origin main", TL, "allow"),
-    ("B09", "git push --dry-run origin main", TL, "allow"),
-    ("B10", "git push origin HEAD:main", TL, "allow"),
-    ("B11", "git push origin main & wait; rm -d emptydir", TL, "allow"),
-    ("B12", "git push origin main; cut -d: -f1 /etc/hosts", TL, "allow"),
-    ("B13", "git push origin main && git log -1 --format=%h | tr -d '\\n'", TL, "allow"),
+    ("B08", "git -C /Users/bekbolsun/invai/invai-docs push -u origin main", TL, "allow"),
+    ("B09", "git -C /Users/bekbolsun/invai/invai-docs push --dry-run origin main", TL, "allow"),
+    ("B10", "git -C /Users/bekbolsun/invai/invai-docs push origin HEAD:main", TL, "allow"),
+    ("B11", "git -C /Users/bekbolsun/invai/invai-docs push origin main & wait; rm -d emptydir", TL, "allow"),
+    ("B12", "git -C /Users/bekbolsun/invai/invai-docs push origin main; cut -d: -f1 /etc/hosts", TL, "allow"),
+    ("B13", "git -C /Users/bekbolsun/invai/invai-docs push origin main && git log -1 --format=%h | tr -d '\\n'", TL, "allow"),
     # --- push: still denied (card AC4), alone and chained ---
     ("D01", "git push origin :main", TL, "deny"),
     ("D02", "git push -d origin main", TL, "deny"),
@@ -68,6 +68,11 @@ CASES = [
     ("D33", "git push origin main; git push --delete origin old; echo x | tr -d y", TL, "deny"),
     ("D34", "git push origin main\\\n  --force", TL, "deny"),
     ("D35", "git push origin main", BE, "deny"),  # role rule unchanged
+    # T-P8-3 (OI-22): the old B-row shapes without the literal docs -C path are refused now (stricter)
+    ("D36", "git push origin main; echo x | tr -d y", TL, "deny"),
+    ("D37", "git push origin main 2>&1 | tail -3", TL, "deny"),
+    ("D38", "git -C invai-docs push origin main", TL, "deny"),
+    ("D39", "git push", MAIN, "deny"),
     # --- kill: literal PIDs are fine next to a listing (lesson 2026-09-27) ---
     ("K01", "kill 12345; ps -p 12345", TL, "allow"),
     ("K02", "kill 12345 23456 && ps aux | grep tsx", BE, "allow"),
