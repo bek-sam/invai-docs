@@ -237,11 +237,11 @@ Entry format:
 - Cost of waiting: none for product work; some shell commands that write scripts or quote them are refused, and agents use the Write tool instead.
 - Answer: (owner, in chat, 2026-10-01) A: approve round 3, limited to the one over-strict rule that refuses harmless shell commands which create a script file. Runs as wave P8 card T-P7-4 r3 (`waves/P8/wave.md`).
 
-## OI-24: May T-23-6 (push check) have a fourth round to close one hole the round-3 redesign left in the docs push?   status: open
+## OI-24: May T-23-6 (push check) have a fourth round to close one hole the round-3 redesign left in the docs push?   status: answered
 - From: tech-lead, 2026-10-01. Deadline: 2026-10-03 12:00 CDT. Default if no answer: T-23-6 stays unapproved; `invai-infra`'s held commits (including the approved S-45 fix) stay unpushed; the installed guard stays as it is (it already refuses every code-repo push form but one).
 - Context: Round 3 (wave P8 card T-P8-3) did what you approved: code repos can be pushed in exactly one form, with a fresh gate pass. Both reviewers confirmed that part (110 hook tests pass; 110+ bypass forms refused). Both found the same new hole independently: the docs folder's push is allowed without a gate pass, and the check doesn't look at where that push goes, so a push started from the docs folder can be aimed at a code repo (`waves/23/reviews/T-23-6-reviewer-r3.md`, `T-23-6-security-reviewer-r2.md`, S-47 Medium). The fix is one rule: a docs push must be exactly `push origin main` (or `<sha>:main`), plus refusal tests.
 - Options: A) Round 4 limited to that one rule, same two reviewers. B) Accept as is and log S-47 as a known gap. C) Stop here and keep the infra commits unpushed.
 - Recommendation: A. It is a one-line rule the README already promises; about 20 minutes, and it unblocks the infra push you asked for.
 - Cost of waiting: the S-45 fix and the gate script stay unpushed; no product work is blocked.
-- Answer:
+- Answer: (owner, via the coordinator, 2026-10-02) A: round 4 limited to S-47 (a docs push must be exactly `push origin main` or `<sha>:main`, with refusal tests), same two reviewers. Runs in wave P8 (`waves/P8/wave.md`).
 
