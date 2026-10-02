@@ -94,6 +94,8 @@ Notable facts this inventory turned up:
 | Data transfer out to internet | first 100 GB/mo free (aggregated), then $0.09/GB to 10 TB | [egresscost.com AWS us-east-1 egress 2026](https://egresscost.com/aws/us-east-1/) |
 | Anthropic Claude Opus 5 | $5 / $25 per MTok in/out (list) | [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing), confirmed against `invai-backend/src/ai/models.ts` `MODEL_PRICES` |
 | Anthropic Claude Haiku 4.5 | $1 / $5 per MTok in/out (list) | same |
+| OpenAI GPT-6.1 Sol (stand-in for Opus 5 when only `OPENAI_API_KEY` is set, ADR 0021) | $2 / $10 per MTok in/out, $0.10 cached input (Standard, under 272K input) | [developers.openai.com/api/docs/pricing](https://developers.openai.com/api/docs/pricing), 2026-10-01; `models.ts` `MODEL_PRICES` |
+| OpenAI GPT-6 Luna (`market_niche` on OpenAI) | $0.10 / $0.50 per MTok in/out | same |
 | GitHub Actions, Linux 2-core (x64), private repo | $0.006/min; Pro/Team plans include 3,000 free min/mo | [GitHub Actions billing docs](https://docs.github.com/en/billing/concepts/product-billing/github-actions) |
 | AWS new-account credit (2026 model) | $100 immediately + up to $100 more for 5 onboarding tasks; valid 6 months or until spent, expires 12 months after account creation — **not** the old "12 months always-free" tier | [AWS Free Tier explainer, Sep 2026](https://spot.rackspace.com/blog/aws-free-tier) |
 | CloudFront "Always Free" tier | 1 TB out + 10M requests/mo, perpetual, separate from the account credit above | same CloudFront source as above |
@@ -224,6 +226,10 @@ shops on Starter, that's up to 500–1,500 credits/mo if they use the full allow
   $37.50/mo.
 - The weekly digest route (`digest_narrative`) is separately capped at `DIGEST_MAX_CENTS_PER_WEEK` (10¢/shop/
   week by default, per the code comment in `models.ts`) ≈ $0.43/shop/mo, already inside the above range.
+- **On OpenAI instead (ADR 0021):** Sol costs 40% of Opus 5 per token ($2/$10 vs $5/$25), so the same
+  credit use is about 0.4x the figures above (typical ≈ $10–12/mo for 3 shops, high ≈ $15/mo). Credits are
+  counted the same way on both providers, so plan allowances don't change. Token counts per task differ by
+  model; the eval run in openai mode gives the real cost per call.
 - Staging must run on a **real** Anthropic key too — `providerKey()` in `sst.config.ts` only defaults the
   provider secrets to a placeholder space on the `demo` stage; staging and production both fail to deploy with
   an unset key. Staging usage is assumed to be light manual/QA smoke-testing, not pilot-shop volume: $2–6/mo.

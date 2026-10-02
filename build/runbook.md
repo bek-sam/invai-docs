@@ -66,7 +66,8 @@ Postgres/Redis/MinIO from `invai-infra/local`.
 | `FLOOR_SESSION_TTL_HOURS` | `12` | |
 | `MIN_FLOOR_CONTRACT_VERSION` | contracts' `FLOOR_COMPAT_BASELINE` | Oldest `X-Contract-Version` a floor tablet may call with (ADR 0012). Emergency/rollback override only — bumping the contract version alone never refuses current tablets |
 | `FIELD_ENCRYPTION_KEY` | dev key, format `k1:<base64 32 bytes>` | Encrypts buyer PII and channel tokens. Rotate by prepending a new key: `k2:<base64>,k1:<base64>` — old ciphertext still decrypts |
-| `ANTHROPIC_API_KEY` | empty → mock | See §3 |
+| `ANTHROPIC_API_KEY` | empty → mock | See §3. Wins over `OPENAI_API_KEY` when both are set (ADR 0021) |
+| `OPENAI_API_KEY` | empty | Used only when `ANTHROPIC_API_KEY` is empty (ADR 0021): every AI route then runs on OpenAI. Neither key → mock. Both are ignored under `NODE_ENV=test` |
 | `INTERNAL_ADMIN_TOKEN` | unset → operator DLQ routes 404 | `X-Internal-Token` for the internal dead-letter/redrive routes (`src/api/internal.ts`); never shipped to a browser |
 | `AI_DAILY_PLATFORM_CAP_CENTS` / `AI_DAILY_TENANT_CAP_CENTS` | `50000` / `5000` | Daily (UTC) real-model AI spend caps; `0` turns that cap off |
 | `EASYPOST_API_KEY` | empty → mock | See §3 |
@@ -93,7 +94,7 @@ outside `production` (Node 24's built-in `process.loadEnvFile`); production envi
 inject real env vars instead.
 
 Production refuses to start if any of `PRODUCTION_KEYS` (`src/env.ts`) is missing —
-`EASYPOST_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`,
+`EASYPOST_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`),
 `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SMTP_URL`, `MAIL_FROM`, `IMAGING_SHARED_SECRET` — unless
 `ALLOW_MOCKS=true`. Supplier (S&S) keys aren't in that list: those are tenant-owned, not
 platform-wide.
@@ -138,7 +139,7 @@ to switch that one integration to the real thing — nothing else changes.
 
 | Integration | Env var(s) that switch it on | Mock behavior | Real adapter |
 | --- | --- | --- | --- |
-| AI (Claude) | `ANTHROPIC_API_KEY` | Deterministic, schema-valid output (listings, trademark judging, assistant) | `invai-backend/src/ai/providers/anthropic.ts` |
+| AI (Claude, or OpenAI without a Claude key) | `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY` (ADR 0021) | Deterministic, schema-valid output (listings, trademark judging, assistant) | `invai-backend/src/ai/providers/anthropic.ts`, `.../openai.ts`. Check which one runs: `pnpm evals assistant` prints `mode: anthropic`, `openai` or `mock` |
 | Shipping (EasyPost) | `EASYPOST_API_KEY` | In-process mock carrier: fake rates, a mock tracking code, a real 4x6 PDF via imaging's `/labels/mock` | `invai-backend/src/integrations/carriers/easypost` |
 | Shopify | `SHOPIFY_API_KEY` **and** `SHOPIFY_API_SECRET` (both required) | In-memory mock store that "receives" 1–3 new orders per poll | `invai-backend/src/integrations/channels/shopify/live.ts` (OAuth + webhooks); `.../mock.ts` is the mock |
 | S&S Activewear | `SS_ACTIVEWEAR_ACCOUNT` **and** `SS_ACTIVEWEAR_API_KEY` (both required) | Static catalog + stock mock | `invai-backend/src/integrations/suppliers` |
