@@ -11,7 +11,12 @@ already familiar. Once you've done 01–09, the `diary/` entries (one per wave) 
 sense as "here's what changed and why." Every lesson follows the same 9-part format —
 in one sentence, why it exists, how it works, in our code, what it uses, try it
 yourself, common mistakes, check yourself, words to know — so you always know where to
-look for the thing you need.
+look for the thing you need. The `diary/` entries follow a shorter 5-part format
+instead (what was built, why, what went wrong, what the team learned, files to look
+at), since each one is a dated account of a real wave, not a from-scratch lesson.
+
+**The course is now complete: all 13 modules plus the full wave diary (1–9, 12, 13,
+16–23b, A1, A2, P1–P8).**
 
 New terms are defined the first time they're used and added to `glossary.md`. If a
 lesson uses a term you don't recognize, check there first.
@@ -33,20 +38,58 @@ lesson uses a term you don't recognize, check there first.
 | 11 | Deploy and ops — environments, SST, costs, monitoring, what's still paused | **Done** | [1. Environments and SST](11-deploy-and-ops/01-environments-and-sst.md), [2. What it costs](11-deploy-and-ops/02-what-it-costs.md), [3. Monitoring and what's paused](11-deploy-and-ops/03-monitoring-and-whats-paused.md) |
 | 12 | Product and business — scope, fences, pricing, research, growth ideas, "don't build" | **Done** | [1. Scope and fences](12-product-and-business/01-scope-and-fences.md), [2. Pricing and research](12-product-and-business/02-pricing-and-research.md), [3. Growth ideas and "don't build"](12-product-and-business/03-growth-ideas-and-dont-build.md) |
 | 13 | Build InvAI from zero — a hands-on track: rebuild a small, real version of InvAI step by step, then compare it with the real code | **Done** | [1. Machine setup](13-build-from-zero/01-machine-setup.md), [2. A repo and the contract package](13-build-from-zero/02-contract-package.md), [3. The backend: first endpoint, drizzle, a migration](13-build-from-zero/03-first-backend-endpoint.md), [4. Multi-tenancy](13-build-from-zero/04-multi-tenancy.md), [5. Auth and roles](13-build-from-zero/05-auth-and-roles.md), [6. A job, the outbox, a webhook, idempotency](13-build-from-zero/06-job-outbox-webhook-idempotency.md), [7. A mock provider, and the switch to a real one](13-build-from-zero/07-mock-and-real-provider.md), [8. The web app: one screen](13-build-from-zero/08-web-app-screen.md), [9. The floor app basics](13-build-from-zero/09-floor-app-offline-scanning.md), [10. Tests: unit, then E2E](13-build-from-zero/10-tests-unit-and-e2e.md), [11. The image service](13-build-from-zero/11-image-service.md), [12. CI and a deploy outline](13-build-from-zero/12-ci-and-deploy.md), [13. Running your own AI team](13-build-from-zero/13-running-your-own-ai-team.md) |
-| — | `diary/` — one short lesson per wave (what, why, what went wrong, what to look at) | Not started | — |
+| — | `diary/` — one short lesson per wave (what, why, what went wrong, what to look at) | **Done** | See the diary index below |
 
-**Suggested next lesson:** All 13 modules are now done. Next up is `diary/` — one short
-lesson per wave, starting from the waves this course's own module 10 drew on (the
-shared-Redis flakes, the reprint profit bug, the OrbStack/Mac-sleep incidents) through
-the most recent wave, so each wave gets its own "what was built, why, what went wrong"
-entry instead of only the three representative incidents module 10.3 covers in depth.
+**Suggested next lesson:** the course is complete. From here, add a new `diary/wave-<n>.md`
+entry after each future wave lands (same 5-part format), and extend a module if the
+product grows into territory it doesn't cover yet.
+
+## Diary index — one entry per wave
+
+Covers every wave in `invai-docs/waves/` through P8. Waves 23 and 23b share one entry
+(23b was split from 23 under the 5-card cap and kept the same `T-23-x` card ids).
+Waves 10, 11, 14, 15, 24 and 25 don't have diary entries: 10 and 11 are the deferred
+AWS-reliability waves (decision 0019), 14 was split and absorbed into waves 20–21, and
+15/24/25 hadn't landed as of this writing.
+
+| Wave | Lesson |
+|---|---|
+| 1 | [Safe to put real keys in](diary/wave-01.md) |
+| 2 | [Money and accounts](diary/wave-02.md) |
+| 3 | [Integrations hardened](diary/wave-03.md) |
+| 4 | [The floor app is complete](diary/wave-04.md) |
+| 5 | [Office web, orders and settings](diary/wave-05.md) |
+| 6 | [Office web for inventory, production, profit, AI listings](diary/wave-06.md) |
+| 7 | [Multi-channel shops and correct money](diary/wave-07.md) |
+| 8 | [AI and marketplace compliance](diary/wave-08.md) |
+| 9 | [Imaging for real print shops](diary/wave-09.md) |
+| 12 | [Reliable at scale (local)](diary/wave-12.md) |
+| 13 | [Contracts and quality](diary/wave-13.md) |
+| 16 | [The team harness catches mistakes as they happen](diary/wave-16.md) |
+| 17 | [The assistant as the shop's business analyst](diary/wave-17.md) |
+| 18 | [Market signals for the assistant](diary/wave-18.md) |
+| 19 | [The weekly business review digest](diary/wave-19.md) |
+| 20 | [Digest and market copy right on today's date](diary/wave-20.md) |
+| 21 | [Evidence and docs: policies, legal drafts, help center](diary/wave-21.md) |
+| 22 | [P2 sweep, part 1: contracts and backend correctness](diary/wave-22.md) |
+| 23 (+23b) | [P2 sweep, part 2: screens, floor, imaging, AI polish, E2E](diary/wave-23.md) |
+| A1 | [Analytics v2, the data and read services](diary/wave-a1.md) |
+| A2 | [Analytics v2, screens, assistant and digest](diary/wave-a2.md) |
+| P1 | [Test isolation, flakes, imaging, AI, thumbnails, floor QC](diary/wave-p1.md) |
+| P2 | [P1 gate fixes, then the next polish items](diary/wave-p2.md) |
+| P3 | [The floor rate-limit fix](diary/wave-p3.md) |
+| P4 | [True profit for reprinted orders](diary/wave-p4.md) |
+| P5 | [Spanish alert/timeline text, realistic demo reprints](diary/wave-p5.md) |
+| P6 | [Floor live updates without a URL token, safe db:reset](diary/wave-p6.md) |
+| P7 | [A repeatable gate pool, one confidence badge, tighter guards](diary/wave-p7.md) |
+| P8 | [Infra unblock: S-45, push check, guard script-write fix](diary/wave-p8.md) |
 
 ## Where things are
 - Modules live one folder per module, one file per lesson, named
   `0N-<lesson-slug>.md`.
 - `glossary.md` — every term, once, in plain words, with where it appears in InvAI.
   Add a new term the first time a lesson uses it.
-- `diary/wave-<n>.md` — a short lesson per wave once waves resume being summarized here.
+- `diary/wave-<n>.md` — a short lesson per wave, in the table above.
 
 ## Notion mirror
 The markdown in this folder is the source of truth; Notion is a read-along mirror kept
@@ -108,6 +151,16 @@ logins or customer data — the markdown above never has any of these either.
 | 13.11 The Image Service | https://app.notion.com/p/3edb5391545a81b499e7c0534a2f35d3 |
 | 13.12 CI and a Deploy Outline | https://app.notion.com/p/3edb5391545a81219f3ece86846473a8 |
 | 13.13 Running Your Own AI Team | https://app.notion.com/p/3edb5391545a81a4b9d1eb5de2d84dd9 |
+| Diary 1 — Waves 1-9 | https://app.notion.com/p/3edb5391545a8115bc6cd8ef46c55813 |
+| Diary 2 — Waves 12-13 | https://app.notion.com/p/3edb5391545a81d0b4fed644c4593923 |
+| Diary 3 — Waves 16-19 | https://app.notion.com/p/3edb5391545a81f79911e91e3c0e8c3a |
+| Diary 4 — Waves 20-23 | https://app.notion.com/p/3edb5391545a81438d6dc45d3ec5e3ac |
+| Diary 5 — Waves A1-A2 | https://app.notion.com/p/3edb5391545a815788c3d37578061e63 |
+| Diary 6 — Waves P1-P8 | https://app.notion.com/p/3edb5391545a810d9ff7e109c4b1606c |
+
+The diary is mirrored as six grouped pages (one per phase of the project, not one page
+per wave) rather than 29 separate pages — each Notion page covers the same waves as the
+markdown entries listed under it in the table above.
 
 Created as a private draft page (no destination was named); move it under a shared
 space if you'd like it visible to others. Update a page's markdown here first, then
