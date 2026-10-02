@@ -16,7 +16,9 @@
     are read (text up to 256 KB, any path; larger text is denied, binaries skipped) and checked with
     every rule above, nested scripts too. A missing file is allowed, unless the same command also
     may write it (a redirect into it, or a command other than a plain reader such as pnpm, grep,
-    pgrep or echo naming it): written in this call, then run, so split it into two calls;
+    pgrep or echo naming it): written in this call, then run, so split it into two calls. The word
+    after a redirect (`>`, `>>`, `>|`, `&>`, `2>`, `<`) is a file, not a script it runs, unless a shell
+    reads it on stdin (`bash < x.sh`) (T-P8-2);
   - text piped into a shell must come from `echo`, `printf` or `cat` (read as commands); `curl | sh`,
     `wget -O- | bash`, `| rev | bash`, `| sed ... | sh` are denied;
   - decoded text run as code is denied: `base64 -d`, `openssl base64|enc -d`, `xxd -r`, `uudecode`,
@@ -499,6 +501,9 @@ def setting_rules(w):
 # Only literal text may be piped into a shell (its words are read as commands below); decoders get
 # encoded_rules' message.
 PIPE_TO_SHELL_SOURCES = {"echo", "printf", "cat"}
+# Redirect operators as _lex returns them (`>`, `>>`, `>|`, `&>`, `2>` as `2` then `>`, `<`, `<<`, `>&`, `<>`),
+# also glued to a separator (`;>`); `>(`/`<(` are process substitutions, not redirects (T-P8-2).
+REDIRECT_OP = re.compile(r"(?:&>>?|>>?|>\||>&|<&|<>|<<?)$")
 
 
 def simple_commands(cmd, depth=0, cwd=None):
@@ -547,7 +552,19 @@ def simple_commands(cmd, depth=0, cwd=None):
         git_dir_here = captured.get("GIT_DIR") or env.get("GIT_DIR")
         result.append((w, cwd, git_dir_here))
         head = os.path.basename(w[0]).lower()
-        target = _script_target(w)
+        if op and REDIRECT_OP.search(op):
+            # T-P8-2: the word after a redirect is a file, not a command (`echo ls > /tmp/x.sh` runs nothing).
+            # Only a shell reading it on stdin (`bash < x.sh`, `sh -s < x.sh`) runs it as a script.
+            j = idx - 1
+            while j > 0 and items[j][1] and REDIRECT_OP.search(items[j][1]):
+                j -= 1
+            runner = _strip_prefix(list(items[j][0])) if j >= 0 and op.endswith("<") and not op.endswith("<<") else []
+            if (runner and os.path.basename(runner[0]).lower() in SHELLS and _script_target(runner) is None
+                    and not any(re.fullmatch(r"-[a-zA-Z]*c[a-zA-Z]*", x) for x in runner[1:])):
+                SCRIPT_REFS.append((w[0], cwd))
+            target = None
+        else:
+            target = _script_target(w)
         if target is not None:
             SCRIPT_REFS.append((target, cwd))
         if head in ("cd", "pushd"):
