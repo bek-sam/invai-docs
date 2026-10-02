@@ -20,9 +20,9 @@ lesson uses a term you don't recognize, check there first.
 |---|---|---|---|
 | 01 | Big picture — the business, the user journey, what InvAI solves | **Done** | [1. The DTF business](01-big-picture/01-the-dtf-business.md), [2. The user journey](01-big-picture/02-the-user-journey.md) |
 | 02 | Architecture — the 8 repos, how a request travels, with a diagram | **Done** | [1. The 8 repos](02-architecture/01-eight-repos.md), [2. The request journey](02-architecture/02-request-journey.md) |
-| 03 | The stack — each tool and why, over the alternatives | Not started | — |
-| 04 | Data and tenancy — schema, migrations, `company_id` + RLS, `withTenant`, money in cents | Not started | — |
-| 05 | Core flows — order import → SKU map → gang sheet → floor scans → label → profit | Not started | — |
+| 03 | The stack — each tool and why, over the alternatives | **Done** | [1. TypeScript, Zod, oRPC and Biome](03-stack/01-typescript-zod-and-the-contract.md), [2. drizzle + Postgres RLS, and Valkey/BullMQ](03-stack/02-database-and-jobs.md), [3. S3/MinIO and Better Auth](03-stack/03-storage-and-auth.md), [4. React, TanStack, Vite, Vitest and Playwright](03-stack/04-frontend-stack.md), [5. Python/pyvips, Docker/OrbStack, SST, GitHub Actions](03-stack/05-imaging-and-infrastructure.md) |
+| 04 | Data and tenancy — schema, migrations, `company_id` + RLS, `withTenant`, money in cents | **Done** | [1. Schema and migrations](04-data-and-tenancy/01-schema-and-migrations.md), [2. Tenancy, `company_id` and RLS, in full](04-data-and-tenancy/02-tenancy-company-id-and-rls.md), [3. Money, units, and one item = one unit](04-data-and-tenancy/03-money-units-and-one-item-one-unit.md) |
+| 05 | Core flows — order import → SKU map → gang sheet → floor scans → label → profit | **Done** | [1. Order import and the SKU map](05-core-flows/01-order-import-and-sku-map.md), [2. Gang sheet and the floor](05-core-flows/02-gang-sheet-and-floor.md), [3. Label and profit](05-core-flows/03-label-and-profit.md) |
 | 06 | Reliability — idempotency, the outbox, jobs and retries, rate limits, mocks vs real | Not started | — |
 | 07 | AI features — the gateway, prompts, validators, evals, cost, trademark check, assistant | Not started | — |
 | 08 | Quality — tests in layers, E2E, the gate, CI, reviews, catching weakened tests | Not started | — |
@@ -32,10 +32,11 @@ lesson uses a term you don't recognize, check there first.
 | 12 | Product and business — scope, fences, pricing, research, growth ideas, "don't build" | Not started | — |
 | — | `diary/` — one short lesson per wave (what, why, what went wrong, what to look at) | Not started | — |
 
-**Suggested next lesson:** Module 03, "the stack" — now that you've seen *where* each
-tool sits (module 02), module 03 covers *why* each one was picked over its alternatives
-(TanStack Table v9, oRPC 1.15, Better Auth 1.7, drizzle 0.45, TypeScript 7, Zod 4,
-pyvips, SST, and the rest).
+**Suggested next lesson:** Module 06, "reliability" — modules 03–05 covered the tools,
+the tenancy/data model and the golden-path flows (order import → SKU map → gang sheet
+→ floor scans → label → profit); module 06 goes deeper on the idempotency and job
+patterns that lesson 5.3 (label buying) and lesson 5.2 (offline scans) already showed
+in practice.
 
 ## Where things are
 - Modules live one folder per module, one file per lesson, named
@@ -59,6 +60,17 @@ logins or customer data — the markdown above never has any of these either.
 | 1.2 The User Journey | https://app.notion.com/p/3ecb5391545a816fb51cd02a3d8fbd65 |
 | 2.1 The 8 Repos | https://app.notion.com/p/3ecb5391545a81ddb83df0026ec5cf4d |
 | 2.2 The Request Journey | https://app.notion.com/p/3ecb5391545a81eeb027d821c9b866cb |
+| 3.1 TypeScript, Zod, oRPC and Biome | https://app.notion.com/p/3edb5391545a819e86a4d6252f70dcee |
+| 3.2 Drizzle, Postgres RLS and Valkey/BullMQ | https://app.notion.com/p/3edb5391545a81c8ab26f833300302b0 |
+| 3.3 S3/MinIO for Files, Better Auth for Sign-in | https://app.notion.com/p/3edb5391545a816ba6e1c0e41b733dec |
+| 3.4 React, TanStack, Vite, Vitest and Playwright | https://app.notion.com/p/3edb5391545a8134b342f64019f7033d |
+| 3.5 Python/pyvips, Docker/OrbStack, SST, GitHub Actions | https://app.notion.com/p/3edb5391545a81b2839fdaca0464c74d |
+| 4.1 Schema and Migrations | https://app.notion.com/p/3edb5391545a8171a224c3a4074e40c4 |
+| 4.2 Tenancy, Company ID and RLS, in Full | https://app.notion.com/p/3edb5391545a819ba3d2ec1a02dabd84 |
+| 4.3 Money, Units, and One Item = One Unit | https://app.notion.com/p/3edb5391545a8141a1efe93228f58919 |
+| 5.1 Order Import and the SKU Map | https://app.notion.com/p/3edb5391545a81ba9af3ffdeec8f177a |
+| 5.2 Gang Sheet and the Floor | https://app.notion.com/p/3edb5391545a812bb385dd6dc3267ed7 |
+| 5.3 Label and Profit | https://app.notion.com/p/3edb5391545a813c88cad55ad4168981 |
 
 Created as a private draft page (no destination was named); move it under a shared
 space if you'd like it visible to others. Update a page's markdown here first, then
