@@ -16,7 +16,7 @@ BE = "backend-engineer"
 CASES = [
     # --- R1 git push: main session or tech-lead only (lessons wave 2, wave 8) ---
     ("P01", "git push origin main", BE, "deny", "R1"),
-    ("P02", "git -C /Users/bekbolsun/invai/invai-docs push", MAIN, "allow", "R1"),
+    ("P02", "git -C /Users/bekbolsun/invai/invai-docs push", MAIN, "deny", "R1"),  # S-47: bare push not the docs form
     ("P03", "git -C /Users/bekbolsun/invai/invai-docs push origin main", "tech-lead", "allow", "R1"),
     ("P04", "cd invai-backend && git push origin main", "reviewer", "deny", "R1"),
     ("P05", "git -C ../invai-web push", BE, "deny", "R1"),

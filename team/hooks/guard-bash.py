@@ -644,11 +644,13 @@ CODE_PUSH_FORM = re.compile(
     r"git -C " + re.escape(WORKSPACE_DIR)
     + r"/invai-(backend|web|floor|ui|contracts|imaging|infra) push origin (main|([0-9a-f]{7,40}):main)")
 DOCS_DIR = WORKSPACE_DIR + "/invai-docs"
+DOCS_PUSH_REFSPEC = re.compile(r"main|[0-9a-f]{7,40}:main")  # S-47: docs pushes `origin <this>` and nothing else
 PUSH_CTX = {"cmd": "", "in_script": False}  # the whole Bash command; set by main() and script_rules()
 PUSH_FORM_MSG = ("a code repo is pushed only as the whole command, exactly: "
                  "git -C " + WORKSPACE_DIR + "/<repo> push origin main (or <sha>:main), with nothing before "
                  "or after it (no cd, &&, ;, |, 2>&1, $(...), bash -c, env prefix, ~ or relative path), "
-                 "after 'pnpm gate' passed for that commit. invai-docs: git -C " + DOCS_DIR + " push origin main")
+                 "after 'pnpm gate' passed for that commit. invai-docs: git -C " + DOCS_DIR + " push origin main "
+                 "(or <sha>:main), nothing else in the push")
 
 
 def _gate_stamp_path(workspace_dir):
@@ -661,11 +663,18 @@ def _gate_stamp_path(workspace_dir):
 def _is_docs_push(w, sub_at, git_dir_val):
     """True only when this push is positively invai-docs: a top-level command of the Bash call itself
     (not a script, $(...), bash -c, eval, xargs or other prefix), written `git -C <DOCS_DIR>[/] push ...`,
-    with no GIT_* variable, --git-dir, git function or alias anywhere in the command."""
+    with no GIT_* variable, --git-dir, git function or alias anywhere in the command, and pushing
+    exactly `origin main` or `origin <7-40 hex sha>:main` (S-47)."""
     cmd = PUSH_CTX["cmd"]
     if PUSH_CTX["in_script"] or git_dir_val is not None or w[sub_at].lower() != "push":
         return False
     if w[1:sub_at] not in (["-C", DOCS_DIR], ["-C", DOCS_DIR + "/"]):
+        return False
+    args = w[sub_at + 1:]  # S-47: no other remote, URL, path, option or refspec
+    redir = args[-1:] == ["2"]  # `... main 2>&1` lexes as words `... main 2`, then a `>&` item `1`
+    if redir:
+        args = args[:-1]
+    if len(args) != 2 or args[0] != "origin" or not DOCS_PUSH_REFSPEC.fullmatch(args[1]):
         return False
     if "GIT_" in cmd or re.search(r"\bfunction\s+git\b|\bgit\s*\(\s*\)|\balias\b", cmd):
         return False
@@ -675,7 +684,8 @@ def _is_docs_push(w, sub_at, git_dir_val):
         return False
     if any("GIT_" in x for words, _, here in items for x in words + here):
         return False
-    return any(words == w for words, _, _ in items)
+    return any(words == w and (not redir or items[i + 1:i + 2] and items[i + 1][:2] == (["1"], ">&"))
+               for i, (words, _, _) in enumerate(items))
 
 
 def _gate_check_push(w, sub_at, git_dir_val):

@@ -285,7 +285,7 @@ class TestDocsPush(Base):
 
     def test_docs_push_allowed_without_stamp(self):
         for cmd in (f"git -C {DOCS} push origin main", f"git -C {DOCS}/ push origin main",
-                    f"git -C {DOCS} push", f"git -C {DOCS} push -u origin main",
+                    f"git -C {DOCS} push origin d8568aa:main", f"git -C {DOCS} push origin {'a1' * 20}:main",
                     f"git -C {DOCS} push origin main 2>&1 | tail -3",
                     f"git -C {DOCS} push origin main; git -C {DOCS} log -1 --format=%h | tr -d x",
                     f"export PATH=\"$HOME/.local/share/pnpm/bin:$PATH\"; git -C {DOCS} push origin main"):
@@ -310,6 +310,46 @@ class TestDocsPush(Base):
                          (f"echo x | xargs git -C {DOCS} push origin", str(WORKSPACE))):
             with self.subTest(cmd=cmd):
                 self.assertDecision(cmd, "deny", self.no_stamp(), cwd=cwd)
+
+    def test_docs_push_other_words_denied(self):
+        """S-47: the docs push is exactly `origin main` or `origin <7-40 hex>:main`, nothing else."""
+        url = "git@github.com:example/invai-infra.git"
+        for cmd in (f"git -C {DOCS} push {url} FETCH_HEAD:main",
+                    f"git -C {DOCS} fetch {WORKSPACE}/invai-infra main; git -C {DOCS} push {url} FETCH_HEAD:main",
+                    f"git -C {DOCS} fetch {CONTRACTS} main:refs/heads/carrier && "
+                    f"git -C {DOCS} push git@github.com:example/invai-contracts.git carrier:main",
+                    f"git -C {DOCS} push {WORKSPACE}/invai-infra main",
+                    f"git -C {DOCS} push {CONTRACTS} main:refs/heads/x",
+                    f"git -C {DOCS} push ../invai-contracts main",
+                    f"git -C {DOCS} push upstream main",
+                    f"git -C {DOCS} push --repo={url} origin main",
+                    f"git -C {DOCS} push origin main --repo={CONTRACTS}",
+                    f"git -C {DOCS} push --repo {url} origin main",
+                    f"git -C {DOCS} push origin FETCH_HEAD:main",
+                    f"git -C {DOCS} push origin HEAD:main",
+                    f"git -C {DOCS} push origin carrier:main",
+                    f"git -C {DOCS} push origin main:refs/heads/main",
+                    f"git -C {DOCS} push origin main main",
+                    f"git -C {DOCS} push origin main {'a1' * 20}:main",
+                    f"git -C {DOCS} push origin abc123:main",
+                    f"git -C {DOCS} push origin {'a' * 41}:main",
+                    f"git -C {DOCS} push origin ABCDEF0:main",
+                    f"git -C {DOCS} push origin d8568aa:refs/heads/x",
+                    f"git -C {DOCS} push origin",
+                    f"git -C {DOCS} push",
+                    f"git -C {DOCS} push -u origin main",
+                    f"git -C {DOCS} push --dry-run origin main",
+                    f"git -C {DOCS} push -o ci.skip origin main",
+                    f"git -C {DOCS} push --no-verify origin main",
+                    f"git -C {DOCS} push 'origin main'",
+                    f"git -C {DOCS} push origin 'main '",
+                    f"git -C {DOCS} push origin main -- x",
+                    f"git -C {DOCS} push origin main 2",
+                    f"git -C {DOCS} push origin main 2>&1 x",
+                    f"git -C {DOCS} push {url} main 2>&1 | tail -3",
+                    f"git -C {DOCS} push upstream main; git -C {DOCS} log -1"):
+            with self.subTest(cmd=cmd):
+                self.assertDecision(cmd, "deny", self.no_stamp())
 
     def test_docs_force_still_denied(self):
         self.assertDecision(f"git -C {DOCS} push --force origin main", "deny", self.no_stamp(), msg="force-push")

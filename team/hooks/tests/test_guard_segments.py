@@ -26,9 +26,10 @@ CASES = [
     ("B06", "git -C /Users/bekbolsun/invai/invai-docs push origin main 2>&1 | tail -3", TL, "allow"),
     # T-23-6: a push whose repo is a loop variable (-C $r) can't be pinned, so the gate-stamp check refuses it.
     ("B07", "for r in invai-docs invai-backend; do git -C $r push origin main; done; git log -1 | tr -d x", TL, "deny"),
-    ("B08", "git -C /Users/bekbolsun/invai/invai-docs push -u origin main", TL, "allow"),
-    ("B09", "git -C /Users/bekbolsun/invai/invai-docs push --dry-run origin main", TL, "allow"),
-    ("B10", "git -C /Users/bekbolsun/invai/invai-docs push origin HEAD:main", TL, "allow"),
+    # S-47 (OI-24): a docs push is exactly `origin main` or `origin <sha>:main`; other words now deny.
+    ("B08", "git -C /Users/bekbolsun/invai/invai-docs push -u origin main", TL, "deny"),
+    ("B09", "git -C /Users/bekbolsun/invai/invai-docs push --dry-run origin main", TL, "deny"),
+    ("B10", "git -C /Users/bekbolsun/invai/invai-docs push origin HEAD:main", TL, "deny"),
     ("B11", "git -C /Users/bekbolsun/invai/invai-docs push origin main & wait; rm -d emptydir", TL, "allow"),
     ("B12", "git -C /Users/bekbolsun/invai/invai-docs push origin main; cut -d: -f1 /etc/hosts", TL, "allow"),
     ("B13", "git -C /Users/bekbolsun/invai/invai-docs push origin main && git log -1 --format=%h | tr -d '\\n'", TL, "allow"),
