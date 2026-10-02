@@ -245,3 +245,12 @@ Entry format:
 - Cost of waiting: the S-45 fix and the gate script stay unpushed; no product work is blocked.
 - Answer: (owner, via the coordinator, 2026-10-02) A: round 4 limited to S-47 (a docs push must be exactly `push origin main` or `<sha>:main`, with refusal tests), same two reviewers. Runs in wave P8 (`waves/P8/wave.md`).
 
+
+## OI-25: Turn on real AI photo generation (OpenAI GPT Image) for lifestyle listing photos?   status: open
+- From: tech-lead, 2026-10-02. Deadline: none (nothing waits on it). Default if no answer: lifestyle scenes keep using the built-in sample generator (free, clearly labelled "sample"); template photo sets (phase A) work fully without it.
+- Context: you approved AI listing photos on 2026-10-02 (SCR-008, waves 26 and 27). Phase B can send a blank garment picture (never your design, never buyer data) to OpenAI's image API to draw a scene; InvAI then pastes your real design on and rejects any picture where the design changed. The team built it but may not switch on paid calls. It turns on only when `IMAGE_GEN_PROVIDER=openai` is set next to your `OPENAI_API_KEY` in `invai-backend/.env` (runbook "AI photos"). Limits already enforced before every call: 30 AI images per shop per day (`IMAGE_GEN_DAILY_CAP_PER_SHOP`), the platform daily AI spend cap, and credits (10 credits per AI scene image, 1 per template image; these credit prices are a starting point and yours to change).
+- Cost estimate (OpenAI list prices as researched in `research/16` §5.2; T-27-1's report has the prices checked on the day): about $0.02–0.06 per image, so about $0.15–0.40 per 6-image lifestyle set. 30 images/day for one shop is at most about $1.80/day.
+- Options: A) Enable on your dev machine only, try a few sets, then decide for pilots. B) Enable for pilots with the 30/day cap. C) Keep the sample generator until a pilot asks.
+- Recommendation: A. It costs cents, and it is the only way to judge real quality and drift-rejection rates before any shop sees it.
+- Cost of waiting: none for phase A; lifestyle scenes stay sample pictures.
+- Answer:
