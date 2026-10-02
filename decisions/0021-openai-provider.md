@@ -1,6 +1,6 @@
 # 0021: OpenAI is a second real AI provider, used only when there is no Anthropic key
 
-- Status: accepted (2026-10-01)
+- Status: proposed (2026-10-01), architect to accept
 - Type: architecture
 - Supersedes: none. Narrows 0007 (Claude stays the default and the eval baseline).
 
