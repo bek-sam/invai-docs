@@ -11,8 +11,7 @@
 | `OPENAI_API_KEY= ANTHROPIC_API_KEY= pnpm vitest run src/modules/photos src/api/buckets.test.ts src/db` | exit 0; 16 files, 75 tests passed (rls-coverage + fk-coverage included, no exception added) |
 | same env, `src/api/authz.test.ts` | exit 0; 7 passed (walks `photos.*` as anon / no-permission / floor / station / vendor) |
 | Mutation proof in worktree `../invai-backend-t264r` (removed after): dropped `!c.chargedAt &&` at `service.ts:1194`, ran `-t "charges once per composition"` | RED: `duplicate key value violates unique constraint "ai_credit_ledger_photo_ref_uq"` (T-26-3 backstop fires first; without it the `ledger toHaveLength(8)` assertion at `photos.test.ts:308` would see 16) |
-| `scan-test-weakening.sh invai-backend 30618a0~1` | removed=0 added=190; hits are `vi.spyOn(imaging.*)` and `vi.mock(../ai/*)` (dependencies, not the unit under test); the "test-only branch" hits are T-26-3 files |
-| Grant diffs (`git show 30618a0 5930d59 -- schema/index.ts router.ts modules/jobs.ts orpc.ts buckets.test.ts imaging/client.ts`) | one export, one mount, one import, `AI_BUCKET_PROCEDURES` + `photos.estimate` in NON_GET_READS, one bucket test, additive imaging functions only |
+| `scan-test-weakening.sh invai-backend 30618a0~1`; grant-file diffs of both commits | removed=0 added=190; hits are spies/mocks of imaging and `../ai/*` (dependencies); "test-only branch" hits are T-26-3 files. Grants: one export, one mount, one import, `AI_BUCKET_PROCEDURES` + `photos.estimate` read, one bucket test, additive imaging functions |
 | dev DB read-only (`psql`): set `901e408d` | status ready, zip ready 3 files, 8/8 compositions charged, 8 ledger rows, 16 done images; `relrowsecurity = t` and a policy on all 4 `photo_*` tables |
 
 ## Acceptance criteria
@@ -40,6 +39,4 @@ none
 
 ## Optional notes (not blocking)
 - (a) `service.ts` `attachToDraft`: a draft of another design (same company, same channel) is accepted; the contract comment says "same design". Needs a `PHOTO_BAD_REQUEST_REASONS` entry from the architect (backlog row), then one `draft.designId !== s.designId` check here; `conflict()` would do meanwhile.
-- (b) Charge without re-assert can overdraw by at most one set (≤ 48) when credits drop between create and render; same pattern as `ai.createDrafts`; acceptable, note in backlog.
-- (c) `toChecks` drops unknown imaging codes but keeps `passes: false`, so a failure is still visible (reason-less); `design_drift`/`region_changed` are already in the enum, so phase B is safe. Append-only contract makes this the right call.
-- `photos.dispatchSet` runs at default priority 0 on `render`; it is a tiny fan-out, fine.
+- (b) No re-assert at charge: overdraw bounded by one set (≤ 48), same pattern as `ai.createDrafts`; backlog note. (c) `toChecks` drops unknown codes but keeps `passes: false`, so nothing is hidden; `design_drift`/`region_changed` are already in the enum, phase B is safe.
