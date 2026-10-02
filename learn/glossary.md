@@ -1,7 +1,7 @@
 # Glossary
 
 Every term, once, in plain words, with where it shows up in InvAI. Grows as new modules
-are written; right now it covers modules 01–12. Add a term the first time a lesson uses
+are written; right now it covers modules 01–13. Add a term the first time a lesson uses
 it — don't duplicate an entry that's already here.
 
 ## The business
@@ -460,3 +460,57 @@ it — don't duplicate an entry that's already here.
   impossibility, trust cost).
 - **Inducement** — a legal theory of liability for building or providing a tool whose main
   foreseeable use is enabling someone else's infringement.
+
+## Build from zero (module 13)
+- **Docker Compose** — a tool that starts a group of containers from one YAML file
+  describing each service's image, ports and settings; `invai-infra/local/docker-
+  compose.yml` is InvAI's real one.
+- **Container** — a lightweight, isolated process running from a packaged image; InvAI's
+  local Postgres, Valkey and MinIO all run as containers.
+- **Volume (Docker)** — a Docker-managed storage location that survives a container being
+  stopped or recreated, as long as it isn't explicitly removed.
+- **Contract-first** — writing an API's shapes (inputs, outputs, errors) down once, in a
+  shared package, before any backend or frontend code is built against it.
+- **Procedure (oRPC)** — one callable unit in an oRPC contract: an input shape, an output
+  shape, a permission, and the errors it may throw.
+- **ESM (ECMAScript Modules)** — the standard `import`/`export` module system every InvAI
+  repo uses, instead of the older CommonJS `require`.
+- **Handler** — the function attached to one oRPC procedure that does the real work
+  (query the database, return a value, or throw a declared error).
+- **Authentication** — proving who is making a request (a valid session); Better Auth's
+  job in InvAI.
+- **Authorization** — deciding what a known, authenticated requester is allowed to do;
+  InvAI's own permission guard, reading `ROLE_PERMISSIONS`, handles this.
+- **Permission guard** — the middleware every InvAI procedure passes through, checking
+  its declared permission against the signed-in member's role before any handler runs.
+- **Adapter** — a concrete implementation of a shared interface for one specific provider
+  (a mock, or a real carrier/marketplace/supplier), interchangeable with any other adapter
+  of the same interface.
+- **Deterministic (mock)** — producing the same output for the same input every time, with
+  no randomness or dependence on the current time; a requirement for every InvAI mock
+  provider, so tests built on top of them aren't flaky.
+- **TanStack Query** — the library managing server-state in InvAI's React apps: caching,
+  loading/error states, refetching and cache invalidation after a write.
+- **Query key** — the identifier TanStack Query caches a piece of data under; invalidating
+  a key tells it that data may be stale and should be refetched.
+- **Mutation (TanStack Query)** — a hook for a write (create/update/delete), as opposed to
+  a query (a read).
+- **Wedge scanner** — a barcode scanner that connects as a keyboard ("keyboard wedge"),
+  detected by keystroke timing rather than a special browser API; `invai-floor`'s scan
+  listener is built on this.
+- **Offline-first** — an app design where every action is written to a local store first
+  and synced to the server opportunistically, so the UI never has to block on network
+  availability; `invai-floor`'s whole scan flow works this way.
+- **Parked (floor outbox sense)** — an outbox entry the flush gave up retrying
+  automatically (rejected, blocked, or sign-in ended), surfaced to the person instead of
+  retried forever.
+- **DPI (dots per inch)** — the resolution a physical size is rendered at;
+  `invai-imaging` always derives pixels from inches and DPI, never the other way around.
+- **Role file** — a markdown file (with frontmatter) under `.claude/agents/` scoping one
+  agent's ownership, model and preloaded skills.
+- **Skill (generic)** — a reusable, named checklist an agent loads at a specific point in
+  its work (before editing, before reporting done), instead of one long always-on
+  instruction set.
+- **Hook (generic)** — a script that runs automatically around a tool call, enforcing a
+  rule mechanically rather than relying on it being remembered; `guard-bash.py` (see
+  "Guard hook" above) is InvAI's real one.

@@ -4,8 +4,10 @@ Written and kept up to date by the `mentor` role. Plain English, cited to real f
 (`file:line`), for the owner learning how InvAI actually works and why. Read-only on
 code — this folder and the Notion mirror below are the only things the mentor writes.
 
-**How to read this course:** go in order the first time (01 → 12); each module assumes
-the ones before it. Once you've done 01–09, the `diary/` entries (one per wave) make
+**How to read this course:** go in order the first time (01 → 13); each module assumes
+the ones before it. Module 13 is hands-on: it has you rebuild a small, real version of
+InvAI yourself, module by module, so read it after 01–12, when each piece it echoes is
+already familiar. Once you've done 01–09, the `diary/` entries (one per wave) make
 sense as "here's what changed and why." Every lesson follows the same 9-part format —
 in one sentence, why it exists, how it works, in our code, what it uses, try it
 yourself, common mistakes, check yourself, words to know — so you always know where to
@@ -30,9 +32,10 @@ lesson uses a term you don't recognize, check there first.
 | 10 | The AI team — roles, waves, reviews, hooks, token budget, decisions, lessons | **Done** | [1. Roles and the wave process](10-ai-team/01-roles-and-the-wave-process.md), [2. Reviews, hooks and the token budget](10-ai-team/02-reviews-hooks-and-the-token-budget.md), [3. Real incidents and what we learned](10-ai-team/03-real-incidents-and-what-we-learned.md) |
 | 11 | Deploy and ops — environments, SST, costs, monitoring, what's still paused | **Done** | [1. Environments and SST](11-deploy-and-ops/01-environments-and-sst.md), [2. What it costs](11-deploy-and-ops/02-what-it-costs.md), [3. Monitoring and what's paused](11-deploy-and-ops/03-monitoring-and-whats-paused.md) |
 | 12 | Product and business — scope, fences, pricing, research, growth ideas, "don't build" | **Done** | [1. Scope and fences](12-product-and-business/01-scope-and-fences.md), [2. Pricing and research](12-product-and-business/02-pricing-and-research.md), [3. Growth ideas and "don't build"](12-product-and-business/03-growth-ideas-and-dont-build.md) |
+| 13 | Build InvAI from zero — a hands-on track: rebuild a small, real version of InvAI step by step, then compare it with the real code | **Done** | [1. Machine setup](13-build-from-zero/01-machine-setup.md), [2. A repo and the contract package](13-build-from-zero/02-contract-package.md), [3. The backend: first endpoint, drizzle, a migration](13-build-from-zero/03-first-backend-endpoint.md), [4. Multi-tenancy](13-build-from-zero/04-multi-tenancy.md), [5. Auth and roles](13-build-from-zero/05-auth-and-roles.md), [6. A job, the outbox, a webhook, idempotency](13-build-from-zero/06-job-outbox-webhook-idempotency.md), [7. A mock provider, and the switch to a real one](13-build-from-zero/07-mock-and-real-provider.md), [8. The web app: one screen](13-build-from-zero/08-web-app-screen.md), [9. The floor app basics](13-build-from-zero/09-floor-app-offline-scanning.md), [10. Tests: unit, then E2E](13-build-from-zero/10-tests-unit-and-e2e.md), [11. The image service](13-build-from-zero/11-image-service.md), [12. CI and a deploy outline](13-build-from-zero/12-ci-and-deploy.md), [13. Running your own AI team](13-build-from-zero/13-running-your-own-ai-team.md) |
 | — | `diary/` — one short lesson per wave (what, why, what went wrong, what to look at) | Not started | — |
 
-**Suggested next lesson:** All 12 modules are now done. Next up is `diary/` — one short
+**Suggested next lesson:** All 13 modules are now done. Next up is `diary/` — one short
 lesson per wave, starting from the waves this course's own module 10 drew on (the
 shared-Redis flakes, the reprint profit bug, the OrbStack/Mac-sleep incidents) through
 the most recent wave, so each wave gets its own "what was built, why, what went wrong"
@@ -92,6 +95,19 @@ logins or customer data — the markdown above never has any of these either.
 | 12.1 Scope and Fences | https://app.notion.com/p/3edb5391545a8143a9a2d7a213bf1980 |
 | 12.2 Pricing and Research | https://app.notion.com/p/3edb5391545a81c38095d8c8683d7fa2 |
 | 12.3 Growth Ideas and "Don't Build" | https://app.notion.com/p/3edb5391545a818ebfddc5c582148b1a |
+| 13.1 Machine Setup | https://app.notion.com/p/3edb5391545a814b8693ceba002ed4d8 |
+| 13.2 A Repo and the Contract Package | https://app.notion.com/p/3edb5391545a81139084da98a451b666 |
+| 13.3 The Backend: First Endpoint, Drizzle, a Migration | https://app.notion.com/p/3edb5391545a8177aea3f2fcb4a54513 |
+| 13.4 Multi-Tenancy | https://app.notion.com/p/3edb5391545a8194b921ff77e8ea6f10 |
+| 13.5 Auth and Roles | https://app.notion.com/p/3edb5391545a8137ae64cb4076760719 |
+| 13.6 A Job, the Outbox, a Webhook, Idempotency | https://app.notion.com/p/3edb5391545a816ca47cdcea8fed49b2 |
+| 13.7 A Mock Provider, and the Switch to a Real One | https://app.notion.com/p/3edb5391545a818aa0b4e3f6d0267fc5 |
+| 13.8 The Web App: One Screen | https://app.notion.com/p/3edb5391545a81e8adf1dc2184c72655 |
+| 13.9 The Floor App Basics | https://app.notion.com/p/3edb5391545a81898efef2a5a2995b68 |
+| 13.10 Tests: Unit, Then E2E | https://app.notion.com/p/3edb5391545a812fa295f32666ccdbb7 |
+| 13.11 The Image Service | https://app.notion.com/p/3edb5391545a81b499e7c0534a2f35d3 |
+| 13.12 CI and a Deploy Outline | https://app.notion.com/p/3edb5391545a81219f3ece86846473a8 |
+| 13.13 Running Your Own AI Team | https://app.notion.com/p/3edb5391545a81a4b9d1eb5de2d84dd9 |
 
 Created as a private draft page (no destination was named); move it under a shared
 space if you'd like it visible to others. Update a page's markdown here first, then
