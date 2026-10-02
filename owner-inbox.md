@@ -221,18 +221,27 @@ Entry format:
 - Cost of waiting: E2E doesn't run automatically on push. The local pre-push gate (T-23-6) still runs it before every push, so no untested code is pushed.
 - Answer:
 
-## OI-22: May T-23-6 (pre-push gate) have a third review round to redesign its push check?   status: open
+## OI-22: May T-23-6 (pre-push gate) have a third review round to redesign its push check?   status: answered
 - From: tech-lead, 2026-09-29. Deadline: 2026-10-01 12:00 CDT. Default if no answer: T-23-6 stays unpushed; the live push check stays as it is (it over-blocks one push form and misses two path forms, and is no weaker than before it existed); pushes keep following the integration-gate rule.
 - Context: The team rule sends a card to you after two failed review rounds. All 5 round-1 findings are fixed. Round 2 (`waves/23/reviews/T-23-6-reviewer-r2.md`) found 2 more, both in the push check: (1) a push with a `2>&1` redirect is wrongly refused even with a valid pass, and (2) paths written with `~` or `{}` aren't checked at all. The security review (`T-23-6-security-reviewer-r1.md`, S-42 Medium) found a third: a push wrapped in `$(...)` skips the check. All three are in the same guesswork about which folder a command runs in; no existing guard is weakened.
 - Options: A) Allow round 3 as a simpler redesign: the hook accepts a push of a code repo only in one exact form (`git -C /abs/path/<repo> push origin <ref>`, alone in its command) and refuses every other form, so there's no folder guessing. Same reviewer plus security. B) Accept as is and log both as known gaps (the stamp is a speed bump, not a security boundary). C) Drop the push block and keep only the `pnpm gate` script.
 - Recommendation: A. Point patches found three new holes in two rounds; one allowed form is simpler to prove. About an hour of work.
 - Cost of waiting: none for product work; only the automatic push check waits.
-- Answer:
+- Answer: (owner, in chat, 2026-10-01) A: approve the recommended redesign. The push check allows exactly one push form. Also: push `invai-infra`'s held commits once they're fixed. Runs as wave P8 card T-23-6 r3 (`waves/P8/wave.md`).
 
-## OI-23: May T-P7-4 (guard hook gaps) have a third review round to fix one regression?   status: open
+## OI-23: May T-P7-4 (guard hook gaps) have a third review round to fix one regression?   status: answered
 - From: tech-lead, 2026-10-01. Deadline: 2026-10-03 12:00 CDT. Default if no answer: the live guard stays as installed after round 2 (stricter, not weaker; it also refuses some harmless commands, see below); T-P7-4 stays unapproved; nothing else changes.
 - Context: Two review rounds by the security-reviewer, each with one blocking finding; the primary reviewer approved. Round 1's gap (full-URL `gh api` writes) is closed. Round 2 added a regression: a command that only writes a shell script through a redirect is refused as "written then run", and so is a heredoc that merely quotes such a command (it refused the tech lead's own inbox append). Agents can still write files with the Write and Edit tools. Evidence: `waves/P7/reviews/T-P7-4-security-reviewer-r2.md`, `T-P7-4-reviewer-r1.md`, report `waves/P7/reports/T-P7-4.md`.
 - Options: A) Round 3 limited to that one fix (skip the word after a redirect when looking for a script to read) plus allow tests for the six forms the reviewer listed, reviewed by the security-reviewer. B) Roll the guard back to its pre-P7 copy (`invai-docs` history) and drop T-P7-4. C) Keep it as it is.
 - Recommendation: A. The fix is one condition with tests already named by the reviewer; about 30 minutes. Everything else in T-P7-4 (secret and repo-setting blocks, scripts read before running, shell edits counted) passed both reviewers.
 - Cost of waiting: none for product work; some shell commands that write scripts or quote them are refused, and agents use the Write tool instead.
+- Answer: (owner, in chat, 2026-10-01) A: approve round 3, limited to the one over-strict rule that refuses harmless shell commands which create a script file. Runs as wave P8 card T-P7-4 r3 (`waves/P8/wave.md`).
+
+## OI-24: May T-23-6 (push check) have a fourth round to close one hole the round-3 redesign left in the docs push?   status: open
+- From: tech-lead, 2026-10-01. Deadline: 2026-10-03 12:00 CDT. Default if no answer: T-23-6 stays unapproved; `invai-infra`'s held commits (including the approved S-45 fix) stay unpushed; the installed guard stays as it is (it already refuses every code-repo push form but one).
+- Context: Round 3 (wave P8 card T-P8-3) did what you approved: code repos can be pushed in exactly one form, with a fresh gate pass. Both reviewers confirmed that part (110 hook tests pass; 110+ bypass forms refused). Both found the same new hole independently: the docs folder's push is allowed without a gate pass, and the check doesn't look at where that push goes, so a push started from the docs folder can be aimed at a code repo (`waves/23/reviews/T-23-6-reviewer-r3.md`, `T-23-6-security-reviewer-r2.md`, S-47 Medium). The fix is one rule: a docs push must be exactly `push origin main` (or `<sha>:main`), plus refusal tests.
+- Options: A) Round 4 limited to that one rule, same two reviewers. B) Accept as is and log S-47 as a known gap. C) Stop here and keep the infra commits unpushed.
+- Recommendation: A. It is a one-line rule the README already promises; about 20 minutes, and it unblocks the infra push you asked for.
+- Cost of waiting: the S-45 fix and the gate script stay unpushed; no product work is blocked.
 - Answer:
+
