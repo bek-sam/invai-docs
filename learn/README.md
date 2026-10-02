@@ -26,17 +26,17 @@ lesson uses a term you don't recognize, check there first.
 | 06 | Reliability — idempotency, the outbox, jobs and retries, rate limits, mocks vs real | **Done** | [1. Idempotency and the outbox](06-reliability/01-idempotency-and-the-outbox.md), [2. Jobs, retries and rate limits](06-reliability/02-jobs-retries-and-rate-limits.md), [3. Mocks vs. real providers](06-reliability/03-mocks-vs-real-providers.md) |
 | 07 | AI features — the gateway, prompts, validators, evals, cost, trademark check, assistant | **Done** | [1. The gateway and providers](07-ai-features/01-the-gateway-and-providers.md), [2. Prompts, validators and cost](07-ai-features/02-prompts-validators-and-cost.md), [3. The trademark check and the assistant](07-ai-features/03-trademark-check-and-the-assistant.md) |
 | 08 | Quality — tests in layers, E2E, the gate, CI, reviews, catching weakened tests | **Done** | [1. Tests in layers](08-quality/01-tests-in-layers.md), [2. E2E, the gate and CI](08-quality/02-e2e-the-gate-and-ci.md), [3. Reviews and weakened tests](08-quality/03-reviews-and-weakened-tests.md) |
-| 09 | Security — auth, PII, webhooks, the findings log, how fixes are proved | Not started | — |
-| 10 | The AI team — roles, waves, reviews, hooks, token budget, decisions, lessons | Not started | — |
-| 11 | Deploy and ops — environments, SST, costs, monitoring, what's still paused | Not started | — |
-| 12 | Product and business — scope, fences, pricing, research, growth ideas, "don't build" | Not started | — |
+| 09 | Security — auth, PII, webhooks, the findings log, how fixes are proved | **Done** | [1. Auth and roles](09-security/01-auth-and-roles.md), [2. PII and encryption](09-security/02-pii-and-encryption.md), [3. Webhooks and the findings log](09-security/03-webhooks-and-the-findings-log.md) |
+| 10 | The AI team — roles, waves, reviews, hooks, token budget, decisions, lessons | **Done** | [1. Roles and the wave process](10-ai-team/01-roles-and-the-wave-process.md), [2. Reviews, hooks and the token budget](10-ai-team/02-reviews-hooks-and-the-token-budget.md), [3. Real incidents and what we learned](10-ai-team/03-real-incidents-and-what-we-learned.md) |
+| 11 | Deploy and ops — environments, SST, costs, monitoring, what's still paused | **Done** | [1. Environments and SST](11-deploy-and-ops/01-environments-and-sst.md), [2. What it costs](11-deploy-and-ops/02-what-it-costs.md), [3. Monitoring and what's paused](11-deploy-and-ops/03-monitoring-and-whats-paused.md) |
+| 12 | Product and business — scope, fences, pricing, research, growth ideas, "don't build" | **Done** | [1. Scope and fences](12-product-and-business/01-scope-and-fences.md), [2. Pricing and research](12-product-and-business/02-pricing-and-research.md), [3. Growth ideas and "don't build"](12-product-and-business/03-growth-ideas-and-dont-build.md) |
 | — | `diary/` — one short lesson per wave (what, why, what went wrong, what to look at) | Not started | — |
 
-**Suggested next lesson:** Module 09, "security" — modules 06–08 covered reliability
-(idempotency, jobs, mocks), AI features (the gateway, decision 0021's OpenAI provider,
-evals) and quality (test layers, the gate, CI, independent review); module 09 goes
-deeper on auth, PII handling and webhook verification that this run's lessons touched
-on (the gateway's PII scrub, webhook dedupe) but didn't cover as their own topic.
+**Suggested next lesson:** All 12 modules are now done. Next up is `diary/` — one short
+lesson per wave, starting from the waves this course's own module 10 drew on (the
+shared-Redis flakes, the reprint profit bug, the OrbStack/Mac-sleep incidents) through
+the most recent wave, so each wave gets its own "what was built, why, what went wrong"
+entry instead of only the three representative incidents module 10.3 covers in depth.
 
 ## Where things are
 - Modules live one folder per module, one file per lesson, named
@@ -80,6 +80,18 @@ logins or customer data — the markdown above never has any of these either.
 | 8.1 Tests in Layers | https://app.notion.com/p/3edb5391545a8194b371d8053bf58140 |
 | 8.2 E2E, the Gate and CI | https://app.notion.com/p/3edb5391545a811d829ae62eee2b7379 |
 | 8.3 Reviews and Weakened Tests | https://app.notion.com/p/3edb5391545a81b7a881dba2b1eaa039 |
+| 9.1 Auth and Roles | https://app.notion.com/p/3edb5391545a81dda6c0eb1d0a7f90dc |
+| 9.2 PII and Encryption | https://app.notion.com/p/3edb5391545a817e9e1af74f2be7508e |
+| 9.3 Webhooks and the Findings Log | https://app.notion.com/p/3edb5391545a811997f6d57c9e0ffd0e |
+| 10.1 Roles and the Wave Process | https://app.notion.com/p/3edb5391545a815d829be22dde26794d |
+| 10.2 Reviews, Hooks and the Token Budget | https://app.notion.com/p/3edb5391545a81c08c26d4b481b2012e |
+| 10.3 Real Incidents and What We Learned | https://app.notion.com/p/3edb5391545a81aa8f4adf6cb1f569ed |
+| 11.1 Environments and SST | https://app.notion.com/p/3edb5391545a8162b8f4d4b9fda2ddaf |
+| 11.2 What It Costs | https://app.notion.com/p/3edb5391545a816980e0fa311977df27 |
+| 11.3 Monitoring and What's Paused | https://app.notion.com/p/3edb5391545a8126a2e1f1f0ae88e9bc |
+| 12.1 Scope and Fences | https://app.notion.com/p/3edb5391545a8143a9a2d7a213bf1980 |
+| 12.2 Pricing and Research | https://app.notion.com/p/3edb5391545a81c38095d8c8683d7fa2 |
+| 12.3 Growth Ideas and "Don't Build" | https://app.notion.com/p/3edb5391545a818ebfddc5c582148b1a |
 
 Created as a private draft page (no destination was named); move it under a shared
 space if you'd like it visible to others. Update a page's markdown here first, then

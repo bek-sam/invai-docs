@@ -1,7 +1,7 @@
 # Glossary
 
 Every term, once, in plain words, with where it shows up in InvAI. Grows as new modules
-are written; right now it covers modules 01–02. Add a term the first time a lesson uses
+are written; right now it covers modules 01–12. Add a term the first time a lesson uses
 it — don't duplicate an entry that's already here.
 
 ## The business
@@ -336,3 +336,127 @@ it — don't duplicate an entry that's already here.
   by an integration gate and a review before the next wave starts.
 - **ADR (decision record)** — a short, numbered file in `invai-docs/decisions/` recording
   one architecture/product/process decision: context, decision, consequences.
+
+## Security (module 09)
+- **Station token** — a long random secret (`st1.<companyId>.<random>`) issued once to one
+  physical floor tablet, stored only as its SHA-256 hash, proving "this is a known device
+  for this shop."
+- **Floor session** — the signed, time-limited token (`fs1.<payload>.<sig>`) issued after
+  a station token *and* the right staff PIN are both presented.
+- **`auth` mode** — a contract procedure's declared login requirement: `"user"` (web
+  session), `"floor"` (floor session), `"station"` (bare station token only), or
+  `"public"`.
+- **`disabledPaths`** — a Better Auth config option that removes an HTTP route entirely;
+  used to turn off organization-management endpoints InvAI's own code replaces.
+- **Email-verified procedure** — one of a small, explicit set of procedures (money-moving
+  ones) that require a verified email on top of the normal permission check.
+- **AES-256-GCM** — an authenticated encryption cipher: it both hides data and lets the
+  decrypting side detect if the ciphertext was tampered with; used for buyer PII and
+  channel credentials.
+- **Key ring** — a list of encryption keys where one is "primary" (used for new
+  encryption) and all are valid for decryption, enabling key rotation without a mass
+  re-encryption migration.
+- **Unkeyed vs. keyed hash** — `sha256Hex` (no secret, safe only for long random inputs
+  like tokens) versus `hmacHex` (uses a server secret, safe for anything, including
+  guessable values like a dollar amount or an email subject).
+- **DSAR (data-subject access request)** — a legal request (GDPR/CCPA) from a real person
+  asking what data is held about them, or asking for it to be deleted or exported.
+- **Retention window** — a fixed time limit after which data must be deleted, enforced by
+  a scheduled job rather than left to manual cleanup.
+- **Webhook verification** — checking a cryptographic signature on the *raw* request body
+  to prove a webhook really came from the marketplace it claims to be from.
+- **Delivery id** — a unique identifier a marketplace attaches to one specific webhook
+  send, used to detect and ignore a resend of the same event.
+- **Unique partial index** — a Postgres index that enforces uniqueness only among rows
+  matching a condition, letting multiple `pending` attempts exist while blocking two real
+  connections to the same store.
+- **Findings log** — `invai-docs/security/v1-review.md`: one table of every known security
+  issue, its severity, and a status that names the fix's commit and the test that proves
+  it, kept current rather than archived once "done."
+- **Compliance webhook** — a Shopify-specific webhook topic (`customers/redact`,
+  `shop/redact`, ...) tied to a legal data-handling obligation, handled inline rather than
+  queued because it has to be *done*, not just scheduled, before answering 200.
+
+## The AI team, in full (module 10)
+- **Owned paths** — the specific files/folders a role is allowed to edit; checked by
+  reviewers and the `respect-ownership` playbook, not (yet) by a hook.
+- **Escalation (`owner-inbox.md`)** — the explicit, named list of decisions that always go
+  to the human owner, with options, a recommendation, and a deadline.
+- **Token budget** — the shared, exhaustible usage limit across the whole agent team,
+  treated explicitly as a cost to be managed (decision 0018), not an afterthought.
+- **Model tiering** — assigning `haiku`/`sonnet`/`opus` per task based on how much
+  judgment it needs, rather than one model for every role.
+- **Guard hook** — `.claude/hooks/guard-bash.py`, a mechanical, unconditional block on a
+  specific list of dangerous commands (force-push, tags, deploys, `aws`, secrets),
+  distinct from and complementary to the written process rules.
+- **Promotion ladder** — the path a recurring lesson takes from a written reminder, to a
+  playbook or role-file rule, to a mechanically enforced test or hook, as it keeps
+  recurring.
+- **Structural fix** — a fix that makes the correct behavior the *default*, so it can't be
+  skipped by forgetting a step, as opposed to a written rule that depends on being
+  remembered every time.
+- **Root-causing a flake** — finding the actual, specific cause of an intermittent failure
+  before writing it off as random, since an unexplained "flake" is often a real, repeatable
+  bug (a shared Redis DB, a sleeping laptop) hiding behind a misleading label.
+
+## Deploy and ops (module 11)
+- **SST (Serverless Stack)** — infrastructure-as-code written in TypeScript, with
+  pre-built components for common AWS resources, used for InvAI's AWS configuration.
+- **Stage** — SST's name for an environment (`production`, `staging`, `demo`, or an
+  ad-hoc name); one config file branches on the stage name rather than using separate
+  files per environment.
+- **Fargate** — AWS's serverless container-running service; InvAI's Api, Worker, Imaging
+  and one-off Migrate processes all run on it, so no EC2 instance is managed directly.
+- **`/readyz` vs. `/health`** — a load-balancer-facing readiness check (only the hard
+  dependencies that should pull a task out of rotation) versus a human/monitoring-facing
+  status check (reports on everything, including degraded-but-not-fatal dependencies).
+- **KMS envelope encryption** — AWS's managed key-encrypts-key scheme, production's
+  planned upgrade from the static `FIELD_ENCRYPTION_KEY` ring.
+- **List price** — a vendor's published, undiscounted price, used in cost estimates
+  because no committed-use discount or negotiated rate exists yet.
+- **NAT (Network Address Translation)** — lets resources in a private subnet reach the
+  internet (or AWS services) without being directly internet-facing.
+- **VPC interface endpoint** — a private, paid network path from a VPC directly to a
+  specific AWS service, avoiding a trip through NAT or the public internet.
+- **Scenario-based estimate** — pricing several concrete configurations instead of giving
+  one number, so a cost estimate answers "what does this specific setup cost."
+- **`[[OWNER]]` marker** — a notation in ops docs flagging a control that requires the
+  human owner's direct action (an account, a credential, a repo setting) rather than
+  something an agent can configure in code.
+- **P0 (priority zero)** — the highest urgency tag for a gap, meaning it must be fixed
+  before a specific risky action is allowed to proceed.
+- **SEV1–SEV4** — InvAI's incident severity scale, from PII/cross-tenant exposure or a
+  total outage (SEV1) down to a cosmetic issue or near-miss (SEV4).
+- **Incident commander (IC)** — the role that directs a live incident (decides, keeps the
+  timeline, assigns work) without fixing code itself, kept separate from the fixers.
+- **Research gap** — a numbered item in `invai-docs/research/` identifying a known missing
+  control; written ops policies and backlog items both trace back to these gap numbers.
+
+## Product and business (module 12)
+- **Segment** — one of three named shop profiles (small/mid/large) `scope.md` uses to
+  decide what to build for whom, and in what order.
+- **SCR (scope-change request)** — the only process allowed to add or change what's in
+  `scope.md`, requiring PM approval and, for anything touching cost or risk, the owner's
+  approval too.
+- **Fence** — a hard limit on *how* an in-scope feature is allowed to behave (not whether
+  it exists), set with the owner's approval, such as "no scraping" or "no automatic price
+  changes."
+- **Trigger (deferred scope)** — the specific, named condition that would bring a deferred
+  item back into active consideration.
+- **Pricing hypothesis** — a stated price to be tested against real pilot data, not a
+  final, settled number.
+- **Pricing experiment** — a structured test (hypothesis, segment, offer, a method sized
+  to the real sample available, a success metric, a readout plan) for finding out if a
+  price works.
+- **Confidence cap** — an explicit upper limit research applies to its own certainty when
+  it has no real pilot evidence yet, so a desk-research finding isn't mistaken for a proven
+  one.
+- **Impact × reach × confidence ÷ effort** — the formula used to rank growth ideas against
+  evidence rather than intuition.
+- **Outside-approval tiebreaker** — the rule that any idea blocked on an approval the team
+  doesn't control ranks below every idea that isn't, regardless of its raw score.
+- **Don't-build list** — a specific, reasoned list of ideas the research recommends never
+  building, each with its own stated mechanism (legal risk, market fit, policy
+  impossibility, trust cost).
+- **Inducement** — a legal theory of liability for building or providing a tool whose main
+  foreseeable use is enabling someone else's infringement.
