@@ -23,20 +23,20 @@ lesson uses a term you don't recognize, check there first.
 | 03 | The stack — each tool and why, over the alternatives | **Done** | [1. TypeScript, Zod, oRPC and Biome](03-stack/01-typescript-zod-and-the-contract.md), [2. drizzle + Postgres RLS, and Valkey/BullMQ](03-stack/02-database-and-jobs.md), [3. S3/MinIO and Better Auth](03-stack/03-storage-and-auth.md), [4. React, TanStack, Vite, Vitest and Playwright](03-stack/04-frontend-stack.md), [5. Python/pyvips, Docker/OrbStack, SST, GitHub Actions](03-stack/05-imaging-and-infrastructure.md) |
 | 04 | Data and tenancy — schema, migrations, `company_id` + RLS, `withTenant`, money in cents | **Done** | [1. Schema and migrations](04-data-and-tenancy/01-schema-and-migrations.md), [2. Tenancy, `company_id` and RLS, in full](04-data-and-tenancy/02-tenancy-company-id-and-rls.md), [3. Money, units, and one item = one unit](04-data-and-tenancy/03-money-units-and-one-item-one-unit.md) |
 | 05 | Core flows — order import → SKU map → gang sheet → floor scans → label → profit | **Done** | [1. Order import and the SKU map](05-core-flows/01-order-import-and-sku-map.md), [2. Gang sheet and the floor](05-core-flows/02-gang-sheet-and-floor.md), [3. Label and profit](05-core-flows/03-label-and-profit.md) |
-| 06 | Reliability — idempotency, the outbox, jobs and retries, rate limits, mocks vs real | Not started | — |
-| 07 | AI features — the gateway, prompts, validators, evals, cost, trademark check, assistant | Not started | — |
-| 08 | Quality — tests in layers, E2E, the gate, CI, reviews, catching weakened tests | Not started | — |
+| 06 | Reliability — idempotency, the outbox, jobs and retries, rate limits, mocks vs real | **Done** | [1. Idempotency and the outbox](06-reliability/01-idempotency-and-the-outbox.md), [2. Jobs, retries and rate limits](06-reliability/02-jobs-retries-and-rate-limits.md), [3. Mocks vs. real providers](06-reliability/03-mocks-vs-real-providers.md) |
+| 07 | AI features — the gateway, prompts, validators, evals, cost, trademark check, assistant | **Done** | [1. The gateway and providers](07-ai-features/01-the-gateway-and-providers.md), [2. Prompts, validators and cost](07-ai-features/02-prompts-validators-and-cost.md), [3. The trademark check and the assistant](07-ai-features/03-trademark-check-and-the-assistant.md) |
+| 08 | Quality — tests in layers, E2E, the gate, CI, reviews, catching weakened tests | **Done** | [1. Tests in layers](08-quality/01-tests-in-layers.md), [2. E2E, the gate and CI](08-quality/02-e2e-the-gate-and-ci.md), [3. Reviews and weakened tests](08-quality/03-reviews-and-weakened-tests.md) |
 | 09 | Security — auth, PII, webhooks, the findings log, how fixes are proved | Not started | — |
 | 10 | The AI team — roles, waves, reviews, hooks, token budget, decisions, lessons | Not started | — |
 | 11 | Deploy and ops — environments, SST, costs, monitoring, what's still paused | Not started | — |
 | 12 | Product and business — scope, fences, pricing, research, growth ideas, "don't build" | Not started | — |
 | — | `diary/` — one short lesson per wave (what, why, what went wrong, what to look at) | Not started | — |
 
-**Suggested next lesson:** Module 06, "reliability" — modules 03–05 covered the tools,
-the tenancy/data model and the golden-path flows (order import → SKU map → gang sheet
-→ floor scans → label → profit); module 06 goes deeper on the idempotency and job
-patterns that lesson 5.3 (label buying) and lesson 5.2 (offline scans) already showed
-in practice.
+**Suggested next lesson:** Module 09, "security" — modules 06–08 covered reliability
+(idempotency, jobs, mocks), AI features (the gateway, decision 0021's OpenAI provider,
+evals) and quality (test layers, the gate, CI, independent review); module 09 goes
+deeper on auth, PII handling and webhook verification that this run's lessons touched
+on (the gateway's PII scrub, webhook dedupe) but didn't cover as their own topic.
 
 ## Where things are
 - Modules live one folder per module, one file per lesson, named
@@ -71,6 +71,15 @@ logins or customer data — the markdown above never has any of these either.
 | 5.1 Order Import and the SKU Map | https://app.notion.com/p/3edb5391545a81ba9af3ffdeec8f177a |
 | 5.2 Gang Sheet and the Floor | https://app.notion.com/p/3edb5391545a812bb385dd6dc3267ed7 |
 | 5.3 Label and Profit | https://app.notion.com/p/3edb5391545a813c88cad55ad4168981 |
+| 6.1 Idempotency and the Outbox | https://app.notion.com/p/3edb5391545a81bca2d8c11b94705d7c |
+| 6.2 Jobs, Retries and Rate Limits | https://app.notion.com/p/3edb5391545a813c8043f4859e63577d |
+| 6.3 Mocks vs. Real Providers | https://app.notion.com/p/3edb5391545a81bebe1cc7f0a2f9b0c3 |
+| 7.1 The Gateway and Providers | https://app.notion.com/p/3edb5391545a816e8d86d3a6644d5d1e |
+| 7.2 Prompts, Validators and Cost | https://app.notion.com/p/3edb5391545a81a8af53e349953c758c |
+| 7.3 The Trademark Check and the Assistant | https://app.notion.com/p/3edb5391545a81f0a014df002a5237fb |
+| 8.1 Tests in Layers | https://app.notion.com/p/3edb5391545a8194b371d8053bf58140 |
+| 8.2 E2E, the Gate and CI | https://app.notion.com/p/3edb5391545a811d829ae62eee2b7379 |
+| 8.3 Reviews and Weakened Tests | https://app.notion.com/p/3edb5391545a81b7a881dba2b1eaa039 |
 
 Created as a private draft page (no destination was named); move it under a shared
 space if you'd like it visible to others. Update a page's markdown here first, then

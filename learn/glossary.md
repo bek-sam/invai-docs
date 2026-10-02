@@ -215,6 +215,120 @@ it — don't duplicate an entry that's already here.
   expected, usually from an interrupted buy call; recovered by a sweep job rather than
   left for a human to notice.
 
+## Reliability (module 06)
+- **Transactional outbox** — writing an event row in the exact same database
+  transaction as the state change it describes, so the event and the change can
+  never disagree; InvAI's relay (`src/worker/outbox-relay.ts`) turns committed rows
+  into jobs.
+- **Relay** — the background loop polling `outbox_events` for undispatched rows and
+  enqueueing the BullMQ jobs subscribed to each event name.
+- **Commit the intent** — writing "I'm about to do this" to the database *before*
+  calling an external, hard-to-undo API, so a crash mid-call leaves evidence instead
+  of silence (buying a label, pushing tracking).
+- **Read-back before retry** — checking whether an external effect already happened
+  before asking a provider to do it again, instead of assuming a retry is safe by
+  default.
+- **Backoff** — the growing delay between a job's retry attempts after a failure.
+- **Jitter** — randomizing a retry delay within a range, so many jobs that failed
+  together don't all retry at the exact same instant and re-hit a struggling provider
+  in lockstep.
+- **Stalled job** — a BullMQ job whose worker appears to have died or frozen (its
+  lock expired without being renewed in time); put back in the queue to run once more
+  before failing for good.
+- **Dead-letter queue (DLQ)** — where a job lands after a permanent failure or
+  repeated stalling; InvAI's is listable and redrivable at `/internal/dlq`.
+- **Permanent vs. transient failure** — a permanent failure (bad input, revoked
+  token) fails a job immediately with no retries (`permanentFailure()`); a transient
+  one (5xx, timeout, 429) retries with backoff, because waiting might actually help.
+- **Fail open / fail closed** — what a safety check does when it can't be evaluated
+  (e.g. Redis is down). InvAI's rate limiters and spend breaker fail open (allow the
+  request, log and alert) rather than fail closed (block everyone), because an
+  infrastructure blip shouldn't become a platform-wide outage.
+- **Token bucket** — a rate-limiting scheme with a burst capacity that refills
+  continuously over time, used for InvAI's per-company API rate limits.
+- **Adapter** — the shared interface a real integration and its mock both implement
+  (`CarrierAdapter`, `ChannelAdapter`, `BillingProvider`, `AiProvider`), so calling
+  code never branches on which one answered.
+- **Sample / demo workspace** — a tenant flagged (`tenancy.demo`) as a demo, forced
+  onto every mock provider regardless of what real keys the environment has, so it
+  can never spend real money or send real data out.
+- **`ALLOW_MOCKS`** — a production-only escape hatch letting a demo/staging
+  deployment boot on mock providers even in a "production" environment.
+
+## AI features (module 07)
+- **Gateway (AI)** — the one module (`src/ai/gateway.ts`) every AI model call passes
+  through, so provider choice, PII scrubbing, cost metering and schema validation are
+  enforced in exactly one place, not reinvented per feature.
+- **Provider (AI)** — one AI vendor's implementation of the shared `AiProvider`
+  interface (Anthropic, OpenAI, or the mock).
+- **Structured output** — a model's answer constrained to match a specific schema
+  (a Zod schema, in InvAI's case), rather than free-form text the caller parses by
+  hand.
+- **Prompt (InvAI sense)** — a versioned `PromptDef` object: a stable `system` prefix,
+  a `user` renderer for the varying part, and a Zod output schema.
+- **Prompt caching** — a provider pricing a reused, identical prefix of a prompt far
+  cheaper than fresh tokens; why InvAI's prompts put stable text first and variable
+  content last.
+- **Prompt injection** — an attack where text meant to be *data* (a buyer's message,
+  an imported listing) is crafted to look like an instruction, trying to redirect the
+  model; defended against with `DATA_RULE` and `dataBlock()`.
+- **Refusal** — a model declining to answer; the gateway turns this into a specific,
+  named error (`AiRefusalError`) instead of passing through empty or ambiguous output.
+- **Validator (AI)** — deterministic code checking a model's already schema-valid
+  answer against InvAI's own hard business rules (e.g. a channel's title-length
+  limit), separate from and in addition to the schema check.
+- **Credit ledger** — the per-shop, per-billing-period record of AI usage against a
+  plan's allowance; the primary limit on how much AI a shop can use.
+- **Spend breaker** — the platform-wide and per-tenant daily dollar caps sitting on
+  top of the credit ledger as a backstop against a runaway loop or a leaked key.
+- **Reasoning effort** — a per-call setting (`low`/`medium`/`high`, or none) trading
+  more "thinking" for quality against more tokens (and cost) per call.
+- **Eval (evaluation set)** — a fixed list of known-answer cases (`cases.jsonl`), run
+  through the real gateway, used to measure an AI route's quality with real numbers
+  instead of a feeling.
+- **Plumbing vs. quality (eval sense)** — plumbing is "did the system wire this
+  correctly" (schema-valid, right cardinality), checkable even against the mock;
+  quality is "did the model get the right answer," checkable only with a real
+  provider.
+- **Baseline (eval sense)** — the frozen last-measured eval result
+  (`evals/baseline.json`), compared against to catch a quality regression.
+- **pg_trgm** — a Postgres extension providing trigram-based fuzzy text similarity,
+  used to find candidate trademark matches before any AI call.
+- **Tool (assistant)** — a named, typed, read-only function the chat assistant can
+  call, each scoped to one tenant and described precisely enough to use correctly.
+
+## Quality (module 08)
+- **Unit test** — a test of a pure function's logic in isolation, no database, no
+  network, no tenant context.
+- **Acceptance test (InvAI sense)** — a Vitest test against a real `invai_test`
+  database, through real tenant fixtures, proving one specific Given/When/Then
+  criterion from a task card; owned by QA, read-only for the implementer.
+- **E2E (end-to-end) test** — a Playwright test driving a real flow across the whole
+  stack, proving the layers actually connect, not just that each one works alone.
+- **Red first** — writing a test before the behavior exists and confirming it fails
+  for the right reason, so passing later is actual proof the behavior was built.
+- **Held-back case** — a test case QA keeps out of the implementer's view until after
+  they report a card done, specifically to check coverage beyond what was visible.
+- **Fixture** — a reusable helper (`createCompany`, `createOrder`, ...) that builds a
+  realistic starting state for a test without each test reinventing that setup.
+- **Integration gate** — the wave-end checkpoint where every repo's own checks plus
+  the full E2E suites run together, on a fresh seed, before anything is pushed.
+- **CI (continuous integration)** — automated checks (lint, typecheck, test, build)
+  running on every push, independent of and faster than a full integration gate.
+- **Smoke test** — a shallow check that something basic works (a screen loads with no
+  console errors), as opposed to a deep check of correct behavior.
+- **Independent review** — a different agent, given only the card/diff/report (never
+  the author's reasoning), re-running checks and exercising behavior before a card
+  can be pushed.
+- **Co-reviewer** — an additional reviewer required only for a card's specific risk
+  flags (contract change, migration, tenancy/PII/auth, prompts, new UI).
+- **Weakened test** — a test changed so it no longer actually checks the behavior it
+  claims to, without an equal or stronger check added elsewhere.
+- **Verdict (review)** — a review's final decision: `approve`, `changes-required`, or
+  `escalate`, each with specific, named conditions.
+- **Fail-without-change check** — running a new or changed test against the code
+  *before* the fix, to prove it would have caught the problem the fix addresses.
+
 ## The team (introduced here, detailed in module 10)
 - **Task card** — a single unit of work with one named owner, a defined-done checklist
   and owned file paths, filed under `invai-docs/waves/<n>/`.
