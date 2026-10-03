@@ -249,8 +249,16 @@ Entry format:
 ## OI-25: Turn on real AI photo generation (OpenAI GPT Image) for lifestyle listing photos?   status: open
 - From: tech-lead, 2026-10-02. Deadline: none (nothing waits on it). Default if no answer: lifestyle scenes keep using the built-in sample generator (free, clearly labelled "sample"); template photo sets (phase A) work fully without it.
 - Context: you approved AI listing photos on 2026-10-02 (SCR-008, waves 26 and 27). Phase B can send a blank garment picture (never your design, never buyer data) to OpenAI's image API to draw a scene; InvAI then pastes your real design on and rejects any picture where the design changed. The team built it but may not switch on paid calls. It turns on only when `IMAGE_GEN_PROVIDER=openai` is set next to your `OPENAI_API_KEY` in `invai-backend/.env` (runbook "AI photos"). Limits already enforced before every call: 30 AI images per shop per day (`IMAGE_GEN_DAILY_CAP_PER_SHOP`), the platform daily AI spend cap, and credits (10 credits per AI scene image, 1 per template image; these credit prices are a starting point and yours to change).
-- Cost estimate (OpenAI list prices as researched in `research/16` §5.2; T-27-1's report has the prices checked on the day): about $0.02–0.06 per image, so about $0.15–0.40 per 6-image lifestyle set. 30 images/day for one shop is at most about $1.80/day.
+- Cost estimate: the first estimate (research 16 §5.2) was $0.02–0.06 per image. **Updated 2026-10-03** from OpenAI's pricing page as checked by the builder (`waves/27/reports/T-27-1.md`): the provider uses `gpt-image-2` at medium quality, about $0.10–0.11 per image (a cheaper model with only per-token prices is a later upgrade). So about $0.60–0.66 per 6-image lifestyle set, and at most about $3.30/day for one shop at the 30/day cap.
 - Options: A) Enable on your dev machine only, try a few sets, then decide for pilots. B) Enable for pilots with the 30/day cap. C) Keep the sample generator until a pilot asks.
 - Recommendation: A. It costs cents, and it is the only way to judge real quality and drift-rejection rates before any shop sees it.
 - Cost of waiting: none for phase A; lifestyle scenes stay sample pictures.
+- Answer:
+
+## OI-26: When the Shopify app is registered, include the new `write_products` permission (shops reconnect once)?   status: open
+- From: tech-lead, 2026-10-03. Deadline: none (no Shopify app or keys exist yet). Default if no answer: the permission stays in the app config in the repo; nothing is sent to Shopify; pushing photos to Shopify works only on the mock.
+- Context: wave 27 (T-27-4, backend 3f4deae) lets a shop push approved listing photos to a Shopify product. That needs Shopify's `write_products` permission, now added to `invai-backend/shopify.app.toml` and the requested scopes. Shops that connected before it see "reconnect needed" until they reconnect and approve. Registering or updating the app with Shopify is yours (OI-2 covers the wider Shopify App Store questions).
+- Options: A) Keep `write_products` in the config you register. B) Remove photo push from Shopify and use the zip download only. C) Decide later with OI-2.
+- Recommendation: A. It is the only way photos reach Shopify automatically, and one reconnect per shop is small; the zip stays as the fallback.
+- Cost of waiting: none until the Shopify app is registered.
 - Answer:

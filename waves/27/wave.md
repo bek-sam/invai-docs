@@ -39,6 +39,12 @@
 |---|---|---|---|---|---|
 
 ## Log
+- 2026-10-03 Wave 26 gate passed and pushed (`waves/26/wave.md`). The same tech lead runs wave 27 because the owner's task asked one tech lead to run both waves; a deviation from "fresh tech lead per wave" (decision 0018), recorded here. Cards unchanged since the plan review except queued ACs on T-27-3 (AC6–AC9, from wave 26 reviews). T-27-1 (ai, opus), T-27-2 (imaging, opus), T-27-4 (integrations, opus) start in parallel; ports 31xx/81xx per card; gate slot free.
+- 2026-10-03 T-27-4 built (backend 3f4deae; `productUpdate` media, API 2026-07, dedupe by filename/alt; `write_products` added; 1588 tests). OI-26 filed (keep `write_products` when the Shopify app is registered). Reviewer r1 (fable) started; security co-review when a slot frees.
+- 2026-10-03 T-27-4 reviewer r1 changes-required: media still processing is matched by alt text, but every image of a set shares one alt, so several new photos collapse into one "already pushed" (proven by probe). Round 2 (integrations, opus) adds a per-image marker. Security co-review after round 2.
+- 2026-10-03 T-27-4 r2 (backend 31fb391: per-image `[img <8 hex>]` tag at the end of the alt text; 81 channel tests). Reviewer r2 approve (probe re-run). Non-blocking: shoppers' screen readers hear the tag (B-286). Security co-review started.
+- 2026-10-03 T-27-1 built (backend 83ca734 stubs, 927ad35, cfd35ea; 163 ai tests, scene-prompt evals 14/14 mock; full suite only red on T-27-4 tests committed mid-run, 18/18 alone). Model `gpt-image-2` medium, about $0.10–0.11/image (checked 2026-10-03): OI-25's cost estimate updated (was $0.02–0.06). Reviewer r1 (fable) started. T-27-3 notes from the builder: job lock longer than the 120 s image timeout, pass held credits, use `err.retryable`.
+- 2026-10-03 T-27-4 security r1 changes-required: S-52 (Medium) a 5xx retry re-sends the media mutation without re-reading media, so a gateway error after Shopify saved the photos doubles them on the live product (marker test 2075e12). The integrations-engineer fixes only S-52 for the security reviewer's round 2 (that reviewer's second round, within the 2-round limit; the primary reviewer already approved r2). Grant: the one-word `it.fails` → `it` in `shopify/security.test.ts`.
 
 ## Retro
 - What slipped:
