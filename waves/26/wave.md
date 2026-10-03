@@ -45,14 +45,15 @@ Names are fixed here; the architect may refine shapes in T-26-1, and the ADR is 
 **Backend module `photos` (provider: backend-engineer, consumer: web-engineer):** the oRPC procedures from T-26-1.
 
 ## Integration gate
-- [ ] Fresh reset, migrate, seed (AI keys blanked: `OPENAI_API_KEY= ANTHROPIC_API_KEY= caffeinate -i pnpm gate ...`)
-- [ ] `run-golden-path` passes (API, browser, floor) plus the new acceptance spec
-- [ ] Key screens looked at by the tech lead (listing photos en/es, 390 px, dark)
-- [ ] Pushed to `main` (commits: …)
+- [x] Fresh reset, migrate, seed (AI keys blanked), run 3 `invai-infra/.gate/run-20261003T125033Z.log`
+- [x] `run-golden-path` passes: API 13/13, browser 37 (incl. listing-photos 3), floor 3; contracts 143, backend 1575, web 163 + build, imaging 162
+- [x] Key screens looked at by the tech lead: 16-view contact sheet, results grid (dark, zip-failed retry), gate failure screenshots; 390 px es and analysis-failed state through the builder's screenshots, the product-designer and reviewer r2
+- [x] Pushed to `main`: contracts d6d038b..9026680, backend 3889bf6..47a54b3, web c33421f..05d1e08, imaging 26699d8..9d66957, then docs
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
+| 2/5 cards (T-26-1, T-26-3); T-26-2 (S-50), T-26-4 (S-51), T-26-5 (6 findings) needed round 2; no third rounds | none planted (OI-15) | none known; the gate caught 2 spec assumptions, no product bug | 0 | about 1–2 h build per card, wave ~22 h wall clock incl. a usage-limit stop | builders ~0.2–0.4 M subagent tokens each; reviewers ~0.1–0.2 M each; about 5.5 M for the wave |
 
 ## Log
 - 2026-10-02 Plan written by the tech lead from the owner's approved analysis. Next free numbered wave: 26 (24–25 paused, decision 0019). Repos clean and level with origin; Docker healthy; 36 GB free; ports 3000/5173/5174/8000 free.
@@ -65,7 +66,13 @@ Names are fixed here; the architect may refine shapes in T-26-1, and the ADR is 
 - 2026-10-02 QA acceptance tests: backend e32f9c5 (16/16 green on the built module), web a9a5dc6 (`e2e/listing-photos.spec.ts`, smoke route). backend-foundation approve on T-26-1, T-26-3, T-26-4. T-26-1 reviewer (opus) approve (README rows gap: follow-up). T-26-2 security r2 approve (S-50 fixed). T-26-4 security r1 changes-required (S-51 Medium: credits not reserved across open sets; marker test f86184b). T-26-4 round 2 (backend, opus) started with a one-word grant in `security.test.ts` (`it.fails` → `it`). T-26-5 (web, sonnet) building on the :3000 slot. Compliance co-review of T-26-2 started.
 - 2026-10-02 T-26-2 compliance r1 approve (follow-ups B-282). T-26-1 web-engineer co-review approve. T-26-4 r2 built (backend 790986f, S-51: open commitments held, claim/charge refuse instead of going negative; 1574 tests). A coordinator relay reported 4 red tests from a mid-edit snapshot of r2; checked: the tree is clean and 790986f is committed with the suite green. Security r2 approve (S-51 fixed; extra concurrency test 47a54b3; new Low queued as T-27-3 AC8; `estimate.canAfford` queued as T-27-3 AC7). Test-code review of QA and security test commits started (reviewer, sonnet).
 - 2026-10-02 Test-code review approve (`reviews/tests-reviewer-r1.md`). Flaky under load: market AC30 and ratelimit (B-283). T-26-5 built (web 66ab0cb; full web E2E 34 pass, the new spec failed on its own selectors); QA selector fix 760d6f4. T-26-5 reviewer r1 changes-required (4: analysis poll loop, zip keyed on count, signed-URL storms, raw English/390 px) and product-designer r1 changes-required (2: hidden credits reason, 2 columns at 390 px). Round 2 (web, sonnet) fixes those 6; the backend half of the poll loop (a failed analysis is re-enqueued on any call) is queued as T-27-3 AC9 rather than a third T-26-4 round, because the web fix stops the loop.
+- 2026-10-02 The T-26-5 round 2 agent stalled (stream watchdog, 600 s) after its browser checks, with its edits uncommitted (5 files) and its servers stopped (ports free). The tech lead also stalled in a 10 min foreground wait. A bounded finisher (web, sonnet) is committing round 2 on top of those edits. Next: reviewer + product-designer r2, then the wave 26 gate. Wave 27 builders wait until the gate passes, so the gate runs on clean trees.
+- 2026-10-02 T-26-5 r2 committed (web c471c95; docs 1c32eb2). Reviewer r2 approve, product-designer r2 approve. **Every wave 26 card is approved** (all required reviewers' latest files say approve; test-code review approve). Gate started (PID 96552): `OPENAI_API_KEY= ANTHROPIC_API_KEY= caffeinate -i pnpm gate invai-contracts invai-backend invai-web invai-imaging`, output /tmp/w26-gate.out. Ports free, Docker healthy, 33 GB free.
+- 2026-10-02 Gate run 1 FAIL (`invai-infra/.gate/run-20261002T225408Z.log`): all repo checks green (contracts 143, backend 1575, web 163 + build, imaging 162), API golden path 13/13, floor 3/3, browser 34 pass, 1 fail: `listing-photos.spec.ts:70` expected no Approve button after "Approve all passing". The tech lead opened the failure screenshot: product is right (passing images show Approved; images with a check failure or warning keep their own Approve/Reject, as AC6 allows). Spec assumption, routed to QA (sonnet) to fix the assertion without weakening it; the gate re-runs after. The tech lead's own foreground waits stalled twice (600 s): from here every long wait is a background watcher.
+- 2026-10-03 QA fix 50955a3 (approve-all assertion), tests-reviewer r2 approve. Gate run 2 FAIL (`run-20261002T235910Z.log`): same green everywhere else; `listing-photos.spec.ts:92` timed out because the attach dialog says "No AI listing drafts for this design yet" on a plain fresh seed (the spec assumed a draft; lesson 2026-09-30 repeat). Product right; QA (sonnet) makes the spec create its own draft and runs the spec once on its own stack before gate run 3. The earlier stalls coincided with a usage-limit stop (coordinator).
 
 ## Retro
-- What slipped:
-- Lessons added (links to `team/lessons.md`):
+- What slipped: QA acceptance tests came after the backend build (slot limit), so they couldn't shape it; they went green first time. Two gate runs failed on spec assumptions the specs couldn't see before a fresh seed (approve-all semantics, no AI draft on a fresh seed): a repeat of lesson 2026-09-30. The T-26-5 round 2 agent and the tech lead stalled in long waits around a usage-limit stop; a bounded finisher committed the edits.
+- Security co-reviews earned their cost: S-50 (zip without byte caps) and S-51 (credits not reserved across open sets) were both real and both fixed in round 2 with proof tests.
+- Agent memory read: reviewer (polling and test-only checks), qa-engineer (photos module selectors), web-engineer (poll stop and id-keyed rebuilds), backend-foundation (ledger index judgment), imaging-engineer (Storage.size test pattern). Nothing new for every role beyond the lessons below.
+- Lessons added: 2026-10-03 rows in `team/lessons.md` (E2E written before a screen must create its own preconditions; long waits only as background watchers).
