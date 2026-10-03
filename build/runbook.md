@@ -70,6 +70,9 @@ Postgres/Redis/MinIO from `invai-infra/local`.
 | `OPENAI_API_KEY` | empty | Used only when `ANTHROPIC_API_KEY` is empty (ADR 0021): every AI route then runs on OpenAI. Neither key → mock. Both are ignored under `NODE_ENV=test` |
 | `INTERNAL_ADMIN_TOKEN` | unset → operator DLQ routes 404 | `X-Internal-Token` for the internal dead-letter/redrive routes (`src/api/internal.ts`); never shipped to a browser |
 | `AI_DAILY_PLATFORM_CAP_CENTS` / `AI_DAILY_TENANT_CAP_CENTS` | `50000` / `5000` | Daily (UTC) real-model AI spend caps; `0` turns that cap off |
+| `IMAGE_GEN_PROVIDER` | `mock` | Listing photos AI scenes (T-27-1, ADR 0023). `openai` draws scenes with OpenAI `gpt-image-2` (Images API edit, ~10–11¢ an image, price table in `src/ai/models.ts`) only when `OPENAI_API_KEY` is also set; sample workspaces always get the mock. Production with `openai` and no key refuses to boot. Owner-only switch (OI-25) |
+| `IMAGE_GEN_DAILY_CAP_PER_SHOP` | `30` | AI scene images per shop per UTC day (mock scenes count too); the next one is refused with `IMAGE_DAILY_CAP_REACHED`. `0` allows none |
+| `IMAGE_GEN_MOCK_DRIFT` | unset | Test-only: `1` makes the mock scene alter the protected print area so the drift path can be tested. Boot fails if it is set outside `NODE_ENV=test` |
 | `EASYPOST_API_KEY` | empty → mock | See §3 |
 | `EASYPOST_WEBHOOK_SECRET` | unset → mock dev secret | EasyPost webhook HMAC (`X-Hmac-Signature`) |
 | `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` | empty → mock | See §3 |
@@ -140,6 +143,7 @@ to switch that one integration to the real thing — nothing else changes.
 | Integration | Env var(s) that switch it on | Mock behavior | Real adapter |
 | --- | --- | --- | --- |
 | AI (Claude, or OpenAI without a Claude key) | `ANTHROPIC_API_KEY`, else `OPENAI_API_KEY` (ADR 0021) | Deterministic, schema-valid output (listings, trademark judging, assistant) | `invai-backend/src/ai/providers/anthropic.ts`, `.../openai.ts`. Check which one runs: `pnpm evals assistant` prints `mode: anthropic`, `openai` or `mock` |
+| AI scene images (listing photos) | `IMAGE_GEN_PROVIDER=openai` **and** `OPENAI_API_KEY` | Deterministic sample scene (backdrop, light, props) drawn around the blank garment, at a provider size, free | `invai-backend/src/ai/images/openai.ts`. **Only the owner turns it on (OI-25):** set both vars on the API and worker, restart them, and check that a new `ai_jobs` row of kind `image_scene` shows `provider = openai` and a cost. Every image costs real money (~10–11¢); the per-shop daily cap, credits and the daily AI spend caps apply. Turn it off by setting `IMAGE_GEN_PROVIDER=mock` |
 | Shipping (EasyPost) | `EASYPOST_API_KEY` | In-process mock carrier: fake rates, a mock tracking code, a real 4x6 PDF via imaging's `/labels/mock` | `invai-backend/src/integrations/carriers/easypost` |
 | Shopify | `SHOPIFY_API_KEY` **and** `SHOPIFY_API_SECRET` (both required) | In-memory mock store that "receives" 1–3 new orders per poll | `invai-backend/src/integrations/channels/shopify/live.ts` (OAuth + webhooks); `.../mock.ts` is the mock |
 | S&S Activewear | `SS_ACTIVEWEAR_ACCOUNT` **and** `SS_ACTIVEWEAR_API_KEY` (both required) | Static catalog + stock mock | `invai-backend/src/integrations/suppliers` |
