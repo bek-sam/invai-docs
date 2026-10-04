@@ -262,3 +262,51 @@ Entry format:
 - Recommendation: A. It is the only way photos reach Shopify automatically, and one reconnect per shop is small; the zip stays as the fallback.
 - Cost of waiting: none until the Shopify app is registered.
 - Answer:
+
+## OI-27: May listing photos use real photographs of blank garments as bases, not only code-drawn shirts (amend decision 0022 §3)?   status: open
+- From: product-manager (research), 2026-10-03. Deadline: 2026-10-17 18:00 CDT. Default if no answer: bases stay code-drawn only; photos keep looking illustrated, and Amazon's adult-apparel main image (a real standing model) stays impossible.
+- Context: research (`research/18-listing-images-and-gang-sheets.md`, "Three structural causes" and "Real photographs as bases") found our photos look fake because every shirt is drawn with code. Decision 0022 §3 says bases are "drawn by code, never downloaded stock art". The fix keeps the design lock exactly as is: your design is still pasted on by InvAI's own code and never touched by a model. Only the shirt underneath changes, from a drawing to a real photo (house shoot, a shop's own shoot, or licensed stock). `photos.py compose()` already does the pasting; only its source changes. The architect would also amend ADR 0023 §2 (the restore-blank-color step).
+- Options: A) Allow real photo bases of all three kinds (house shoot, shop's own, licensed stock). B) Allow house and shop shoots only, no stock. C) Keep code-drawn bases only.
+- Recommendation: A, with licensed stock used only if the compliance officer confirms the license allows reuse across many shops. It is the single change that makes photos look real, and design fidelity is unchanged.
+- Cost of waiting: blocks wave IMG1 (photo-base library); every listing set made meanwhile looks illustrated.
+- Answer:
+
+## OI-28: Fund a one-time house photoshoot of top blank garments (about $500–2,000 per half day) for the shared photo library?   status: open
+- From: product-manager (research), 2026-10-03. Deadline: 2026-10-24 18:00 CDT. Default if no answer: no shoot and no stock purchase; nothing is spent; the library starts with drawn bases (or AI bases if OI-29 is approved).
+- Context: depends on OI-27. The report's recommended library is real photos for main images (Comfort Colors 1717, Bella+Canvas 3001, Gildan 5000 tees, hoodies and sweatshirts; flat, folded, standing model front and back, close-up; top 6–8 colors each, other colors recolored with a color-accuracy check) plus AI-made bases for secondary lifestyle slots. Real photos need no Etsy AI disclosure and are the safest Amazon/Walmart main image. A shoot needs model releases. Prices are from a vendor survey (Photoroom 2026), not quotes. Follow-up research 19 (`research/19-custom-photo-mockup-tools.md`) found no external mockup API fit to render per image (cost about $310/month for a mid shop, design files leave InvAI, Dynamic Mockups' general terms forbid commercial use); it suggests a free test with one real photo and pilot shops' own photos first, then about 35 studio photos (about $1,300–1,900 at $39/photo) once a model release covering all shops is ready.
+- Options: A) Fund a half-day house shoot (get 2–3 quotes first). B) Buy licensed stock mockup photos instead (only if the license allows multi-shop SaaS use). C) No shoot; use AI-made bases only, with disclosure on every image.
+- Recommendation: A. A few hundred to two thousand dollars once, shared by every shop, gives the most realistic and lowest-risk main images.
+- Cost of waiting: main images stay illustrated or AI-disclosed; no money spent while waiting.
+- Answer:
+
+## OI-29: Use the real AI image provider to build the shared lifestyle base library once (about $50–110), and to sell per-design AI scenes as a paid extra?   status: open
+- From: product-manager (research), 2026-10-03. Deadline: 2026-10-24 18:00 CDT. Default if no answer: mock scenes stay; no provider calls; no money spent.
+- Context: builds on OI-25 (which asks only whether to turn the provider on, starting with a dev trial). The research found that paying per design is the expensive path: about $3.30–7.20 per design when every image is AI, vs $0.20–0.39 for the hybrid. The cheaper plan: InvAI calls the provider once per base (model, scene) at library-build time, every design reuses those bases, and disclosure is tracked per image by the base's origin. Per-design AI scenes remain a paid extra. Your design is never sent to the provider.
+- Options: A) After the OI-25 dev trial, build the library once and offer per-design scenes as a paid extra. B) Build the library only; no per-design scenes. C) Keep mock scenes.
+- Recommendation: A, after answering OI-25 with option A. One-time cost about $50–110; per-design scenes are paid for by credits (see OI-30).
+- Cost of waiting: lifestyle slots stay sample pictures.
+- Answer:
+
+## OI-30: Change photo credit prices to: free previews, 3 credits per approved library set, 15 credits per AI scene, with credit packs at about $0.02 per credit?   status: open
+- From: product-manager (research), 2026-10-03. Deadline: 2026-10-31 18:00 CDT. Default if no answer: today's prices stay (1 credit per template image, 10 per AI scene); credit-pack price stays unset.
+- Context: research 18, section "Credits and gross margin". At today's prices a hybrid design in 3 colors uses about 32 credits, so a starter shop ($149, 500 credits) gets about 15 designs a month, which pushes shops away from the cheap, realistic path. Proposed margins at $0.02/credit: library set about 80%, AI scene 52–78%, opt-in upscale about 88%. Worst case: a pro shop spending all 6,000 credits on AI scenes costs about $57 (8% of $699). The bigger risk is text AI at 1 credit per 1,000 tokens, which can sell near cost on the top model; the monthly cost review should check it. These are estimates, not measured costs.
+- Options: A) Adopt the proposed prices. B) Adopt them, but keep AI scenes at 10 credits on a cheaper model (about $0.05 or less per image). C) Keep today's prices.
+- Recommendation: A, and re-check margins after the first month of real usage (data-analyst cost review).
+- Cost of waiting: none until real photo bases exist (IMG1); after that, shops pay too much for the cheapest path.
+- Answer:
+
+## OI-31: Allow opt-in AI upscaling of low-resolution print files (an exception to "models never change design pixels")?   status: open
+- From: product-manager (research), 2026-10-03. Deadline: 2026-11-07 18:00 CDT. Default if no answer: no upscaler; low-DPI files are only flagged and held, as today.
+- Context: research 18, section "Gang sheets need better file checks". Low-res art is a top DTF complaint; paid tools (DTFWiz and others) upscale 4x with Real-ESRGAN for about $0.005 per file. An upscaler invents pixels in the design, which the principle behind decision 0022 forbids (0022 itself covers photos, not print files). Proposed guard: opt-in per file, before/after shown, original kept, the shop's approval recorded, always the "approve" autonomy level, and 2 credits per upscale. The other file checks (thin lines, small text, white boxes, color profile) are plain code and need no decision.
+- Options: A) Allow opt-in upscaling with those guards. B) Allow it only for shops that turn it on in settings. C) No upscaling.
+- Recommendation: A. It rescues orders that would otherwise print badly or wait on the buyer, and the shop always sees and approves the result.
+- Cost of waiting: low-res orders stay held for manual fixing.
+- Answer:
+
+## OI-32: Add listing video to scope, starting with a simple non-AI slideshow made from the listing photos?   status: open
+- From: product-manager (research), 2026-10-03. Deadline: 2026-11-07 18:00 CDT. Default if no answer: no video is built; listings use photos only.
+- Context: video is out of scope today. Etsy allows 1 clip (5–15 s), and secondary sources cite Etsy saying listings with video are "40% more likely" to sell; TikTok Shop strongly favors 9:16 video. A slideshow (pan and carousel of the listing photos) costs almost nothing to render. AI video (Veo 3 Fast about $0.10/s, Kling about $0.14/s) would be about $0.80–1.12 per 8 s clip and would need its own scope change request, AI disclosure, and a price (proposed 150 credits).
+- Options: A) Add the non-AI slideshow now; AI video only via a later scope change request. B) Add both slideshow and AI video. C) No video.
+- Recommendation: A. Cheap, no disclosure needed, covers Etsy and TikTok; AI video can follow if shops ask.
+- Cost of waiting: listings go without video.
+- Answer:
