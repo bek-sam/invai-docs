@@ -33,15 +33,15 @@
 - QA acceptance tests first are skipped again (decision 0018 budget): every card except T-29-3 and T-29-4 has a security co-review that proves issues with failing tests, and the gate runs every suite. Recorded as a deviation.
 
 ## Integration gate
-- [ ] Fresh reset, migrate, seed, AI keys blanked
-- [ ] `run-golden-path` passes (API, browser, floor) and every touched repo's checks
-- [ ] Key screens: not looked at by agents (decision 0024); the owner checks them from the feature test guide
-- [ ] Pushed to `main`
+- [x] Fresh reset, migrate, seed, AI keys blanked (`invai-infra/.gate/run-20261009T163912Z.log`, first attempt)
+- [x] `run-golden-path` passes: API 13/13, browser 37, floor 3; contracts 147, backend 1700, web 181 + build
+- [x] Key screens: not looked at by agents (decision 0024); the owner checks them from the feature test guide. The seeded owner@ and admin@ now see the two-step banner (deadline 7 days after the seed)
+- [x] Pushed to `main`: contracts dc62328..0f666f1, backend 95324fe..32113d7, web 4559618..8d134d7, then docs
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
-| | none planted (OI-15 open) | | | | |
+| 4/5 cards with every reviewer approving in round 1 (T-29-1, T-29-2, T-29-3, T-29-5). T-29-4 needed a test-only round 2 (tests survived an always-skip mutation) | none planted (OI-15 open) | none to product. One review escape: T-29-4's round 2 test file failed `pnpm typecheck` after an approve (the round 2 review prompt listed vitest only); a parallel security co-review caught it before the gate, fixed in 7a763a5 | 0 | builds 1–21 min per card; wave about 3 h wall clock | about 2.9 M subagent tokens: plan reviews 0.31 M, builders 1.07 M (0.11–0.37 M per card, T-29-4 incl. round 2 and gate fix), reviews 1.55 M (0.06–0.18 M each, 17 review files) |
 
 ## Log
 - 2026-10-09 Fresh tech lead (memory read from the absolute path). State: all repos clean and pushed (contracts dc62328, backend 95324fe, web 4559618, floor 9304da1, ui 52af2b8, imaging f2d2eda, infra 1644dd4, docs 4122db1; imaging has an untracked `.DS_Store` only); nothing listening on 3000–3199, 5173, 5174, 8000; Docker healthy; 29 GB free. Cards written; plan review next.
@@ -64,3 +64,13 @@
 - 2026-10-09 T-29-1 architect (sonnet) r1 approve (docs 5d338a0; design matches plan items 1-6; both departures accepted). Waiting on T-29-1 security.
 - 2026-10-09 Gate fix: backend 7a763a5 (T-29-4 test types narrowed). Reviewer pass approve on 7a763a5 and 246838f (docs 237c317; mutations prove both new security tests). Waiting on T-29-1 security.
 - 2026-10-09 T-29-1 security (opus) r1 approve (backend 32113d7 own test file: cross-company keys survive + S-59 `it.fails`; docs f3007a1: S-56 Fixed, 0027 accepted). New S-59 (Low): a reused buyer-photo key is deleted without a shared-use check. **T-29-1 approved. Every wave 29 card is approved** (each required reviewer's latest file says approve). Gate started.
+- 2026-10-09 Gate fix 2: backend 32113d7 (security test only) reviewed by reading (docs ac1f96f, approve; tests not re-run during the gate).
+- 2026-10-09 Gate passed on the first attempt (`invai-infra/.gate/run-20261009T163912Z.log`) and the three code repos pushed. Backlog: B-270, B-292, B-293, B-296, B-297, B-299 done; new B-300..B-307. Counts: 171 done, 98 open, 22 proposed, 10 partial, 2 imaging-part, 2 blocked, 2 other (307 rows). Dev DB left freshly seeded by the gate; nothing listening on 3000–3199, 5173, 5174, 8000.
+
+## Retro
+- What slipped: the architect's plan review found 10 blocking card errors (the wave 28 review found 9): the tech lead's quick code read named the wrong table for the sheet guard, missed that `purged` is a contract value, missed split shipments and already-purged orders. All were fixed in card text before any build, at a cost of 0.18 M tokens; the contract step took the guard card's slot, so B-298 moved out. T-29-4's first tests passed even with the guard broken to "always skip"; the reviewer's mutation check caught it. The round 2 review prompt (written by the tech lead) listed only vitest, so a type error in the round 2 test file was approved and caught later by another reviewer's typecheck.
+- What worked: mutation checks by reviewers (T-29-1 filters, T-29-4 guard, T-29-3 `isSafeAppPath`, T-29-2 sample rule) gave real evidence; the security co-review of the purge found S-59 (a shared photo key) and proved the cross-company fence with a test; the PM decided B-292 and B-299 inside the plan review, so no card waited on a decision.
+- Process deviations: QA acceptance-tests-first skipped (decision 0018 budget). Two gate-time test commits (7a763a5, 32113d7) got a short reviewer pass instead of a new card round. Notion rows not written by this tech lead (the coordinator adds them from the owner report).
+- Guard false positives (B-298) hit the PM, the architect, a reviewer and a builder again this wave; recommended as a small platform-sre card in wave 30.
+- Agent memory read: reviewer (DOM tests that pass without the guard; heredoc guard trap), backend-engineer (design preview keys are shared; a "still holds X" loop never ends once a row is left on purpose), backend-foundation (shared index file committed by another agent), architect (artwork state is duplicated on `order_items`), security-reviewer (check the shared-key guard on every key family a purge deletes).
+- Lessons added: 2026-10-09 wave 29 rows in `team/lessons.md`.

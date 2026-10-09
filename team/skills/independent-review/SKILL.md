@@ -47,6 +47,11 @@ different model from the author's (card "Model"; Fable ↔ Opus).
      `src/db/rls-coverage.test.ts src/api/authz.test.ts`. Web/floor also `pnpm build`; imaging
      `uv run ruff check . && uv run pytest <touched tests>`; infra `pnpm typecheck && pnpm lint`.
    - The card's own verification commands.
+   - A round 2 or test-only diff gets the same `pnpm typecheck && pnpm lint`: vitest does not typecheck
+     (lesson 2026-10-09 wave 29).
+   - For a guard, filter, skip rule or delete predicate: mutate it once in a scratch worktree (always on,
+     always off, filter removed) and confirm a test goes red; a suite that stays green blocks (lessons
+     2026-10-09 waves 28–29).
    - The full suites and E2E run once per wave at the integration gate (`run-golden-path`, decision 0019),
      not in each review. Run the full suite yourself only when the diff touches shared code (`src/lib`,
      `src/db`, `src/api`, the worker) or the card's report shows a full-suite failure.
