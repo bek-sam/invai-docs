@@ -1,6 +1,6 @@
 # 0025: Account lockout per email, last-10 password history, and required two-step sign-in for owners and admins
 
-- Status: proposed (2026-10-09); the security-reviewer accepts it in the T-28-2 review
+- Status: accepted (2026-10-09)
 - Type: security
 
 ## Context
