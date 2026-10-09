@@ -1,6 +1,6 @@
 # 0027: Buyer text (personalization, rendered art, free-text notes) follows the buyer PII clocks
 
-- Status: proposed (security-reviewer and compliance-officer to accept)
+- Status: proposed (security-reviewer to accept; compliance accepted 2026-10-09)
 - Type: security
 
 ## Context
