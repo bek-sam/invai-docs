@@ -1,9 +1,10 @@
 # Wave 30: print files and old renders follow the buyer-text clocks; built images that run end to end; guard false positives
 
 - Dates: 2026-10-09 →
-- Goal (user outcome): no gang-sheet print file and no leftover render keeps a buyer's personalization text past the 30-day clock, and a reused buyer photo is not lost at the first unit's clock (closes the gaps that keep Amazon's "PII deleted 30 days after delivery" row Partial); the backend ships compiled bootstrap, migrate and reference-seed commands, and every app image builds, runs as non-root and passes the API golden path from a local `docker compose --profile full` stack, so the owner's first staging deploy has no unknown build step; agents stop losing turns to guard false positives.
+- Goal (user outcome): no gang-sheet print file and no leftover render keeps a buyer's personalization text past the 30-day clock, and a reused buyer photo is not lost at the first unit's clock (narrows the gaps behind Amazon's "30 days after delivery" row; it stays Partial until B-302 (audit_log flags) and B-303 (manual uploads) are closed); the backend ships compiled bootstrap, migrate and reference-seed commands, and every app image builds, runs as non-root and passes the API golden path from a local `docker compose --profile full` stack, so the owner's first staging deploy has no unknown build step; agents stop losing turns to guard false positives.
 - Owner order 2026-10-09: "push everything to 100%, go". This lifts the pause on the AWS-free prep parts of waves 24–25 (decision 0019 still holds for anything that needs AWS). This tech lead runs only wave 30.
 - Scope ref: always in scope (compliance Amazon DPP and security S-59: B-300, B-301, B-304; reliability and security prep for deploy: B-01, B-03 migrate step, B-59, B-58 code side, B-21 images, B-76 compose `full`; team tooling reliability: B-298).
+- Plan reviewed by: product-manager (2026-10-09, approve with 2 wording edits; decision 0032 accepted: sheet files may go once a unit is purged, the screens must say why, B-308 for wave 31; `reviews/plan-pm.md`, docs 4cc6c26) and architect (opus, 2026-10-09, changes-required, 9 blocking card-text edits applied as written: sheet/preview orphans and the full reference-column list, join through `transfers.order_item_id`, bootstrap grants only CONNECT/USAGE so REVOKEs hold, RDS master user `invai` (one-line sst.config.ts grant to T-30-3), CLI bundling traps, RDS CA bundle in the image, `MIGRATION_DATABASE_URL` and seed output for `invai_full`, guard sinks that run implicitly, 3-agent slot rule; `reviews/plan-architect.md`, docs ebfb572). All edits were card text; no second plan round.
 - Fences: no deploys, no `sst`, no `aws`, no accounts, no real keys, no outbound sends; gates run with AI keys blanked. Owner-pending items not touched: OI-3, 8, 13, 15, 17, 21, 25–32. At most 3 agents at once, reviewers included. No canary planted (OI-15 still open).
 - Carried from wave 24: T-24-2 and T-24-3 were written but never run; T-30-2 and T-30-3 replace them (same agreed entry points, architect A1, already used by `invai-infra/sst.config.ts`). B-23 (KMS field encryption) is left for wave 31.
 
@@ -17,7 +18,7 @@
 
 ## Order and slots (3 agents at once)
 1. Plan review: product-manager and architect (opus), in parallel.
-2. Slot A: T-30-1, T-30-2, T-30-4 build in parallel (no shared files). T-30-3 starts when T-30-2's entry points are committed (it builds against them).
+2. Slot A: T-30-1, T-30-2, T-30-4 build in parallel (no shared files). T-30-3 starts at the first free slot after T-30-2 has committed its build config **and** bootstrap-cli (tech lead gives both SHAs). If T-30-2's review changes bootstrap, T-30-3 re-runs its AC7 proof.
 3. Reviews take slots as each card finishes; T-30-3's compose run and the gate both need :3000, :5173, :5174 and :8000, so they never overlap.
 - Ports and Valkey DBs: T-30-1 none (tests on `invai_test`; any scratch run uses Valkey DB 12); T-30-2 a throwaway Postgres container on :5440 and API on :3132 (Valkey DB 13); T-30-3 the :3000/:5173/:5174/:8000 slot, DB `invai_full`, Valkey DB 9; T-30-4 none.
 
@@ -42,5 +43,6 @@
 
 ## Log
 - 2026-10-09 Fresh tech lead (memory read from the absolute path). State: all repos clean and pushed (contracts 0f666f1, backend 32113d7, web 8d134d7, floor 9304da1, ui 52af2b8, imaging f2d2eda (untracked `.DS_Store`), infra 1644dd4, docs 6985c18); nothing listening on 3000–3199; Docker healthy; 29 GB free. Cards written; plan review next.
+- 2026-10-09 Plan reviews: PM approve (0032, B-308 added), architect changes-required (9 edits applied). Slot A starts: T-30-1, T-30-2, T-30-4.
 
 ## Retro

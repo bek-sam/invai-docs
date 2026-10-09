@@ -16,10 +16,11 @@ Role file: `.claude/agents/platform-sre.md`. Memory: `/Users/bekbolsun/invai/.cl
 ## Owned paths (edit)
 - `invai-backend/Dockerfile`, `invai-web/Dockerfile`, `invai-floor/Dockerfile`, `invai-imaging/Dockerfile`, and their ignore files. The build context of backend, web and floor is the workspace root, which is not a git repo, so use BuildKit's per-Dockerfile ignore file (`<repo>/Dockerfile.dockerignore`), not a root `.dockerignore`; `invai-imaging/.dockerignore` stays.
 - `invai-infra/local/docker-compose.yml` (`full` profile services only; the infra services stay byte-identical), `invai-infra/scripts/full.sh` (new runner), `invai-infra/README.md` (a short `full` section)
+- `invai-infra/sst.config.ts`: one line only, `username: "invai"` on the `Db` component (architect plan review item 4: SST defaults the master user to `postgres`, and migration 0025 runs `ALTER ROLE invai`; no database exists yet, changing it later destroys the instance).
 - Report: `invai-docs/waves/30/reports/T-30-3.md`
 
 ## Read-only paths
-- All source code, `package.json` files, `tsup.config.ts` (T-30-2), `sst.config.ts`, `.github/**` (CI changes are wave 31), the shared dev DB `invai`
+- All source code, `package.json` files, `tsup.config.ts` (T-30-2), the rest of `sst.config.ts`, `.github/**` (CI changes are wave 31), the shared dev DB `invai`
 
 ## Depends on
 - T-30-2's build commit (the tech lead gives you its SHA). Entry points: `dist/api/server.js`, `dist/worker/index.js`, `dist/db/{bootstrap,migrate,reference-seed}-cli.js`; migrations in `/app/drizzle`.
@@ -27,11 +28,11 @@ Role file: `.claude/agents/platform-sre.md`. Memory: `/Users/bekbolsun/invai/.cl
 ## Acceptance criteria
 1. Every image is multi-stage; every base image (node, python, uv, the static web server) is pinned by digest (`name:tag@sha256:...`), none on `latest`; the runtime stage runs as a non-root user with a fixed uid; each has a `HEALTHCHECK` (api, imaging, web, floor; worker if it has a probe, else say why); the runtime holds production dependencies only.
 2. No secret in any layer: `docker history --no-trunc` shows none, and no `.env*`, `seed-output.json`, `.git`, `node_modules` from the host, `e2e/` or test files are in the image (show a `find` inside each image).
-3. The backend image runs api, worker and the three CLIs by command, with `drizzle/` at `/app/drizzle`.
+3. The backend image runs api, worker and the three CLIs by command, with `drizzle/` at `/app/drizzle`. The image holds `/app/certs/rds-global-bundle.pem` (`sst.config.ts:379` sets `NODE_EXTRA_CA_CERTS` to it; RDS uses `verify-full`), fetched at build time and checked against a pinned sha256 in the Dockerfile.
 4. Web and floor: `VITE_API_URL` is a build argument (a runtime env var does nothing for a Vite build); the static server serves the SPA fallback, sends no server version, and listens on an unprivileged port.
 5. `docker compose --profile full` uses its **own database `invai_full`** (created idempotently by a one-off step) and Valkey DB 9, so it never touches the shared dev DB `invai`; a one-off `migrate` service runs bootstrap → migrate → reference seed from the backend image as the owner role. Because Postgres roles are cluster-wide, the app role's password in the `full` profile stays `invai` (the local value), so dev and tests keep working; say so in the README.
-6. `invai-infra/scripts/full.sh up | seed | down` builds one image at a time, starts the profile, seeds `invai_full` with the demo seed from the host (`DATABASE_URL` pointed at `invai_full`, `SEED_OUTPUT_FILE=/tmp/invai-full-seed.json`, `REDIS_URL` on DB 9), and stops only the `full` services (infra and volumes stay). `down --purge` also drops `invai_full` and the built images.
-7. **Proof:** on the seeded `full` stack, `cd invai-web && E2E_API=1 E2E_API_URL=http://localhost:3000 pnpm e2e e2e/api-golden-path.spec.ts --reporter=line` passes 13/13; web and floor answer 200 with the SPA on `/` and a deep link; imaging `/health` ok. If production mode blocks plain-http localhost (secure cookies, CSP), run api/worker with `NODE_ENV=production ALLOW_MOCKS=true` where it works and report exactly what needed development mode and why.
+6. `invai-infra/scripts/full.sh up | seed | down` builds one image at a time, starts the profile, seeds `invai_full` with the demo seed from the host (`DATABASE_URL` and `MIGRATION_DATABASE_URL` both pointed at `invai_full`, in the seed and in the api, worker and migrate services, `SEED_OUTPUT_FILE=/tmp/invai-full-seed.json`, `REDIS_URL` on DB 9), and stops only the `full` services (infra and volumes stay). `down --purge` also drops `invai_full` and the built images. Prefer a separate bucket `invai-full` created by the profile's own init, so purge leaves no objects behind.
+7. **Proof:** on the seeded `full` stack, `cd invai-web && E2E_API=1 E2E_SEED_OUTPUT_FILE=/tmp/invai-full-seed.json E2E_API_URL=http://localhost:3000 pnpm e2e e2e/api-golden-path.spec.ts --reporter=line` passes 13/13; web and floor answer 200 with the SPA on `/` and a deep link; imaging `/health` ok. If production mode blocks plain-http localhost (secure cookies, CSP), run api/worker with `NODE_ENV=production ALLOW_MOCKS=true` where it works and report exactly what needed development mode and why.
 8. Disk: build one image at a time, prune your own dangling layers, report each image size; stop if free space drops below 6 GB (`df -h /`).
 
 ## Verification
