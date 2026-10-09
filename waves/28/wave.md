@@ -35,14 +35,15 @@
 - **QA acceptance tests first** are skipped this wave (decision 0018 token budget; three of five cards are security-reviewed and the security reviewer proves issues with failing tests; the gate runs every suite). Recorded as a deviation.
 
 ## Integration gate
-- [ ] Fresh reset, migrate, seed, AI keys blanked
-- [ ] `run-golden-path` passes (API, browser, floor)
-- [ ] Key screens: not looked at by agents (decision 0024); the owner checks them from the feature test guide
-- [ ] Pushed to `main` (commits: …)
+- [x] Fresh reset, migrate, seed, AI keys blanked (`invai-infra/.gate/run-20261009T153940Z.log`, first attempt)
+- [x] `run-golden-path` passes: API 13/13, browser 37, floor 3; contracts 146, backend 1670, web 172 + build
+- [x] Key screens: not looked at by agents (decision 0024); the owner checks them from the feature test guide. Seeded companies are sample shops (`demo: true`), so two-step enforcement shows only on a newly signed-up shop
+- [x] Pushed to `main`: contracts 9026680..dc62328, backend 6bf766e..95324fe, web 0495189..4559618, then docs
 
 ## Team metrics
 | First-pass approvals | Canary caught? | Escaped defects | Reopened | Avg cycle time | Tokens per card |
 |---|---|---|---|---|---|
+| 3/5 cards with every reviewer approving in round 1 (T-28-1, T-28-4, T-28-5). Primary reviewer first-pass 5/5. Security co-reviews sent back T-28-2 (S-57, S-58, both Medium, fixed in one round) and T-28-3 (decision text; found the older S-56) | none planted (OI-15 open) | none known; gate passed on the first attempt | 0 | build about 10–25 min per card; wave about 4 h wall clock | about 3.1 M subagent tokens: plan 0.39 M, builders 1.24 M (0.12–0.46 M per card), reviews 1.49 M (0.08–0.19 M each) |
 
 ## Log
 - 2026-10-09 Fresh tech lead. State: all repos clean and pushed (contracts 9026680, backend 6bf766e, web 0495189, floor 9304da1, ui 52af2b8, imaging f2d2eda, infra 1644dd4, docs acf2493); no app process listening on 3000–3199, 5173, 5174, 8000; 31 GB free. Backlog reconciled; cards written; plan review started.
@@ -62,6 +63,12 @@
 - 2026-10-09 T-28-2 round 2 (backend 03998af migration 0043 `users.mfa_required_since`, 95324fe; docs f1e34f8): attempts counted before the password check; grace restarts at most once per user; proofs flipped to `it`; full suite 1670 pass + 1 expected fail (S-56). Migration 0043 applied to the dev DB. Security r2 started. Reviewer r1 notes went to backlog B-294..B-297.
 - 2026-10-09 T-28-2 security r2 approve (bursts of 40: at most 10 passwords tested, same for unknown emails, one email; demote/deactivate/re-promote cycles stay blocked; accepted gap: a user already required before 0043 can get one more grace through a new invite, once). Docs 5673f47: S-57, S-58 fixed; 0025 accepted. **T-28-2 approved. Every wave 28 card is approved** (each required reviewer's latest file says approve). The security proof tests (b2b9565, ecff989) were accepted by the feature owners, who flipped or kept their markers as granted. Gate started: `OPENAI_API_KEY= ANTHROPIC_API_KEY= IMAGE_GEN_PROVIDER= caffeinate -i pnpm gate invai-contracts invai-backend invai-web`.
 
+- 2026-10-09 Gate passed on the first attempt and all three code repos pushed. Backlog: B-185..B-188 and B-261 done. Counts: 165 done, 96 open (incl. 8 new from this wave, B-292..B-299), 22 proposed, 10 partial, 2 imaging-part, 2 blocked, 2 other (299 rows).
+
 ## Retro
-- What slipped:
-- Lessons added (links to `team/lessons.md`):
+- What slipped: the plan needed 9 blocking card edits from the plan reviews (vendor role, active vs any org, sample orgs, account-exists leak, code ownership, a non-existent order state, an endless loop); all were caught before any build. The lockout card's first build checked the lock before the password but counted after it (S-57), the same "claim before the guarded work" class as wave 27's spend bugs. The full suite of T-28-2 and T-28-3 was red for a while on a security-owned file (`GLOBAL_TABLES`) the card didn't grant. The guard hook blocked heredoc and scratch-file edits for the tech lead and three agents (it reads `../x` tokens inside heredoc bodies as script paths).
+- What worked: the architect's plan review read Better Auth's dispatch code and turned a per-user lockout that leaked which accounts exist into an email-keyed one before a line was written. Security co-reviews proved two Medium auth bugs and one older PII gap (S-56) with failing tests. The primary reviewer's mutation checks on the retention sweep (remove each filter, watch the fence test go red) gave strong evidence for a delete job.
+- Process deviations: backlog reconciliation ran as tech-lead curation (no card); QA acceptance-tests-first skipped (decision 0018 budget; security co-reviews and the gate covered it). Notion "InvAI Feature Test Guide" rows not added: the tech lead had no Notion tool in this session; the rows to add are listed in the owner report.
+- Agent memory read: reviewer (assertions that always pass; raw code literals), backend-foundation (Better Auth change vs reset paths; global tables need `GLOBAL_TABLES`; seeded companies are sample shops), architect (vendor role, sample orgs), backend-engineer (guard heredoc trap). Promoted: the task-card template now asks for the `GLOBAL_TABLES` grant on any new table without `company_id`.
+- Escaped plan defect found in the retro: the cards defined "sample workspace" as `companies.demo`, but the codebase's test is `isSampleWorkspace`; the seeded shop (`demo = true`) is exempt from two-step sign-in. Real sign-ups are covered. Backlog B-299 (PM decision, then backend-foundation). Cause: this tech lead was started in `invai-docs/`, so its memory (which held this exact fact) wasn't loaded; the role file now names the absolute memory path.
+- Lessons added: 2026-10-09 wave 28 rows in `team/lessons.md` (five rows).
