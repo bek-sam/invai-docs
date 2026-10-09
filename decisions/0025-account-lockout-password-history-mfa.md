@@ -1,0 +1,26 @@
+# 0025: Account lockout per email, last-10 password history, and required two-step sign-in for owners and admins
+
+- Status: proposed (2026-10-09); the security-reviewer accepts it in the T-28-2 review
+- Type: security
+
+## Context
+Amazon's Data Protection Policy (2025-11-25 update) asks for account lockout after ten unsuccessful logins, password history for the last ten passwords, and MFA for accounts that reach buyer data (`security/v1-review.md`, DPP table; backlog B-185, B-186, B-188). Before this, sign-in had only the 20/min per-IP limit (decision 0008), Better Auth kept no password history, and two-step sign-in (TOTP + backup codes, T-2-3) was optional. Better Auth 1.7.5 runs our before-hooks ahead of the endpoint and gives after-hooks the endpoint's `APIError` (`dist/api/dispatch.mjs`), so a refusal can happen before any session or password write. Links: card T-28-2, contract T-28-1 (`MFA_REQUIRED`, `Me.mfa`, `AUTH_ERROR_CODES`, `AccountLockedBody`, contracts 0.13.0), web T-28-4. Built by backend-foundation; reviewed by reviewer and security-reviewer.
+
+## Decision
+1. **Lockout.** 10 wrong passwords in a row (`ACCOUNT_LOCK_THRESHOLD`, at most 10) for one email, from any IP, lock that email's sign-in for 30 minutes (`ACCOUNT_LOCK_MINUTES`). While locked, every `/sign-in/email` for it, even with the right password, answers `ACCOUNT_LOCKED` (HTTP 423, `retryAfterSec`, `Retry-After`) before the endpoint runs, so no session is made.
+   - The counter is keyed by HMAC-SHA256 of the normalized email (trimmed, lowercased) under the auth secret, in the global table `sign_in_failures`; the address is never stored. Emails with no account lock exactly the same way and get the same 423.
+   - Counting is one atomic `INSERT … ON CONFLICT DO UPDATE … RETURNING`; the one failure that reaches the threshold sends the single "account locked" email (en/es, only if the user exists), guarded again by `notified_at`, and logs a warning with the user id only.
+   - A right password clears the streak; the lock ends by itself after 30 minutes (the next failure starts at 1); a completed password reset clears it at once. Failures with no lock stop counting 24 hours after the last one; stale rows are swept, so the table holds about a day of data.
+   - The per-IP limit (20/min, decision 0008) is unchanged and separate.
+2. **Password history.** On `/change-password` and `/reset-password`, a new password equal to the current one or any of the previous 9 (the last 10) is refused with `PASSWORD_REUSED` (400) and nothing changes. Only Better Auth scrypt hashes are stored (`password_history`, at most 10 per user, deleted with the user), checked with Better Auth's own `password.verify`. Every password set enters it: sign-up, invite sign-up, the seed, change, reset. A change checks history only after the current password verifies, so a stolen session can't test guesses against old passwords.
+3. **Required two-step sign-in.** Required = the user holds an active `owner` or `admin` membership in any org whose `companies.demo` is false (`MFA_REQUIRED_ROLES`). Per user, not per active org. Vendor orgs only carry the `vendor` role, so vendors are excluded (the portal shows no buyer PII); sample workspaces never count.
+   - Deadline = `users.mfa_grace_starts_at` + `MFA_GRACE_DAYS` (default 7, allowed 0–14). Existing users got the migration time. The start is reset to now when a user who was not required becomes required: role change to owner/admin, reactivation, accepting an invite as owner/admin, creating a real org.
+   - Past the deadline without two-step sign-in, every oRPC procedure except `me.get` and `me.switchOrg` answers `MFA_REQUIRED` (403, `data.deadline`) for web sessions, whatever org is active. `me.get` returns `mfa: { required, enabled, deadline }` (omitted for floor sessions).
+   - Not affected: Better Auth routes (two-step enable/verify, sign-out, password reset, verification resend), floor PIN and station sessions, webhooks, and the two HTTP routes outside oRPC: SSE `/events` and signed `/l` links.
+   - A required user can't turn two-step sign-in off: `/two-factor/disable` answers `MFA_DISABLE_NOT_ALLOWED` (403).
+
+## Consequences
+- Trade-off: anyone who knows an email can lock its sign-in for 30 minutes by guessing 10 times. The mitigations are the self-service reset (it unlocks at once), the time limit, the email to the owner, and the per-IP limit that slows one attacker. Repeated targeting would need an IP/WAF answer (`v1-review.md` "Before applying" item 10).
+- A user in their grace period sees nothing blocked; the web (T-28-4) shows a banner and, past the deadline, routes `MFA_REQUIRED` to the setup page. Turning two-step on needs a verified email, so the setup page must offer "resend verification email".
+- Two new global tables without `company_id`: `src/db/rls-coverage.test.ts` lists them in `GLOBAL_TABLES` (security-reviewer owns that test).
+- Enforced by `src/lib/account-security.test.ts` (lockout incl. 20 parallel attempts, history, MFA rule, grace restart, sample workspace, floor sessions). Updating the DPP table text in `security/v1-review.md` is the security-reviewer's follow-up.
