@@ -22,7 +22,9 @@ Amazon's Data Protection Policy (update effective 2025-11-25) says non-PII Amazo
 | `import_runs` (Amazon) | id, connection, format, status, counts, dates | `errors` → `'[]'`; `file_key` → `''` (the CSV object itself expires on the S3 lifecycle) |
 | `listings` (Amazon) | id, listing id, title, state, url, links (the shop's own catalog) | `raw` → `'{}'` |
 | `market_price_snapshots` (Amazon sources) | none | row deleted |
-| `order_item_transitions`, `scans`, `transfers`, `gang_sheets`, `bins`, `reprints`, `item_artwork`, `inventory_movements` | InvAI's own production and stock records (ids, states, times); no Amazon content beyond ids | none |
+| `order_item_transitions`, `scans`, `transfers`, `gang_sheets`, `bins`, `reprints`, `inventory_movements` | InvAI's own production and stock records (ids, states, times); no Amazon content beyond ids | none |
+| `item_artwork` | ids, item link, state, times | PII, not cleared today: `values`, `file_key`, `preview_key` hold the buyer's personalization answers and art rendered with that text. To be cleared by the PII sweep; open gap S-56 (backlog B-293), not part of this sweep |
+| `labels` | tracking number and label key (the shop's carrier record, kept) | none; the label PDF itself is removed by the 30-day S3 rule |
 | `audit_log` | kept (append-only; DPP asks 12 months of logs; log retention is B-75) | none |
 | `webhook_deliveries`, `outbox_events`, BullMQ job data | already purged on their own short windows (7 days; relay cleanup; queue age) | none here |
 
