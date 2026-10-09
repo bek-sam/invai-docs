@@ -1,6 +1,6 @@
 # 0026: Amazon non-PII data older than 18 months is cleared daily; bookkeeping records stay
 
-- Status: proposed (compliance-officer and security-reviewer accept in the T-28-3 review)
+- Status: proposed (security accepted 2026-10-09; compliance pending)
 - Type: security
 
 ## Context
