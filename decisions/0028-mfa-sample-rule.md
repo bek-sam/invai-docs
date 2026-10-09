@@ -1,6 +1,6 @@
 # 0028: Two-step sign-in exempts only sample workspaces (`isSampleRow`); stray promise rejections are logged, not fatal
 
-- Status: proposed (security-reviewer accepts)
+- Status: accepted (2026-10-09)
 - Type: security
 
 ## Context
